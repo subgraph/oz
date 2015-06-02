@@ -17,6 +17,9 @@ const profileDirectory = "/var/lib/oz/cells.d"
 
 var log = createLogger()
 
+// By convention oz-init writes log messages to stderr with a single character
+// prefix indicating the logging level.  These messages are read one line at a time
+// over a pipe by oz-daemon and translated into appropriate log events.
 func createLogger() *logging.Logger {
 	l := logging.MustGetLogger("oz-init")
 	be := logging.NewLogBackend(os.Stderr, "", 0)

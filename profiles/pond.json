@@ -1,0 +1,29 @@
+{
+"path": "/usr/local/bin/pond"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/office-mail.svg"
+	, "window_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/office-mail.svg"
+	, "disable_audio":true
+}
+, "network":{
+	"nettype":"empty"
+	, "sockets": [
+		{"nettype":"client", "proto":"tcp", "port":9050}
+		, {"nettype":"client", "proto":"tcp", "port":30003}
+	]
+}
+, "whitelist": [
+	{"source":"${HOME}/.pond"}
+	, {"source":"/opt/usr/share/gopkgs/pond"}
+]
+, "blacklist": [
+]
+, "environment": [
+	{"name":"GOPATH", "value":"/opt/usr/share/gopkgs/pond"}
+	, {"name":"TOR_SKIP_LAUNCH"}
+	, {"name":"TOR_SOCKS_HOST"}
+	, {"name":"TOR_SOCKS_PORT"}
+]
+}

@@ -1,0 +1,34 @@
+{
+"path": "/usr/bin/liferea"
+, "_wrapper": "/usr/bin/torify"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/liferea.svg"
+	, "_tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/liferea.svg"
+}
+, "network":{
+	"nettype":"bridge"
+	, "sockets": [
+		{"nettype":"client", "proto":"tcp", "port":9050}
+	]
+}
+, "whitelist": [
+	{"source":"/run/resolvconf"}
+
+	, {"source":"${HOME}/.local/share/liferea"}
+	, {"source":"${HOME}/.cache/liferea"}
+	, {"source":"${HOME}/.config/liferea"}
+
+	, {"source":"${HOME}/.config/gtk-3.0"}
+	, {"source":"${HOME}/.config/gtk-2.0"}
+
+	, {"source":"${HOME}/.config/dconf"}
+	, {"source":"${HOME}/.cache/dconf"}
+	, {"source":"/run/user/${UID}/dconf"}
+]
+, "blacklist": [
+]
+, "_environment": [
+]
+}

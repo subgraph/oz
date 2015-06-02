@@ -1,0 +1,17 @@
+{
+"path": "/usr/bin/evince"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon":"/usr/share/icons/hicolor/48x48/apps/evince.png"
+}
+, "network":{
+	"nettype":"empty"
+}
+, "whitelist": [
+]
+, "blacklist": [
+]
+, "environment": [
+]
+}

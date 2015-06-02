@@ -1,0 +1,30 @@
+{
+"path": "/usr/bin/torbrowser-launcher"
+, "watchdog": "start-tor-browser"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "disable_audio": true
+	, "disable_clipboard": false
+	, "tray_icon":"/usr/share/pixmaps/torbrowser80.xpm"
+}
+, "network":{
+	"nettype":"empty"
+	, "sockets": [
+		{"nettype":"client", "proto":"tcp", "port":9050}
+	]
+}
+, "whitelist": [
+	{"source":"${HOME}/.local/share/torbrowser"}
+	, {"source":"${HOME}/.cache/torbrowser"}
+	, {"source":"${HOME}/.config/torbrowser"}
+	, {"source":"${HOME}/Downloads/TorBrowser"}
+]
+, "blacklist": [
+]
+, "environment": [
+        {"name":"TOR_SKIP_LAUNCH"}
+        , {"name":"TOR_SOCKS_HOST"}
+        , {"name":"TOR_SOCKS_PORT"}
+]
+}

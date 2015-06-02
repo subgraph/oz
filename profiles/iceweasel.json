@@ -1,0 +1,27 @@
+{
+"path": "/usr/bin/iceweasel"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/iceweasel.svg"
+}
+, "network":{
+	"nettype":"bridge"
+	, "sockets": [
+		{"nettype":"client", "proto":"tcp", "port":9050}
+	]
+}
+, "whitelist": [
+	{"source":"/run/resolvconf"}
+	, {"source":"${HOME}/.mozilla"}
+	, {"source":"${HOME}/.cache/mozilla"}
+	, {"source":"${HOME}/Downloads/"}
+
+	, {"source":"${HOME}/.config/gtk-3.0"}
+	, {"source":"${HOME}/.config/gtk-2.0"}
+]
+, "blacklist": [
+]
+, "environment": [
+]
+}

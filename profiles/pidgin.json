@@ -1,0 +1,18 @@
+{
+"path": "/usr/bin/pidgin"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/pidgin-menu.svg"
+}
+, "network":{
+	"nettype":"bridge"
+}
+, "whitelist": [
+	{"source":"${HOME}/.purple"}
+]
+, "blacklist": [
+]
+, "environment": [
+]
+}

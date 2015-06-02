@@ -1,0 +1,24 @@
+{
+"path": "/usr/bin/xchat"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon": "/usr/share/icons/gnome-colors-common/scalable/apps/xchat.svg"
+	, "disable_audio": true
+}
+, "network":{
+	"nettype":"empty"
+	, "sockets": [
+		{"nettype":"client", "destination": "10.10.0.90", "proto":"tcp", "port":57000}
+	]
+}
+, "whitelist": [
+	{"source":"${HOME}/.xpra/xchat"}
+	, {"source":"${HOME}/.xchat2"}
+
+	, {"source":"${HOME}/.config/gtk-3.0"}
+	, {"source":"${HOME}/.config/gtk-2.0"}
+]
+, "blacklist": [
+]
+}

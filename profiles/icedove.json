@@ -1,0 +1,34 @@
+{
+"path": "/usr/bin/icedove"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon": "/usr/share/icons/hicolor/scalable/apps/icedove.svg"
+	, "disable_audio": true
+}
+, "network":{
+	"nettype":"bridge"
+	, "sockets": [
+		{"nettype":"client", "proto":"tcp", "port":9050}
+	]
+}
+, "whitelist": [
+	{"source":"/run/resolvconf"}
+	, {"source":"/run/user/${UID}/keyring"}
+	, {"source":"/tmp/gpg-*"}
+	, {"source":"${HOME}/.cache/icedove"}
+	, {"source":"${HOME}/.gnupg"}
+	, {"source":"${HOME}/..thunderbird"}
+	, {"source":"${HOME}/.icedove"}
+
+	, {"source":"${HOME}/.config/gtk-3.0"}
+	, {"source":"${HOME}/.config/gtk-2.0"}
+]
+, "_blacklist": [
+]
+, "environment": [
+	{"name":"GPG_AGENT_INFO"}
+	, {"name":"GNOME_KEYRING_CONTROL"}
+	, {"name":"GNOME_KEYRING_PID", "value":"1"}
+]
+}

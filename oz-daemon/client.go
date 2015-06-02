@@ -19,13 +19,14 @@ func clientSend(msg interface{}) (*ipc.Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer c.Close()
 	rr, err := c.ExchangeMsg(msg)
-	resp := <- rr.Chan()
-	rr.Done()
-	c.Close()
 	if err != nil {
 		return nil, err
 	}
+
+	resp := <- rr.Chan()
+	rr.Done()
 	return resp,nil
 }
 

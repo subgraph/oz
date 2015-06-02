@@ -52,11 +52,14 @@ func initialize() *daemonState {
 
 func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	d.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
+
 	for _,sbox := range d.sandboxes {
 		if sbox.init.Process.Pid == pid {
-			sbox.fs.Cleanup()
+			sbox.remove()
+			return
 		}
 	}
+	d.Notice("No sandbox found with oz-init pid = %d", pid)
 }
 
 func runServer(args ...interface{}) error {

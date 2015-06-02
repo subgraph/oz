@@ -84,6 +84,18 @@ func (d *daemonState) launch(p *oz.Profile) (*Sandbox, error) {
 	return sbox,nil
 }
 
+func (sbox *Sandbox) remove() {
+	sboxes := []*Sandbox{}
+	for _,sb := range sbox.daemon.sandboxes {
+		if sb == sbox {
+			sb.fs.Cleanup()
+		} else {
+			sboxes = append(sboxes, sb)
+		}
+	}
+	sbox.daemon.sandboxes = sboxes
+}
+
 func (sbox *Sandbox) logMessages() {
 	scanner := bufio.NewScanner(sbox.stderr)
 	for scanner.Scan() {

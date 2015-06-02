@@ -15,6 +15,7 @@ func (fs *Filesystem) Cleanup() error {
 		fs.log.Warning(msg)
 		return errors.New(msg)
 	}
+	fs.log.Info("Cleanup() called on filesystem at root %s", fs.root)
 
 	for {
 		mnts,err := getMountsBelow(fs.base)

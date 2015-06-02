@@ -1,2 +1,5 @@
 oz.iml
 .idea/
+oz/oz
+cmd/oz-init/oz-init
+cmd/oz-daemon/oz-daemon

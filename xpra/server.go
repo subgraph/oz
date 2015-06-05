@@ -20,7 +20,9 @@ func NewServer(config *oz.XServerConf, display uint64, workdir string) *Xpra {
 	x.WorkDir = workdir
 	x.xpraArgs = prepareServerArgs(config, display, workdir)
 	x.Process = exec.Command("/usr/bin/xpra", x.xpraArgs...)
-	x.Process.Env = append(os.Environ(), "TMPDIR="+workdir)
+	x.Process.Env = append(os.Environ(),
+		"TMPDIR="+workdir,
+	)
 
 	return x
 }

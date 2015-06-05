@@ -11,11 +11,21 @@ import (
 	"github.com/op/go-logging"
 	"github.com/kr/pty"
 	"fmt"
+	"github.com/subgraph/oz/xpra"
+	"os/user"
+	"strconv"
+	"path"
 )
 
 const profileDirectory = "/var/lib/oz/cells.d"
 
-var log = createLogger()
+type initState struct {
+	log *logging.Logger
+	user *user.User
+	fs *fs.Filesystem
+}
+
+//var log = createLogger()
 
 // By convention oz-init writes log messages to stderr with a single character
 // prefix indicating the logging level.  These messages are read one line at a time
@@ -47,47 +57,88 @@ func Main() {
 			Usage: "name of profile to launch",
 			EnvVar: "INIT_PROFILE",
 		},
-
+		cli.IntFlag{
+			Name: "uid",
+			EnvVar: "INIT_UID",
+		},
 	}
 	app.Run(os.Args)
 }
 
 func runInit(c *cli.Context) {
+	st := new(initState)
+	st.log = createLogger()
 	address := c.String("address")
 	profile := c.String("profile")
+	uid := uint32(c.Int("uid"))
 	if address == "" {
-		log.Error("Error: missing required 'address' argument")
+		st.log.Error("Error: missing required 'address' argument")
 		os.Exit(1)
 	}
 	if profile == "" {
-		log.Error("Error: missing required 'profile' argument")
+		st.log.Error("Error: missing required 'profile' argument")
 		os.Exit(1)
 	}
 	profileName = profile
-	log.Info("Starting oz-init for profile: %s", profile)
-	log.Info("Socket address: %s", address)
+	st.log.Info("Starting oz-init for profile: %s", profile)
+	st.log.Info("Socket address: %s", address)
 	p,err := loadProfile(profile)
 	if err != nil {
-		log.Error("Could not load profile %s: %v", profile, err)
+		st.log.Error("Could not load profile %s: %v", profile, err)
 		os.Exit(1)
 	}
+	u,err := user.LookupId(strconv.FormatUint(uint64(uid), 10))
+	if err != nil {
+		st.log.Error("Failed to lookup user with uid=%d: %v", uid, err)
+		os.Exit(1)
+	}
+	st.user = u
 
-	fs := fs.NewFromProfile(p, log)
+	fs := fs.NewFromProfile(p, u, st.log)
 	if err := fs.OzInit(); err != nil {
-		log.Error("Error: setting up filesystem failed: %v\n", err)
+		st.log.Error("Error: setting up filesystem failed: %v\n", err)
 		os.Exit(1)
 	}
+	st.fs = fs
+	if p.XServer.Enabled {
+		st.startXpraServer(&p.XServer, fs)
+	}
 
-	oz.ReapChildProcs(log, handleChildExit)
+	oz.ReapChildProcs(st.log, st.handleChildExit)
 
 	serv := ipc.NewMsgConn(messageFactory, address)
 	serv.AddHandlers(
 		handlePing,
-		handleRunShell,
+		st.handleRunShell,
 	)
 	serv.Listen()
 	serv.Run()
-	log.Info("oz-init exiting...")
+	st.log.Info("oz-init exiting...")
+}
+
+func (is *initState) startXpraServer (config *oz.XServerConf,  fs *fs.Filesystem) {
+	workdir := fs.Xpra()
+	if workdir == "" {
+		is.log.Warning("Xpra work directory not set")
+		return
+	}
+	logpath := path.Join(workdir, "xpra-server.out")
+	f,err := os.Create(logpath)
+	if err != nil {
+		is.log.Warning("Failed to open xpra logfile (%s): %v", logpath, err)
+		return
+	}
+	defer f.Close()
+	xpra := xpra.NewServer(config, 123, workdir)
+	xpra.Process.Stdout = f
+	xpra.Process.Stderr = f
+	xpra.Process.Env = []string{
+		"HOME="+ is.user.HomeDir,
+	}
+	is.log.Info("Starting xpra server")
+	if err := xpra.Process.Start(); err != nil {
+		is.log.Warning("Failed to start xpra server: %v", err)
+	}
 }
 
 func loadProfile(name string) (*oz.Profile, error) {
@@ -107,14 +158,14 @@ func handlePing(ping *PingMsg, msg *ipc.Message) error {
 	return msg.Respond(&PingMsg{Data: ping.Data})
 }
 
-func handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
+func (is *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	if msg.Ucred == nil {
 		return msg.Respond(&ErrorMsg{"No credentials received for RunShell command"})
 	}
 	if msg.Ucred.Uid == 0 || msg.Ucred.Gid == 0 && !allowRootShell {
 		return msg.Respond(&ErrorMsg{"Cannot open shell because allowRootShell is disabled"})
 	}
-	log.Info("Starting shell with uid = %d, gid = %d", msg.Ucred.Uid, msg.Ucred.Gid)
+	is.log.Info("Starting shell with uid = %d, gid = %d", msg.Ucred.Uid, msg.Ucred.Gid)
 	cmd := exec.Command("/bin/sh", "-i")
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Credential = &syscall.Credential{
@@ -126,7 +177,7 @@ func handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	}
 	cmd.Env = append(cmd.Env, "PATH=/usr/bin:/bin")
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", profileName))
-	log.Info("Executing shell...")
+	is.log.Info("Executing shell...")
 	f,err := ptyStart(cmd)
 	defer f.Close()
 	if err != nil {
@@ -157,7 +208,7 @@ func ptyStart(c *exec.Cmd) (ptty *os.File, err error) {
 	return ptty, nil
 }
 
-func handleChildExit(pid int, wstatus syscall.WaitStatus) {
-	log.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
+func (is *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
+	is.log.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
 }
 

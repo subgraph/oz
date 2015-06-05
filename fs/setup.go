@@ -5,6 +5,9 @@ import (
 	"os"
 	"path"
 	"syscall"
+	"os/user"
+	"strconv"
+	"errors"
 )
 
 var basicBindDirs = []string{
@@ -37,6 +40,16 @@ var basicSymlinks = [][2]string{
 }
 
 func (fs *Filesystem) Setup() error {
+	if fs.xpra != "" {
+		if err := fs.createXpraDir(); err != nil {
+			return err
+		}
+		item,err := fs.newItem(fs.xpra, fs.xpra, false)
+		if err != nil {
+			return err
+		}
+		fs.whitelist = append(fs.whitelist, item)
+	}
 	if err := fs.setupRootfs(); err != nil {
 		return err
 	}
@@ -44,6 +57,30 @@ func (fs *Filesystem) Setup() error {
 		return err
 	}
 	return fs.setupMountItems()
+}
+
+func (fs *Filesystem) createXpraDir() error {
+	uid,gid,err := userIds(fs.user)
+	if err != nil {
+		return err
+	}
+	dir := path.Join(fs.user.HomeDir, ".Xoz", fs.name)
+	if err := createSubdirs(fs.user.HomeDir, uid, gid, 0755, ".Xoz", fs.name); err != nil {
+		return fmt.Errorf("failed to create xpra directory (%s): %v", dir, err)
+	}
+	return nil
+}
+
+func userIds(user *user.User) (int, int, error) {
+	uid,err := strconv.Atoi(user.Uid)
+	if err != nil {
+		return -1,-1, errors.New("failed to parse uid from user struct: "+ err.Error())
+	}
+	gid,err := strconv.Atoi(user.Gid)
+	if err != nil {
+		return -1,-1, errors.New("failed to parse gid from user struct: "+ err.Error())
+	}
+	return uid,gid,nil
 }
 
 func (fs *Filesystem) setupRootfs() error {

@@ -80,8 +80,9 @@ func (mi *mountItem) readSourceInfo(src string) (os.FileInfo, error) {
 		return nil, fmt.Errorf("source path (%s) does not exist", src)
 	}
 
-	if !strings.HasPrefix(src, mi.fs.home) {
-		return nil, fmt.Errorf("mount item (%s) has flag MountCreateIfAbsent, but is not child of home directory (%s)", src, mi.fs.home)
+	home := mi.fs.user.HomeDir
+	if !strings.HasPrefix(src, home) {
+		return nil, fmt.Errorf("mount item (%s) has flag MountCreateIfAbsent, but is not child of home directory (%s)", src, home)
 	}
 
 	if err := os.MkdirAll(src, 0750); err != nil {

@@ -20,9 +20,11 @@ type directory struct {
 
 type Filesystem struct {
 	log *logging.Logger
-	home         string
+	user         *user.User
+	name		 string
 	base         string
 	root         string
+	xpra 		 string
 	userID       string
 	noDefaults   bool
 	noSysAndProc bool
@@ -32,6 +34,10 @@ type Filesystem struct {
 
 func (fs *Filesystem) Root() string {
 	return fs.root
+}
+
+func (fs *Filesystem) Xpra() string {
+	return fs.xpra
 }
 
 func (fs *Filesystem) addWhitelist(path, target string, readonly bool) error {
@@ -65,8 +71,8 @@ func (fs *Filesystem) newItem(path, target string, readonly bool) (*mountItem, e
 	}, nil
 }
 
-func NewFromProfile(profile *oz.Profile, log *logging.Logger) *Filesystem {
-	fs := NewFilesystem(profile.Name, log)
+func NewFromProfile(profile *oz.Profile, user *user.User, log *logging.Logger) *Filesystem {
+	fs := NewFilesystem(profile.Name, user, log)
 	for _,wl := range profile.Whitelist {
 		fs.addWhitelist(wl.Path, wl.Path, wl.ReadOnly)
 	}
@@ -75,24 +81,22 @@ func NewFromProfile(profile *oz.Profile, log *logging.Logger) *Filesystem {
 	}
 	fs.noDefaults = profile.NoDefaults
 	fs.noSysAndProc = profile.NoSysProc
+	if profile.XServer.Enabled {
+		fs.xpra = path.Join(user.HomeDir, ".Xoz", profile.Name)
+	}
 	return fs
 }
 
-func NewFilesystem(name string, log *logging.Logger) *Filesystem {
-
+func NewFilesystem(name string, user *user.User, log *logging.Logger) *Filesystem {
 	fs := new(Filesystem)
 	fs.log = log
+	fs.name = name
 	if log == nil {
 		fs.log = logging.MustGetLogger("oz")
 	}
 	fs.base = path.Join("/srv/oz", name)
 	fs.root = path.Join(fs.base, "rootfs")
-
-	u, err := user.Current()
-	if err != nil {
-		panic("Failed to look up current user: " + err.Error())
-	}
-	fs.home = u.HomeDir
+	fs.user = user
 	fs.userID = strconv.Itoa(os.Getuid())
 
 	return fs
@@ -203,5 +207,19 @@ func copyFileInfo(info os.FileInfo, target string) error {
 	st := info.Sys().(*syscall.Stat_t)
 	os.Chown(target, int(st.Uid), int(st.Gid))
 	os.Chmod(target, info.Mode().Perm())
+	return nil
+}
+
+func createSubdirs(base string, uid,gid int, mode os.FileMode, subdirs ...string) error {
+	dir := base
+	for _,sd := range subdirs {
+		dir = path.Join(dir, sd)
+		if err := os.Mkdir(dir, mode); err != nil && !os.IsExist(err) {
+			return err
+		}
+		if err := os.Chown(dir, uid, gid); err != nil {
+			return err
+		}
+	}
 	return nil
 }

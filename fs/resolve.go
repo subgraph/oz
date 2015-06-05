@@ -30,7 +30,7 @@ func (fs *Filesystem) resolveVars(p string) (string, error) {
 		return resolved, nil
 
 	case strings.HasPrefix(p, homeVar):
-		return path.Join(fs.home, p[len(homeVar):]), nil
+		return path.Join(fs.user.HomeDir, p[len(homeVar):]), nil
 
 	case strings.HasPrefix(p, uidVar):
 		return strings.Replace(p, uidVar, fs.userID, -1), nil

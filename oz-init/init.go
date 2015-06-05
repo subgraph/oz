@@ -25,8 +25,6 @@ type initState struct {
 	fs *fs.Filesystem
 }
 
-//var log = createLogger()
-
 // By convention oz-init writes log messages to stderr with a single character
 // prefix indicating the logging level.  These messages are read one line at a time
 // over a pipe by oz-daemon and translated into appropriate log events.
@@ -61,6 +59,10 @@ func Main() {
 			Name: "uid",
 			EnvVar: "INIT_UID",
 		},
+		cli.IntFlag{
+			Name: "display",
+			EnvVar: "INIT_DISPLAY",
+		},
 	}
 	app.Run(os.Args)
 }
@@ -71,6 +73,8 @@ func runInit(c *cli.Context) {
 	address := c.String("address")
 	profile := c.String("profile")
 	uid := uint32(c.Int("uid"))
+	disp := c.Int("display")
+
 	if address == "" {
 		st.log.Error("Error: missing required 'address' argument")
 		os.Exit(1)
@@ -101,7 +105,11 @@ func runInit(c *cli.Context) {
 	}
 	st.fs = fs
 	if p.XServer.Enabled {
-		st.startXpraServer(&p.XServer, fs)
+		if disp == 0 {
+			st.log.Error("Cannot start xpra because no display number was passed to oz-init")
+			os.Exit(1)
+		}
+		st.startXpraServer(&p.XServer, fs, disp)
 	}
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)
@@ -116,7 +124,7 @@ func runInit(c *cli.Context) {
 	st.log.Info("oz-init exiting...")
 }
 
-func (is *initState) startXpraServer (config *oz.XServerConf,  fs *fs.Filesystem) {
+func (is *initState) startXpraServer (config *oz.XServerConf,  fs *fs.Filesystem, display int) {
 	workdir := fs.Xpra()
 	if workdir == "" {
 		is.log.Warning("Xpra work directory not set")
@@ -129,7 +137,7 @@ func (is *initState) startXpraServer (config *oz.XServerConf,  fs *fs.Filesystem
 		return
 	}
 	defer f.Close()
-	xpra := xpra.NewServer(config, 123, workdir)
+	xpra := xpra.NewServer(config, uint64(display), workdir)
 	xpra.Process.Stdout = f
 	xpra.Process.Stderr = f
 	xpra.Process.Env = []string{

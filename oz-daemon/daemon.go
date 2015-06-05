@@ -16,6 +16,7 @@ type daemonState struct {
 	profiles oz.Profiles
 	sandboxes []*Sandbox
 	nextSboxId int
+	nextDisplay int
 	memBackend *logging.ChannelMemoryBackend
 	backends []logging.Backend
 }
@@ -47,6 +48,7 @@ func initialize() *daemonState {
 	d.profiles = ps
 	oz.ReapChildProcs(d.log, d.handleChildExit)
 	d.nextSboxId = 1
+	d.nextDisplay = 100
 	return d
 }
 

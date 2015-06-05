@@ -17,6 +17,7 @@ const initPath = "/usr/local/bin/oz-init"
 type Sandbox struct {
 	daemon *daemonState
 	id int
+	display int
 	profile *oz.Profile
 	init *exec.Cmd
 	fs *fs.Filesystem
@@ -36,7 +37,7 @@ func findSandbox(id int) *Sandbox {
 */
 const initCloneFlags = syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS
 
-func createInitCommand(addr, name, chroot string, uid uint32) *exec.Cmd {
+func createInitCommand(addr, name, chroot string, uid uint32, display int) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -47,6 +48,9 @@ func createInitCommand(addr, name, chroot string, uid uint32) *exec.Cmd {
 		"INIT_ADDRESS="+addr,
 		"INIT_PROFILE="+name,
 		fmt.Sprintf("INIT_UID=%d", uid),
+	}
+	if display > 0 {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("INIT_DISPLAY=%d", display))
 	}
 	return cmd
 }
@@ -64,7 +68,13 @@ func (d *daemonState) launch(p *oz.Profile, uid uint32) (*Sandbox, error) {
 	if err != nil {
 		return nil, err
 	}
-	cmd := createInitCommand(addr, p.Name, fs.Root(), uid)
+	display := 0
+	if p.XServer.Enabled {
+		display = d.nextDisplay
+		d.nextDisplay += 1
+	}
+
+	cmd := createInitCommand(addr, p.Name, fs.Root(), uid, display)
 	pp,err := cmd.StderrPipe()
 	if err != nil {
 		fs.Cleanup()
@@ -78,6 +88,7 @@ func (d *daemonState) launch(p *oz.Profile, uid uint32) (*Sandbox, error) {
 	sbox := &Sandbox{
 		daemon: d,
 		id: d.nextSboxId,
+		display: display,
 		profile: p,
 		init: cmd,
 		fs: fs,

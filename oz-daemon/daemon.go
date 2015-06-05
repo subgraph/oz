@@ -8,6 +8,7 @@ import (
 	"github.com/subgraph/oz/ipc"
 	"syscall"
 	"github.com/subgraph/oz/fs"
+	"os/user"
 )
 
 type daemonState struct {
@@ -95,8 +96,7 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
 	d.Debug("Would launch %s", p.Name)
-
-	_,err = d.launch(p)
+	_,err = d.launch(p, m.Ucred.Uid)
 	if err != nil {
 		d.Warning("launch of %s failed: %v", p.Name, err)
 		return m.Respond(&ErrorMsg{err.Error()})
@@ -139,7 +139,9 @@ func (d *daemonState) handleClean(clean *CleanMsg, msg *ipc.Message) error {
 			return msg.Respond(&ErrorMsg{errmsg})
 		}
 	}
-	fs := fs.NewFromProfile(p, d.log)
+	// XXX
+	u,_ := user.Current()
+	fs := fs.NewFromProfile(p, u, d.log)
 	if err := fs.Cleanup(); err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
 	}

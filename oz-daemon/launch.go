@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"bufio"
+	"os/user"
 )
 
 const initPath = "/usr/local/bin/oz-init"
@@ -35,7 +36,7 @@ func findSandbox(id int) *Sandbox {
 */
 const initCloneFlags = syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS
 
-func createInitCommand(addr, name, chroot string) *exec.Cmd {
+func createInitCommand(addr, name, chroot string, uid uint32) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -45,12 +46,17 @@ func createInitCommand(addr, name, chroot string) *exec.Cmd {
 	cmd.Env = []string{
 		"INIT_ADDRESS="+addr,
 		"INIT_PROFILE="+name,
+		fmt.Sprintf("INIT_UID=%d", uid),
 	}
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile) (*Sandbox, error) {
-	fs := fs.NewFromProfile(p, d.log)
+func (d *daemonState) launch(p *oz.Profile, uid uint32) (*Sandbox, error) {
+	u,err := user.LookupId(fmt.Sprintf("%d", uid))
+	if err != nil {
+		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
+	}
+	fs := fs.NewFromProfile(p, u, d.log)
 	if err := fs.Setup(); err != nil {
 		return nil, err
 	}
@@ -58,7 +64,7 @@ func (d *daemonState) launch(p *oz.Profile) (*Sandbox, error) {
 	if err != nil {
 		return nil, err
 	}
-	cmd := createInitCommand(addr, p.Name, fs.Root())
+	cmd := createInitCommand(addr, p.Name, fs.Root(), uid)
 	pp,err := cmd.StderrPipe()
 	if err != nil {
 		fs.Cleanup()

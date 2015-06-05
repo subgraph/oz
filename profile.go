@@ -43,7 +43,6 @@ type XServerConf struct {
 	UsePulseAudio    bool   `json:"use_pulse_audio"`
 	DisableClipboard bool   `json:"disable_clipboard"`
 	DisableAudio     bool   `json:"disable_audio"`
-	WorkDir          string `json:"work_dir"`
 }
 
 type WhitelistItem struct {

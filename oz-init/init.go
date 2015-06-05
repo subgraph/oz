@@ -13,7 +13,9 @@ import (
 	"github.com/subgraph/oz/xpra"
 	"os/user"
 	"strconv"
-	"path"
+	"io"
+	"bufio"
+	"strings"
 )
 
 const profileDirectory = "/var/lib/oz/cells.d"
@@ -42,6 +44,7 @@ func createLogger() *logging.Logger {
 }
 
 var allowRootShell = false
+var logXpra = true
 
 func Main() {
 	st := parseArgs()
@@ -138,16 +141,13 @@ func (st *initState) startXpraServer() {
 		st.log.Warning("Xpra work directory not set")
 		return
 	}
-	logpath := path.Join(workdir, "xpra-server.out")
-	f,err := os.Create(logpath)
-	if err != nil {
-		st.log.Warning("Failed to open xpra logfile (%s): %v", logpath, err)
-		return
-	}
-	defer f.Close()
 	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), workdir)
-	xpra.Process.Stdout = f
-	xpra.Process.Stderr = f
+	p,err := xpra.Process.StderrPipe()
+	if err != nil {
+		st.log.Warning("Error creating stderr pipe for xpra output: %v", err)
+		os.Exit(1)
+	}
+	go st.readXpraOutput(p)
 	xpra.Process.Env = []string{
 		"HOME="+ st.user.HomeDir,
 	}
@@ -159,6 +159,25 @@ func (st *initState) startXpraServer() {
 	st.log.Info("Starting xpra server")
 	if err := xpra.Process.Start(); err != nil {
 		st.log.Warning("Failed to start xpra server: %v", err)
+	}
+}
+
+func (st *initState) readXpraOutput(r io.ReadCloser) {
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := sc.Text()
+		if len(line) > 0 {
+			if strings.Contains(line, "xpra is ready.") {
+				os.Stderr.WriteString("XPRA READY\n")
+				if !logXpra {
+					r.Close()
+					return
+				}
+			}
+			if logXpra {
+				st.log.Debug("(xpra) %s", line)
+			}
+		}
 	}
 }
 

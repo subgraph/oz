@@ -117,7 +117,9 @@ func (sbox *Sandbox) logMessages() {
 	scanner := bufio.NewScanner(sbox.stderr)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if len(line) > 1 {
+		if line == "XPRA READY" {
+			sbox.daemon.log.Info("Xpra server is ready for connection")
+		} else if len(line) > 1 {
 			sbox.logLine(line)
 		}
 	}

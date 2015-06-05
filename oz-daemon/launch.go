@@ -9,6 +9,8 @@ import (
 	"io"
 	"bufio"
 	"os/user"
+	"github.com/subgraph/oz/xpra"
+	"os"
 )
 
 const initPath = "/usr/local/bin/oz-init"
@@ -20,9 +22,11 @@ type Sandbox struct {
 	display int
 	profile *oz.Profile
 	init *exec.Cmd
+	cred *syscall.Credential
 	fs *fs.Filesystem
 	stderr io.ReadCloser
 	addr string
+	xpra *xpra.Xpra
 }
 
 /*
@@ -55,7 +59,7 @@ func createInitCommand(addr, name, chroot string, uid uint32, display int) *exec
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, uid uint32) (*Sandbox, error) {
+func (d *daemonState) launch(p *oz.Profile, uid,gid uint32) (*Sandbox, error) {
 	u,err := user.LookupId(fmt.Sprintf("%d", uid))
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
@@ -91,6 +95,7 @@ func (d *daemonState) launch(p *oz.Profile, uid uint32) (*Sandbox, error) {
 		display: display,
 		profile: p,
 		init: cmd,
+		cred: &syscall.Credential{Uid: uid, Gid: gid},
 		fs: fs,
 		addr: addr,
 		stderr: pp,
@@ -119,6 +124,7 @@ func (sbox *Sandbox) logMessages() {
 		line := scanner.Text()
 		if line == "XPRA READY" {
 			sbox.daemon.log.Info("Xpra server is ready for connection")
+			go sbox.startXpraClient()
 		} else if len(line) > 1 {
 			sbox.logLine(line)
 		}
@@ -156,4 +162,19 @@ func (sbox *Sandbox) getLogFunc(c byte) func(string, ...interface{}) {
 		return log.Critical
 	}
 	return nil
+}
+
+func (sbox *Sandbox) startXpraClient() {
+	sbox.xpra = xpra.NewClient(
+		&sbox.profile.XServer,
+		uint64(sbox.display),
+		sbox.cred,
+		sbox.fs.Xpra(),
+		sbox.profile.Name,
+		sbox.daemon.log)
+	sbox.xpra.Process.Stdout = os.Stdout
+	sbox.xpra.Process.Stderr = os.Stdout
+	if err := sbox.xpra.Process.Start(); err != nil {
+		sbox.daemon.Warning("Failed to start xpra client: %v", err)
+	}
 }

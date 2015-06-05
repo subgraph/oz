@@ -98,7 +98,7 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
 	d.Debug("Would launch %s", p.Name)
-	_,err = d.launch(p, m.Ucred.Uid)
+	_,err = d.launch(p, m.Ucred.Uid, m.Ucred.Gid)
 	if err != nil {
 		d.Warning("launch of %s failed: %v", p.Name, err)
 		return m.Respond(&ErrorMsg{err.Error()})

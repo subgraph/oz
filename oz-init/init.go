@@ -111,6 +111,11 @@ func parseArgs() *initState {
 func (st *initState) runInit() {
 	st.log.Info("Starting oz-init for profile: %s", st.profile.Name)
 	st.log.Info("Socket address: %s", st.address)
+	if syscall.Sethostname([]byte(st.profile.Name)) != nil {
+		st.log.Error("Failed to set hostname to (%s)", st.profile.Name)
+	}
+	st.log.Info("Hostname set to (%s)", st.profile.Name)
+
 	if err := st.fs.OzInit(); err != nil {
 		st.log.Error("Error: setting up filesystem failed: %v\n", err)
 		os.Exit(1)

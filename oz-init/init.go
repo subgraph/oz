@@ -151,6 +151,11 @@ func (st *initState) startXpraServer() {
 	xpra.Process.Env = []string{
 		"HOME="+ st.user.HomeDir,
 	}
+	xpra.Process.SysProcAttr = &syscall.SysProcAttr{}
+	xpra.Process.SysProcAttr.Credential = &syscall.Credential{
+		Uid: uint32(st.uid),
+		Gid: uint32(st.gid),
+	}
 	st.log.Info("Starting xpra server")
 	if err := xpra.Process.Start(); err != nil {
 		st.log.Warning("Failed to start xpra server: %v", err)

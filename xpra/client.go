@@ -26,10 +26,11 @@ func NewClient(config *oz.XServerConf, display uint64, cred *syscall.Credential,
 	x.Process.SysProcAttr = &syscall.SysProcAttr{
 		Credential: cred,
 	}
-	x.Process.Env = append(os.Environ(),
+	x.Process.Env = []string{
+		"DISPLAY=:0",
 		fmt.Sprintf("TMPDIR=%s", workdir),
 		fmt.Sprintf("XPRA_SOCKET_HOSTNAME=%s", hostname),
-	)
+	}
 	return x
 }
 
@@ -46,7 +47,7 @@ func prepareClientArgs(config *oz.XServerConf, display uint64, workdir string, l
 		args = append(args, fmt.Sprintf("--window-icon=%s", config.WindowIcon))
 	}
 	args = append(args,
-		fmt.Sprint("--socket-dir=%s", workdir),
+		fmt.Sprintf("--socket-dir=%s", workdir),
 		"attach",
 		fmt.Sprintf(":%d", display),
 	)

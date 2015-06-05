@@ -2,7 +2,6 @@ package ozinit
 
 import (
 	"os"
-	"github.com/codegangsta/cli"
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/ipc"
@@ -21,7 +20,12 @@ const profileDirectory = "/var/lib/oz/cells.d"
 
 type initState struct {
 	log *logging.Logger
+	address string
+	profile *oz.Profile
+	uid int
+	gid int
 	user *user.User
+	display int
 	fs *fs.Filesystem
 }
 
@@ -38,83 +42,87 @@ func createLogger() *logging.Logger {
 }
 
 var allowRootShell = false
-var profileName = "none"
 
 func Main() {
-	app := cli.NewApp()
-	app.Name = "oz-init"
-	app.Action = runInit
-	app.Flags = []cli.Flag {
-		cli.StringFlag {
-			Name: "address",
-			Usage: "unix socket address to listen for commands on",
-			EnvVar: "INIT_ADDRESS",
-		},
-		cli.StringFlag{
-			Name: "profile",
-			Usage: "name of profile to launch",
-			EnvVar: "INIT_PROFILE",
-		},
-		cli.IntFlag{
-			Name: "uid",
-			EnvVar: "INIT_UID",
-		},
-		cli.IntFlag{
-			Name: "display",
-			EnvVar: "INIT_DISPLAY",
-		},
-	}
-	app.Run(os.Args)
+	st := parseArgs()
+	st.runInit()
 }
 
-func runInit(c *cli.Context) {
-	st := new(initState)
-	st.log = createLogger()
-	address := c.String("address")
-	profile := c.String("profile")
-	uid := uint32(c.Int("uid"))
-	disp := c.Int("display")
+func parseArgs() *initState {
+	log := createLogger()
+	getvar := func(name string) string {
+		val := os.Getenv(name)
+		if val == "" {
+			log.Error("Error: missing required '%s' argument", name)
+			os.Exit(1)
+		}
+		return val
+	}
+	addr := getvar("INIT_ADDRESS")
+	pname := getvar("INIT_PROFILE")
+	uidval := getvar("INIT_UID")
+	dispval := os.Getenv("INIT_DISPLAY")
 
-	if address == "" {
-		st.log.Error("Error: missing required 'address' argument")
-		os.Exit(1)
-	}
-	if profile == "" {
-		st.log.Error("Error: missing required 'profile' argument")
-		os.Exit(1)
-	}
-	profileName = profile
-	st.log.Info("Starting oz-init for profile: %s", profile)
-	st.log.Info("Socket address: %s", address)
-	p,err := loadProfile(profile)
+	p,err := loadProfile(pname)
 	if err != nil {
-		st.log.Error("Could not load profile %s: %v", profile, err)
+		log.Error("Could not load profile %s: %v", pname, err)
 		os.Exit(1)
 	}
-	u,err := user.LookupId(strconv.FormatUint(uint64(uid), 10))
+	uid,err := strconv.Atoi(uidval)
 	if err != nil {
-		st.log.Error("Failed to lookup user with uid=%d: %v", uid, err)
+		log.Error("Could not parse INIT_UID argument (%s) into an integer: %v", uidval, err)
 		os.Exit(1)
 	}
-	st.user = u
+	u,err := user.LookupId(uidval)
+	if err != nil {
+		log.Error("Failed to look up user with uid=%s: %v", uidval, err)
+		os.Exit(1)
+	}
+	gid,err := strconv.Atoi(u.Gid)
+	if err != nil {
+		log.Error("Failed to parse gid value (%s) from user struct: %v", u.Gid, err)
+		os.Exit(1)
+	}
+	display := 0
+	if dispval != "" {
+		d,err := strconv.Atoi(dispval)
+		if err != nil {
+			log.Error("Unable to parse display (%s) into an integer: %v", dispval, err)
+			os.Exit(1)
+		}
+		display = d
+	}
 
-	fs := fs.NewFromProfile(p, u, st.log)
-	if err := fs.OzInit(); err != nil {
+	return &initState{
+		log: log,
+		address: addr,
+		profile: p,
+		uid: uid,
+		gid: gid,
+		user: u,
+		display: display,
+		fs: fs.NewFromProfile(p, u, log),
+	}
+}
+
+func (st *initState) runInit() {
+	st.log.Info("Starting oz-init for profile: %s", st.profile.Name)
+	st.log.Info("Socket address: %s", st.address)
+	if err := st.fs.OzInit(); err != nil {
 		st.log.Error("Error: setting up filesystem failed: %v\n", err)
 		os.Exit(1)
 	}
-	st.fs = fs
-	if p.XServer.Enabled {
-		if disp == 0 {
+	if st.profile.XServer.Enabled {
+		if st.display == 0 {
 			st.log.Error("Cannot start xpra because no display number was passed to oz-init")
 			os.Exit(1)
 		}
-		st.startXpraServer(&p.XServer, fs, disp)
+		st.startXpraServer()
 	}
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
-	serv := ipc.NewMsgConn(messageFactory, address)
+	serv := ipc.NewMsgConn(messageFactory, st.address)
 	serv.AddHandlers(
 		handlePing,
 		st.handleRunShell,
@@ -124,28 +132,28 @@ func runInit(c *cli.Context) {
 	st.log.Info("oz-init exiting...")
 }
 
-func (is *initState) startXpraServer (config *oz.XServerConf,  fs *fs.Filesystem, display int) {
-	workdir := fs.Xpra()
+func (st *initState) startXpraServer() {
+	workdir := st.fs.Xpra()
 	if workdir == "" {
-		is.log.Warning("Xpra work directory not set")
+		st.log.Warning("Xpra work directory not set")
 		return
 	}
 	logpath := path.Join(workdir, "xpra-server.out")
 	f,err := os.Create(logpath)
 	if err != nil {
-		is.log.Warning("Failed to open xpra logfile (%s): %v", logpath, err)
+		st.log.Warning("Failed to open xpra logfile (%s): %v", logpath, err)
 		return
 	}
 	defer f.Close()
-	xpra := xpra.NewServer(config, uint64(display), workdir)
+	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), workdir)
 	xpra.Process.Stdout = f
 	xpra.Process.Stderr = f
 	xpra.Process.Env = []string{
-		"HOME="+ is.user.HomeDir,
+		"HOME="+ st.user.HomeDir,
 	}
-	is.log.Info("Starting xpra server")
+	st.log.Info("Starting xpra server")
 	if err := xpra.Process.Start(); err != nil {
-		is.log.Warning("Failed to start xpra server: %v", err)
+		st.log.Warning("Failed to start xpra server: %v", err)
 	}
 }
 
@@ -166,14 +174,14 @@ func handlePing(ping *PingMsg, msg *ipc.Message) error {
 	return msg.Respond(&PingMsg{Data: ping.Data})
 }
 
-func (is *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
+func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	if msg.Ucred == nil {
 		return msg.Respond(&ErrorMsg{"No credentials received for RunShell command"})
 	}
 	if msg.Ucred.Uid == 0 || msg.Ucred.Gid == 0 && !allowRootShell {
 		return msg.Respond(&ErrorMsg{"Cannot open shell because allowRootShell is disabled"})
 	}
-	is.log.Info("Starting shell with uid = %d, gid = %d", msg.Ucred.Uid, msg.Ucred.Gid)
+	st.log.Info("Starting shell with uid = %d, gid = %d", msg.Ucred.Uid, msg.Ucred.Gid)
 	cmd := exec.Command("/bin/sh", "-i")
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Credential = &syscall.Credential{
@@ -184,8 +192,8 @@ func (is *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 		cmd.Env = append(cmd.Env, "TERM="+rs.Term)
 	}
 	cmd.Env = append(cmd.Env, "PATH=/usr/bin:/bin")
-	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", profileName))
-	is.log.Info("Executing shell...")
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
+	st.log.Info("Executing shell...")
 	f,err := ptyStart(cmd)
 	defer f.Close()
 	if err != nil {

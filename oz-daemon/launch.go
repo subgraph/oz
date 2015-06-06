@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path"
+	"sync"
 	"syscall"
 )
 
@@ -27,6 +28,7 @@ type Sandbox struct {
 	stderr  io.ReadCloser
 	addr    string
 	xpra    *xpra.Xpra
+	ready   sync.WaitGroup
 }
 
 /*
@@ -95,7 +97,14 @@ func (d *daemonState) launch(p *oz.Profile, uid, gid uint32) (*Sandbox, error) {
 		addr:    path.Join(fs.Root(), "tmp", "oz-init-control"),
 		stderr:  pp,
 	}
+	sbox.ready.Add(1)
 	go sbox.logMessages()
+	if sbox.profile.XServer.Enabled {
+		go func() {
+			sbox.ready.Wait()
+			go sbox.startXpraClient()
+		}()
+	}
 	d.nextSboxId += 1
 	d.sandboxes = append(d.sandboxes, sbox)
 	return sbox, nil
@@ -115,11 +124,13 @@ func (sbox *Sandbox) remove() {
 
 func (sbox *Sandbox) logMessages() {
 	scanner := bufio.NewScanner(sbox.stderr)
+	seenOk := false
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "XPRA READY" {
-			sbox.daemon.log.Info("Xpra server is ready for connection")
-			go sbox.startXpraClient()
+		if line == "OK" && !seenOk {
+			sbox.daemon.log.Info("oz-init (%s) is ready", sbox.profile.Name)
+			seenOk = true
+			sbox.ready.Done()
 		} else if len(line) > 1 {
 			sbox.logLine(line)
 		}

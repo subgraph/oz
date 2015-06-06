@@ -15,20 +15,22 @@ import (
 	"os/user"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 )
 
 const SocketAddress = "/tmp/oz-init-control"
 
 type initState struct {
-	log     *logging.Logger
-	profile *oz.Profile
-	config  *oz.Config
-	uid     int
-	gid     int
-	user    *user.User
-	display int
-	fs      *fs.Filesystem
+	log       *logging.Logger
+	profile   *oz.Profile
+	config    *oz.Config
+	uid       int
+	gid       int
+	user      *user.User
+	display   int
+	fs        *fs.Filesystem
+	xpraReady sync.WaitGroup
 }
 
 // By convention oz-init writes log messages to stderr with a single character
@@ -121,15 +123,18 @@ func (st *initState) runInit() {
 		st.log.Error("Error: setting up filesystem failed: %v\n", err)
 		os.Exit(1)
 	}
+	oz.ReapChildProcs(st.log, st.handleChildExit)
+
 	if st.profile.XServer.Enabled {
 		if st.display == 0 {
 			st.log.Error("Cannot start xpra because no display number was passed to oz-init")
 			os.Exit(1)
 		}
+		st.xpraReady.Add(1)
 		st.startXpraServer()
 	}
-
-	oz.ReapChildProcs(st.log, st.handleChildExit)
+	st.xpraReady.Wait()
+	st.launchApplication()
 
 	s, err := ipc.NewServer(SocketAddress, messageFactory, st.log,
 		handlePing,
@@ -142,6 +147,7 @@ func (st *initState) runInit() {
 	if err := os.Chown(SocketAddress, st.uid, st.gid); err != nil {
 		st.log.Warning("Failed to chown oz-init control socket: %v", err)
 	}
+	os.Stderr.WriteString("OK\n")
 
 	if err := s.Run(); err != nil {
 		st.log.Warning("MsgServer.Run() return err: %v", err)
@@ -178,11 +184,13 @@ func (st *initState) startXpraServer() {
 
 func (st *initState) readXpraOutput(r io.ReadCloser) {
 	sc := bufio.NewScanner(r)
+	seenReady := false
 	for sc.Scan() {
 		line := sc.Text()
 		if len(line) > 0 {
-			if strings.Contains(line, "xpra is ready.") {
-				os.Stderr.WriteString("XPRA READY\n")
+			if strings.Contains(line, "xpra is ready.") && !seenReady {
+				seenReady = true
+				st.xpraReady.Done()
 				if !st.config.LogXpra {
 					r.Close()
 					return
@@ -192,6 +200,42 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 				st.log.Debug("(xpra) %s", line)
 			}
 		}
+	}
+}
+
+func (st *initState) launchApplication() {
+	cmd := exec.Command(st.profile.Path)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		st.log.Warning("Failed to create stdout pipe: %v", err)
+		return
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		st.log.Warning("Failed to create stderr pipe: %v", err)
+		return
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{}
+	cmd.SysProcAttr.Credential = &syscall.Credential{
+		Uid: uint32(st.uid),
+		Gid: uint32(st.gid),
+	}
+	cmd.Env = []string{
+		fmt.Sprintf("DISPLAY=:%d", st.display),
+	}
+	if err := cmd.Start(); err != nil {
+		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
+		return
+	}
+	go st.readApplicationOutput(stdout, "stdout")
+	go st.readApplicationOutput(stderr, "stderr")
+}
+
+func (st *initState) readApplicationOutput(r io.ReadCloser, label string) {
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := sc.Text()
+		st.log.Debug("(%s) %s", label, line)
 	}
 }
 

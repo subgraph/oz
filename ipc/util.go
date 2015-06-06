@@ -1,17 +1,16 @@
 package ipc
 
 import (
-	"net"
 	"reflect"
 	"syscall"
 )
 
-func setPassCred(c net.Conn) error {
+func setPassCred(c interface{}) error {
 	fd := reflectFD(c)
 	return syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_PASSCRED, 1)
 }
 
-func reflectFD(c net.Conn) int {
+func reflectFD(c interface{}) int {
 	sysfd := extractField(c, "fd", "sysfd")
 	return int(sysfd.Int())
 }

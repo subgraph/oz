@@ -19,10 +19,10 @@ import (
 )
 
 const profileDirectory = "/var/lib/oz/cells.d"
+const socketAddress = "/tmp/oz-init-control"
 
 type initState struct {
 	log *logging.Logger
-	address string
 	profile *oz.Profile
 	uid int
 	gid int
@@ -61,7 +61,6 @@ func parseArgs() *initState {
 		}
 		return val
 	}
-	addr := getvar("INIT_ADDRESS")
 	pname := getvar("INIT_PROFILE")
 	uidval := getvar("INIT_UID")
 	dispval := os.Getenv("INIT_DISPLAY")
@@ -98,7 +97,6 @@ func parseArgs() *initState {
 
 	return &initState{
 		log: log,
-		address: addr,
 		profile: p,
 		uid: uid,
 		gid: gid,
@@ -110,7 +108,6 @@ func parseArgs() *initState {
 
 func (st *initState) runInit() {
 	st.log.Info("Starting oz-init for profile: %s", st.profile.Name)
-	st.log.Info("Socket address: %s", st.address)
 	if syscall.Sethostname([]byte(st.profile.Name)) != nil {
 		st.log.Error("Failed to set hostname to (%s)", st.profile.Name)
 	}
@@ -130,12 +127,20 @@ func (st *initState) runInit() {
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
-	err := ipc.RunServer(st.address, messageFactory, st.log,
+	s,err := ipc.NewServer(socketAddress, messageFactory, st.log,
 		handlePing,
 		st.handleRunShell,
 	)
 	if err != nil {
-		st.log.Warning("RunServer returned err: %v", err)
+		st.log.Error("NewServer failed: %v", err)
+		os.Exit(1)
+	}
+	if err := os.Chown(socketAddress, st.uid, st.gid); err != nil {
+		st.log.Warning("Failed to chown oz-init control socket: %v", err)
+	}
+
+	if err := s.Run(); err != nil {
+		st.log.Warning("MsgServer.Run() return err: %v", err)
 	}
 	st.log.Info("oz-init exiting...")
 }

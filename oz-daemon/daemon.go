@@ -2,13 +2,15 @@ package daemon
 
 import (
 	"fmt"
+	"os/user"
+	"syscall"
 
-	"github.com/op/go-logging"
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/ipc"
-	"os/user"
-	"syscall"
+	"github.com/subgraph/oz/network"
+	
+	"github.com/op/go-logging"
 )
 
 type daemonState struct {
@@ -20,6 +22,7 @@ type daemonState struct {
 	nextDisplay int
 	memBackend  *logging.ChannelMemoryBackend
 	backends    []logging.Backend
+	network     *network.HostNetwork
 }
 
 func Main() {
@@ -30,6 +33,7 @@ func Main() {
 		d.handlePing,
 		d.handleListProfiles,
 		d.handleLaunch,
+		d.handleInitBridgeNetwork,
 		d.handleListSandboxes,
 		d.handleClean,
 		d.handleLogs,
@@ -59,6 +63,15 @@ func initialize() *daemonState {
 	oz.ReapChildProcs(d.log, d.handleChildExit)
 	d.nextSboxId = 1
 	d.nextDisplay = 100
+	
+	d.log.Info("Initializing bridge networking")
+	htn, err := network.BridgeInit(d.log)
+	if err != nil {
+		d.log.Fatalf("Failed to initialize bridge networking: %+v", err)
+	}
+	
+	d.network = htn
+	
 	return d
 }
 
@@ -109,6 +122,12 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 		d.Warning("launch of %s failed: %v", p.Name, err)
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
+	return m.Respond(&OkMsg{})
+}
+
+func (d *daemonState) handleInitBridgeNetwork(msg *InitNetworkMsg, m *ipc.Message) error {
+	d.Debug("Network bridge init message received: %+v", msg)
+	
 	return m.Respond(&OkMsg{})
 }
 

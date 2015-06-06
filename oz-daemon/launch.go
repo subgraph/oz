@@ -6,6 +6,7 @@ import (
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/xpra"
+	"github.com/subgraph/oz/network"
 	"io"
 	"os"
 	"os/exec"
@@ -29,6 +30,7 @@ type Sandbox struct {
 	addr    string
 	xpra    *xpra.Xpra
 	ready   sync.WaitGroup
+	network *network.SandboxNetwork
 }
 
 /*

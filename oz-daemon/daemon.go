@@ -67,11 +67,11 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 }
 
 func runServer(log *logging.Logger, args ...interface{}) error {
-	err := ipc.RunServer(SocketName, messageFactory, log, args...)
+	s,err := ipc.NewServer(SocketName, messageFactory, log, args...)
 	if err != nil {
 		return err
 	}
-	return nil
+	return s.Run()
 }
 
 func (d * daemonState) handlePing(msg *PingMsg, m *ipc.Message) error {

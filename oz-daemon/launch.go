@@ -39,7 +39,7 @@ func findSandbox(id int) *Sandbox {
 	return nil
 }
 */
-const initCloneFlags = syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS
+const initCloneFlags = syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS | syscall.CLONE_NEWNET
 
 func createInitCommand(name, chroot string, uid uint32, display int) *exec.Cmd {
 	cmd := exec.Command(initPath)

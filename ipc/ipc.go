@@ -8,8 +8,6 @@ import (
 
 	"github.com/op/go-logging"
 	"reflect"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 )
@@ -126,18 +124,6 @@ func idGenLoop(done <-chan bool, out chan <- int) {
 			return
 		}
 	}
-}
-
-func CreateRandomAddress(prefix string) (string,error) {
-	var bs [16]byte
-	n,err := rand.Read(bs[:])
-	if n != len(bs) {
-		return "", errors.New("incomplete read of random bytes for client name")
-	}
-	if err != nil {
-		return "", errors.New("error reading random bytes for client name: "+ err.Error())
-	}
-	return prefix+ hex.EncodeToString(bs[:]),nil
 }
 
 func (mc *MsgConn) readLoop() {

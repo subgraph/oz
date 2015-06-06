@@ -3,9 +3,56 @@ import (
 	"reflect"
 	"errors"
 	"fmt"
+	"github.com/op/go-logging"
 )
 
 type handlerMap map[string]reflect.Value
+
+var defaultLog = logging.MustGetLogger("ipc")
+
+type msgDispatcher struct {
+	log  *logging.Logger
+	msgs chan *Message
+	hmap handlerMap
+}
+
+func createDispatcher(log *logging.Logger, handlers...interface{}) (*msgDispatcher, error) {
+	md := &msgDispatcher{
+		log: log,
+		msgs: make(chan *Message),
+		hmap: make(map[string]reflect.Value),
+	}
+	for _,h := range handlers {
+		if err := md.hmap.addHandler(h); err != nil {
+			return nil, err
+		}
+	}
+	go md.runDispatcher()
+	return md, nil
+}
+
+func (md *msgDispatcher) close() {
+	close(md.msgs)
+}
+
+func (md *msgDispatcher) dispatch(m *Message) {
+	md.msgs <- m
+}
+
+func (md *msgDispatcher) logger() *logging.Logger {
+	if md.log != nil {
+		return md.log
+	}
+	return defaultLog
+}
+
+func (md *msgDispatcher) runDispatcher() {
+	for m := range md.msgs {
+		if err := md.hmap.dispatch(m); err != nil {
+			md.logger().Warning("error dispatching message: %v", err)
+		}
+	}
+}
 
 func (handlers handlerMap) dispatch(m *Message) error {
 	h,ok := handlers[m.Type]

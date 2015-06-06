@@ -2,7 +2,6 @@ package ipc
 
 import (
 	"encoding/json"
-	"net"
 	"syscall"
 	"fmt"
 	"reflect"
@@ -15,7 +14,7 @@ func NewMsgFactory(msgTypes ...interface{}) MsgFactory {
 	mf := (MsgFactory)(make(map[string]func() interface{}))
 	for _, mt := range msgTypes {
 		if err := mf.register(mt); err != nil {
-			log.Fatalf("failed adding (%T) in NewMsgFactory: %v", mt, err)
+			defaultLog.Fatalf("failed adding (%T) in NewMsgFactory: %v", mt, err)
 			return nil
 		}
 	}
@@ -56,7 +55,6 @@ type Message struct {
 	Type string
 	MsgID int
 	Body interface{}
-	Peer  *net.UnixAddr
 	Ucred *syscall.Ucred
 	Fds   []int
 	mconn *MsgConn
@@ -120,5 +118,5 @@ func (m *Message) parseControlData(data []byte) error {
 }
 
 func (m *Message) Respond(msg interface{}, fds... int) error {
-	return m.mconn.sendMessage(msg, m.MsgID, m.Peer, fds...)
+	return m.mconn.sendMessage(msg, m.MsgID, fds...)
 }

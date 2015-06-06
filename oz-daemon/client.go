@@ -7,11 +7,7 @@ import (
 )
 
 func clientConnect() (*ipc.MsgConn, error) {
-	c := ipc.NewMsgConn(messageFactory, SocketName)
-	if err := c.Connect(); err != nil {
-		return nil, err
-	}
-	return c, nil
+	return ipc.Connect(SocketName, messageFactory, nil)
 }
 
 func clientSend(msg interface{}) (*ipc.Message, error) {

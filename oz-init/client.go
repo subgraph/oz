@@ -6,11 +6,7 @@ import (
 )
 
 func clientConnect(addr string) (*ipc.MsgConn, error) {
-	c := ipc.NewMsgConn(messageFactory, addr)
-	if err := c.Connect(); err != nil {
-		return nil, err
-	}
-	return c, nil
+	return ipc.Connect(addr, messageFactory, nil)
 }
 
 func clientSend(addr string, msg interface{}) (*ipc.Message, error) {

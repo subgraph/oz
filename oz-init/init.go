@@ -130,13 +130,13 @@ func (st *initState) runInit() {
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
-	serv := ipc.NewMsgConn(messageFactory, st.address)
-	serv.AddHandlers(
+	err := ipc.RunServer(st.address, messageFactory, st.log,
 		handlePing,
 		st.handleRunShell,
 	)
-	serv.Listen()
-	serv.Run()
+	if err != nil {
+		st.log.Warning("RunServer returned err: %v", err)
+	}
 	st.log.Info("oz-init exiting...")
 }
 

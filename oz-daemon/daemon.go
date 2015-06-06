@@ -25,6 +25,7 @@ func Main() {
 	d := initialize()
 
 	err := runServer(
+		d.log,
 		d.handlePing,
 		d.handleListProfiles,
 		d.handleLaunch,
@@ -65,15 +66,12 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	d.Notice("No sandbox found with oz-init pid = %d", pid)
 }
 
-func runServer(args ...interface{}) error {
-	serv := ipc.NewMsgConn(messageFactory, SocketName)
-	if err := serv.AddHandlers(args...); err != nil {
+func runServer(log *logging.Logger, args ...interface{}) error {
+	err := ipc.RunServer(SocketName, messageFactory, log, args...)
+	if err != nil {
 		return err
 	}
-	if err := serv.Listen(); err != nil {
-		return err
-	}
-	return serv.Run()
+	return nil
 }
 
 func (d * daemonState) handlePing(msg *PingMsg, m *ipc.Message) error {

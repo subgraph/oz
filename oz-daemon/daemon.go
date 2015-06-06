@@ -13,6 +13,7 @@ import (
 
 type daemonState struct {
 	log         *logging.Logger
+	config      *oz.Config
 	profiles    oz.Profiles
 	sandboxes   []*Sandbox
 	nextSboxId  int
@@ -41,7 +42,14 @@ func Main() {
 func initialize() *daemonState {
 	d := &daemonState{}
 	d.initializeLogging()
-	ps, err := oz.LoadProfiles("/var/lib/oz/cells.d")
+	var config *oz.Config
+	config, err := oz.LoadConfig(oz.DefaultConfigPath)
+	if err != nil {
+		d.log.Info("Could not load config file (%s), using default config", oz.DefaultConfigPath)
+		config = oz.NewDefaultConfig()
+	}
+	d.config = config
+	ps, err := oz.LoadProfiles(config.ProfileDir)
 	if err != nil {
 		d.log.Fatalf("Failed to load profiles: %v", err)
 	}

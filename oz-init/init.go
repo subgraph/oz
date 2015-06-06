@@ -18,12 +18,12 @@ import (
 	"syscall"
 )
 
-const profileDirectory = "/var/lib/oz/cells.d"
-const socketAddress = "/tmp/oz-init-control"
+const SocketAddress = "/tmp/oz-init-control"
 
 type initState struct {
 	log     *logging.Logger
 	profile *oz.Profile
+	config  *oz.Config
 	uid     int
 	gid     int
 	user    *user.User
@@ -43,12 +43,8 @@ func createLogger() *logging.Logger {
 	return l
 }
 
-var allowRootShell = false
-var logXpra = true
-
 func Main() {
-	st := parseArgs()
-	st.runInit()
+	parseArgs().runInit()
 }
 
 func parseArgs() *initState {
@@ -65,7 +61,14 @@ func parseArgs() *initState {
 	uidval := getvar("INIT_UID")
 	dispval := os.Getenv("INIT_DISPLAY")
 
-	p, err := loadProfile(pname)
+	var config *oz.Config
+	config, err := oz.LoadConfig(oz.DefaultConfigPath)
+	if err != nil {
+		log.Info("Could not load config file (%s), using default config", oz.DefaultConfigPath)
+		config = oz.NewDefaultConfig()
+	}
+
+	p, err := loadProfile(config.ProfileDir, pname)
 	if err != nil {
 		log.Error("Could not load profile %s: %v", pname, err)
 		os.Exit(1)
@@ -97,6 +100,7 @@ func parseArgs() *initState {
 
 	return &initState{
 		log:     log,
+		config:  config,
 		profile: p,
 		uid:     uid,
 		gid:     gid,
@@ -127,7 +131,7 @@ func (st *initState) runInit() {
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
-	s, err := ipc.NewServer(socketAddress, messageFactory, st.log,
+	s, err := ipc.NewServer(SocketAddress, messageFactory, st.log,
 		handlePing,
 		st.handleRunShell,
 	)
@@ -135,7 +139,7 @@ func (st *initState) runInit() {
 		st.log.Error("NewServer failed: %v", err)
 		os.Exit(1)
 	}
-	if err := os.Chown(socketAddress, st.uid, st.gid); err != nil {
+	if err := os.Chown(SocketAddress, st.uid, st.gid); err != nil {
 		st.log.Warning("Failed to chown oz-init control socket: %v", err)
 	}
 
@@ -179,20 +183,20 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 		if len(line) > 0 {
 			if strings.Contains(line, "xpra is ready.") {
 				os.Stderr.WriteString("XPRA READY\n")
-				if !logXpra {
+				if !st.config.LogXpra {
 					r.Close()
 					return
 				}
 			}
-			if logXpra {
+			if st.config.LogXpra {
 				st.log.Debug("(xpra) %s", line)
 			}
 		}
 	}
 }
 
-func loadProfile(name string) (*oz.Profile, error) {
-	ps, err := oz.LoadProfiles(profileDirectory)
+func loadProfile(dir, name string) (*oz.Profile, error) {
+	ps, err := oz.LoadProfiles(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -212,11 +216,11 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	if msg.Ucred == nil {
 		return msg.Respond(&ErrorMsg{"No credentials received for RunShell command"})
 	}
-	if msg.Ucred.Uid == 0 || msg.Ucred.Gid == 0 && !allowRootShell {
+	if msg.Ucred.Uid == 0 || msg.Ucred.Gid == 0 && !st.config.AllowRootShell {
 		return msg.Respond(&ErrorMsg{"Cannot open shell because allowRootShell is disabled"})
 	}
 	st.log.Info("Starting shell with uid = %d, gid = %d", msg.Ucred.Uid, msg.Ucred.Gid)
-	cmd := exec.Command("/bin/sh", "-i")
+	cmd := exec.Command(st.config.ShellPath, "-i")
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Credential = &syscall.Credential{
 		Uid: msg.Ucred.Uid,

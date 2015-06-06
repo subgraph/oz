@@ -29,25 +29,42 @@ type MsgConn struct {
 	onClose func()
 }
 
-func RunServer(address string, factory MsgFactory, log *logging.Logger, handlers ...interface{}) error {
+type MsgServer struct {
+	disp *msgDispatcher
+	factory MsgFactory
+	listener *net.UnixListener
+	done chan bool
+	idGen <- chan int
+}
+
+func NewServer(address string, factory MsgFactory, log *logging.Logger, handlers ...interface{}) (*MsgServer, error) {
 	md,err := createDispatcher(log, handlers...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	addr := &net.UnixAddr{address, "unix"}
-	listener,err := net.ListenUnix("unix", addr)
+	listener,err := net.ListenUnix("unix", &net.UnixAddr{address, "unix"})
 	if err != nil {
 		md.close()
-		return err
+		return nil, err
 	}
 	done := make(chan bool)
 	idGen := newIdGen(done)
+	return &MsgServer{
+		disp: md,
+		factory: factory,
+		listener: listener,
+		done: done,
+		idGen: idGen,
+	}, nil
+}
+
+func (s *MsgServer) Run() error {
 	for {
-		conn,err := listener.AcceptUnix()
+		conn,err := s.listener.AcceptUnix()
 		if err != nil {
-			close(md.msgs)
-			listener.Close()
+			s.disp.close()
+			s.listener.Close()
 			return err
 		}
 		if err := setPassCred(conn); err != nil {
@@ -55,10 +72,10 @@ func RunServer(address string, factory MsgFactory, log *logging.Logger, handlers
 		}
 		mc := &MsgConn{
 			conn: conn,
-			disp: md,
+			disp: s.disp,
 			oob: createOobBuffer(),
-			factory: factory,
-			idGen: idGen,
+			factory: s.factory,
+			idGen: s.idGen,
 			respMan: newResponseManager(),
 		}
 		go mc.readLoop()

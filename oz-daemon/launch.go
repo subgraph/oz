@@ -3,7 +3,6 @@ import (
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
 	"os/exec"
-	"github.com/subgraph/oz/ipc"
 	"syscall"
 	"fmt"
 	"io"
@@ -11,6 +10,7 @@ import (
 	"os/user"
 	"github.com/subgraph/oz/xpra"
 	"os"
+	"path"
 )
 
 const initPath = "/usr/local/bin/oz-init"
@@ -41,7 +41,7 @@ func findSandbox(id int) *Sandbox {
 */
 const initCloneFlags = syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS
 
-func createInitCommand(addr, name, chroot string, uid uint32, display int) *exec.Cmd {
+func createInitCommand(name, chroot string, uid uint32, display int) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -49,7 +49,6 @@ func createInitCommand(addr, name, chroot string, uid uint32, display int) *exec
 		Cloneflags: initCloneFlags,
 	}
 	cmd.Env = []string{
-		"INIT_ADDRESS="+addr,
 		"INIT_PROFILE="+name,
 		fmt.Sprintf("INIT_UID=%d", uid),
 	}
@@ -68,17 +67,13 @@ func (d *daemonState) launch(p *oz.Profile, uid,gid uint32) (*Sandbox, error) {
 	if err := fs.Setup(); err != nil {
 		return nil, err
 	}
-	addr,err := ipc.CreateRandomAddress("@oz-init-")
-	if err != nil {
-		return nil, err
-	}
 	display := 0
 	if p.XServer.Enabled {
 		display = d.nextDisplay
 		d.nextDisplay += 1
 	}
 
-	cmd := createInitCommand(addr, p.Name, fs.Root(), uid, display)
+	cmd := createInitCommand(p.Name, fs.Root(), uid, display)
 	pp,err := cmd.StderrPipe()
 	if err != nil {
 		fs.Cleanup()
@@ -97,7 +92,7 @@ func (d *daemonState) launch(p *oz.Profile, uid,gid uint32) (*Sandbox, error) {
 		init: cmd,
 		cred: &syscall.Credential{Uid: uid, Gid: gid},
 		fs: fs,
-		addr: addr,
+		addr: path.Join(fs.Root(), "tmp", "oz-init-control"),
 		stderr: pp,
 	}
 	go sbox.logMessages()

@@ -1,9 +1,10 @@
 package xpra
+
 import (
-	"github.com/subgraph/oz"
 	"fmt"
-	"os"
 	"github.com/op/go-logging"
+	"github.com/subgraph/oz"
+	"os"
 	"os/exec"
 	"syscall"
 )
@@ -54,11 +55,11 @@ func prepareClientArgs(config *oz.XServerConf, display uint64, workdir string, l
 	return args
 }
 
-func exists(path,label string, log *logging.Logger) bool {
+func exists(path, label string, log *logging.Logger) bool {
 	if path == "" {
 		return false
 	}
-	if _,err := os.Stat(path); err != nil {
+	if _, err := os.Stat(path); err != nil {
 		if !os.IsNotExist(err) {
 			log.Notice("%s file missing at %s, ignored.", label, path)
 		} else {

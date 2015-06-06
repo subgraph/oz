@@ -1,4 +1,5 @@
 package daemon
+
 import "github.com/subgraph/oz/ipc"
 
 const SocketName = "@oz-control"
@@ -21,8 +22,8 @@ type ListProfilesMsg struct {
 
 type Profile struct {
 	Index int
-	Name string
-	Path string
+	Name  string
+	Path  string
 }
 
 type ListProfilesResp struct {
@@ -31,7 +32,7 @@ type ListProfilesResp struct {
 
 type LaunchMsg struct {
 	Index int "Launch"
-	Name string
+	Name  string
 }
 
 type ListSandboxesMsg struct {
@@ -39,7 +40,7 @@ type ListSandboxesMsg struct {
 }
 
 type SandboxInfo struct {
-	Id int
+	Id      int
 	Address string
 	Profile string
 }
@@ -50,11 +51,11 @@ type ListSandboxesResp struct {
 
 type CleanMsg struct {
 	Index int "Clean"
-	Name string
+	Name  string
 }
 
 type LogsMsg struct {
-	Count int "Logs"
+	Count  int "Logs"
 	Follow bool
 }
 
@@ -63,16 +64,15 @@ type LogData struct {
 }
 
 var messageFactory = ipc.NewMsgFactory(
-		new(PingMsg),
-		new(OkMsg),
-		new(ErrorMsg),
-		new(ListProfilesMsg),
-		new(ListProfilesResp),
-		new(LaunchMsg),
-		new(ListSandboxesMsg),
-		new(ListSandboxesResp),
-		new(CleanMsg),
-		new(LogsMsg),
-		new(LogData),
+	new(PingMsg),
+	new(OkMsg),
+	new(ErrorMsg),
+	new(ListProfilesMsg),
+	new(ListProfilesResp),
+	new(LaunchMsg),
+	new(ListSandboxesMsg),
+	new(ListSandboxesResp),
+	new(CleanMsg),
+	new(LogsMsg),
+	new(LogData),
 )
-

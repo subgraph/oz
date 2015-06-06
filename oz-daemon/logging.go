@@ -1,11 +1,11 @@
 package daemon
+
 import (
 	"github.com/op/go-logging"
+	"github.com/subgraph/oz/ipc"
 	"log"
 	"os"
-	"github.com/subgraph/oz/ipc"
 )
-
 
 func (d *daemonState) Debug(format string, args ...interface{}) {
 	d.log.Debug(format, args...)
@@ -38,9 +38,11 @@ func (d *daemonState) initializeLogging() {
 	}
 	d.installBackends()
 }
+
 var format = logging.MustStringFormatter(
 	"%{color}%{time:15:04:05} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}",
 )
+
 func (d *daemonState) addBackend(be logging.Backend) {
 	d.backends = append(d.backends, be)
 	d.installBackends()
@@ -48,7 +50,7 @@ func (d *daemonState) addBackend(be logging.Backend) {
 
 func (d *daemonState) removeBackend(be logging.Backend) {
 	newBackends := []logging.Backend{}
-	for _,b := range d.backends {
+	for _, b := range d.backends {
 		if b != be {
 			newBackends = append(newBackends, b)
 		}
@@ -66,9 +68,9 @@ func (d *daemonState) installBackends() {
 }
 
 type logFollower struct {
-	daemon *daemonState
+	daemon  *daemonState
 	wrapper logging.Backend
-	m *ipc.Message
+	m       *ipc.Message
 }
 
 func (lf *logFollower) Log(level logging.Level, calldepth int, rec *logging.Record) error {
@@ -84,7 +86,7 @@ func (lf *logFollower) remove() {
 }
 
 func (d *daemonState) followLogs(m *ipc.Message) {
-	be := &logFollower{m:m, daemon: d}
+	be := &logFollower{m: m, daemon: d}
 	be.wrapper = logging.NewBackendFormatter(be, format)
 	d.addBackend(be.wrapper)
 }

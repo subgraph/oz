@@ -1,9 +1,10 @@
 package daemon
+
 import (
-	"github.com/subgraph/oz/ipc"
 	"errors"
-	"strconv"
 	"fmt"
+	"github.com/subgraph/oz/ipc"
+	"strconv"
 )
 
 func clientConnect() (*ipc.MsgConn, error) {
@@ -11,7 +12,7 @@ func clientConnect() (*ipc.MsgConn, error) {
 }
 
 func clientSend(msg interface{}) (*ipc.Message, error) {
-	c,err := clientConnect()
+	c, err := clientConnect()
 	if err != nil {
 		return nil, err
 	}
@@ -21,17 +22,17 @@ func clientSend(msg interface{}) (*ipc.Message, error) {
 		return nil, err
 	}
 
-	resp := <- rr.Chan()
+	resp := <-rr.Chan()
 	rr.Done()
-	return resp,nil
+	return resp, nil
 }
 
 func ListProfiles() ([]Profile, error) {
-	resp,err := clientSend(new(ListProfilesMsg))
+	resp, err := clientSend(new(ListProfilesMsg))
 	if err != nil {
 		return nil, err
 	}
-	body,ok := resp.Body.(*ListProfilesResp)
+	body, ok := resp.Body.(*ListProfilesResp)
 	if !ok {
 		return nil, errors.New("ListProfiles response was not expected type")
 	}
@@ -39,11 +40,11 @@ func ListProfiles() ([]Profile, error) {
 }
 
 func ListSandboxes() ([]SandboxInfo, error) {
-	resp,err := clientSend(&ListSandboxesMsg{})
+	resp, err := clientSend(&ListSandboxesMsg{})
 	if err != nil {
 		return nil, err
 	}
-	body,ok := resp.Body.(*ListSandboxesResp)
+	body, ok := resp.Body.(*ListSandboxesResp)
 	if !ok {
 		return nil, errors.New("ListSandboxes response was not expected type")
 	}
@@ -51,13 +52,13 @@ func ListSandboxes() ([]SandboxInfo, error) {
 }
 
 func Launch(arg string) error {
-	idx,name,err := parseProfileArg(arg)
+	idx, name, err := parseProfileArg(arg)
 	if err != nil {
 		return err
 	}
-	resp,err := clientSend(&LaunchMsg{
+	resp, err := clientSend(&LaunchMsg{
 		Index: idx,
-		Name: name,
+		Name:  name,
 	})
 	if err != nil {
 		return err
@@ -74,13 +75,13 @@ func Launch(arg string) error {
 }
 
 func Clean(arg string) error {
-	idx,name,err := parseProfileArg(arg)
+	idx, name, err := parseProfileArg(arg)
 	if err != nil {
 		return err
 	}
-	resp,err := clientSend(&CleanMsg{
+	resp, err := clientSend(&CleanMsg{
 		Index: idx,
-		Name: name,
+		Name:  name,
 	})
 	if err != nil {
 		return err
@@ -100,18 +101,18 @@ func parseProfileArg(arg string) (int, string, error) {
 	if len(arg) == 0 {
 		return 0, "", errors.New("profile argument needed")
 	}
-	if n,err := strconv.Atoi(arg); err == nil {
+	if n, err := strconv.Atoi(arg); err == nil {
 		return n, "", nil
 	}
 	return 0, arg, nil
 }
 
 func Logs(count int, follow bool) (chan string, error) {
-	c,err := clientConnect()
+	c, err := clientConnect()
 	if err != nil {
 		return nil, err
 	}
-	rr,err := c.ExchangeMsg(&LogsMsg{Count: count, Follow: follow})
+	rr, err := c.ExchangeMsg(&LogsMsg{Count: count, Follow: follow})
 	if err != nil {
 		return nil, err
 	}

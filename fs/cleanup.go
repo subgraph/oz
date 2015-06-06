@@ -1,12 +1,12 @@
 package fs
 
 import (
+	"errors"
+	"github.com/op/go-logging"
 	"io/ioutil"
 	"sort"
 	"strings"
 	"syscall"
-	"errors"
-	"github.com/op/go-logging"
 )
 
 func (fs *Filesystem) Cleanup() error {
@@ -18,7 +18,7 @@ func (fs *Filesystem) Cleanup() error {
 	fs.log.Info("Cleanup() called on filesystem at root %s", fs.root)
 
 	for {
-		mnts,err := getMountsBelow(fs.base)
+		mnts, err := getMountsBelow(fs.base)
 		if err != nil {
 			return err
 		}
@@ -35,7 +35,7 @@ func (fs *Filesystem) Cleanup() error {
 func (mnts mountEntries) unmountAll(log *logging.Logger) (bool, error) {
 	reterr := error(nil)
 	atLeastOne := false
-	for _,m := range mnts {
+	for _, m := range mnts {
 		if err := syscall.Unmount(m.dir, 0); err != nil {
 			log.Warning("Failed to unmount mountpoint %s: %v", m.dir, err)
 			reterr = err

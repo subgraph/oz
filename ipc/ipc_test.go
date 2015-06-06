@@ -1,8 +1,9 @@
 package ipc
+
 import (
-	"testing"
-	"sync"
 	"os"
+	"sync"
+	"testing"
 )
 
 type TestMsg struct {
@@ -12,15 +13,17 @@ type TestMsg struct {
 type testConnection struct {
 	server *MsgConn
 	client *MsgConn
-	wg sync.WaitGroup
+	wg     sync.WaitGroup
 	called bool
 }
 
 type testServer struct {
 	conn *MsgConn
-	wg sync.WaitGroup
+	wg   sync.WaitGroup
 }
+
 const testSocket = "@test"
+
 var testFactory = NewMsgFactory(new(TestMsg))
 
 func testConnect(handler func(*TestMsg, *Message) error) (*testConnection, error) {
@@ -51,7 +54,7 @@ func testConnect(handler func(*TestMsg, *Message) error) (*testConnection, error
 }
 
 func runTest(t *testing.T, handler func(*TestMsg, *Message) error, tester func(*testConnection)) {
-	tc,err := testConnect(handler)
+	tc, err := testConnect(handler)
 	if err != nil {
 		t.Error("error setting up test connection:", err)
 	}
@@ -86,7 +89,7 @@ func TestUcred(t *testing.T) {
 }
 
 func TestPassFDs(t *testing.T) {
-	fds := []int{1,2}
+	fds := []int{1, 2}
 	handler := func(tm *TestMsg, msg *Message) error {
 		if len(msg.Fds) != len(fds) {
 			t.Errorf("Expecting %d descriptors, got %d", len(fds), len(msg.Fds))

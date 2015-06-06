@@ -1,17 +1,18 @@
 package main
+
 import (
-	"syscall"
-	"unsafe"
+	"fmt"
 	"os"
 	"os/signal"
-	"fmt"
+	"syscall"
+	"unsafe"
 )
 
 type winsize struct {
 	Height uint16
-	Width uint16
-	x uint16
-	y uint16
+	Width  uint16
+	x      uint16
+	y      uint16
 }
 type State struct {
 	termios Termios
@@ -101,7 +102,7 @@ func HandleResize(fd int) {
 }
 
 func handleSIGWINCH(fd int) {
-	ws,errno := GetWinsize(0)
+	ws, errno := GetWinsize(0)
 	if errno != 0 {
 		fmt.Printf("error reading winsize: %v\n", errno.Error())
 		return

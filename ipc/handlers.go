@@ -1,9 +1,10 @@
 package ipc
+
 import (
-	"reflect"
 	"errors"
 	"fmt"
 	"github.com/op/go-logging"
+	"reflect"
 )
 
 type handlerMap map[string]reflect.Value
@@ -16,13 +17,13 @@ type msgDispatcher struct {
 	hmap handlerMap
 }
 
-func createDispatcher(log *logging.Logger, handlers...interface{}) (*msgDispatcher, error) {
+func createDispatcher(log *logging.Logger, handlers ...interface{}) (*msgDispatcher, error) {
 	md := &msgDispatcher{
-		log: log,
+		log:  log,
 		msgs: make(chan *Message),
 		hmap: make(map[string]reflect.Value),
 	}
-	for _,h := range handlers {
+	for _, h := range handlers {
 		if err := md.hmap.addHandler(h); err != nil {
 			return nil, err
 		}
@@ -55,9 +56,9 @@ func (md *msgDispatcher) runDispatcher() {
 }
 
 func (handlers handlerMap) dispatch(m *Message) error {
-	h,ok := handlers[m.Type]
+	h, ok := handlers[m.Type]
 	if !ok {
-		return errors.New("no handler found for message type:"+ m.Type)
+		return errors.New("no handler found for message type:" + m.Type)
 	}
 	return executeHandler(h, m)
 }
@@ -65,7 +66,7 @@ func (handlers handlerMap) dispatch(m *Message) error {
 func executeHandler(h reflect.Value, m *Message) error {
 	var args [2]reflect.Value
 	args[0] = reflect.ValueOf(m.Body)
-	args[1]= reflect.ValueOf(m)
+	args[1] = reflect.ValueOf(m)
 
 	rs := h.Call(args[:])
 	if len(rs) != 1 {
@@ -82,7 +83,7 @@ func (handlers handlerMap) addHandler(h interface{}) error {
 	if err != nil {
 		return err
 	}
-	if _,ok := handlers[msgType]; ok{
+	if _, ok := handlers[msgType]; ok {
 		return fmt.Errorf("duplicate handler registered for message type '%s'", msgType)
 	}
 	handlers[msgType] = reflect.ValueOf(h)
@@ -125,5 +126,3 @@ func typeCheckHandler(h interface{}) (string, error) {
 	}
 	return string(in0.Field(0).Tag), nil
 }
-
-

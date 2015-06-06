@@ -6,42 +6,42 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/op/go-logging"
-	"reflect"
 	"fmt"
+	"github.com/op/go-logging"
 	"io"
+	"reflect"
 )
 
 const maxFdCount = 3
 
 type MsgConn struct {
-	log *logging.Logger
+	log      *logging.Logger
 	conn     *net.UnixConn
 	buf      [1024]byte
 	oob      []byte
-	disp *msgDispatcher
+	disp     *msgDispatcher
 	factory  MsgFactory
 	isClosed bool
-	idGen <-chan int
-	respMan *responseManager
-	onClose func()
+	idGen    <-chan int
+	respMan  *responseManager
+	onClose  func()
 }
 
 type MsgServer struct {
-	disp *msgDispatcher
-	factory MsgFactory
+	disp     *msgDispatcher
+	factory  MsgFactory
 	listener *net.UnixListener
-	done chan bool
-	idGen <- chan int
+	done     chan bool
+	idGen    <-chan int
 }
 
 func NewServer(address string, factory MsgFactory, log *logging.Logger, handlers ...interface{}) (*MsgServer, error) {
-	md,err := createDispatcher(log, handlers...)
+	md, err := createDispatcher(log, handlers...)
 	if err != nil {
 		return nil, err
 	}
 
-	listener,err := net.ListenUnix("unix", &net.UnixAddr{address, "unix"})
+	listener, err := net.ListenUnix("unix", &net.UnixAddr{address, "unix"})
 	if err != nil {
 		md.close()
 		return nil, err
@@ -49,31 +49,31 @@ func NewServer(address string, factory MsgFactory, log *logging.Logger, handlers
 	done := make(chan bool)
 	idGen := newIdGen(done)
 	return &MsgServer{
-		disp: md,
-		factory: factory,
+		disp:     md,
+		factory:  factory,
 		listener: listener,
-		done: done,
-		idGen: idGen,
+		done:     done,
+		idGen:    idGen,
 	}, nil
 }
 
 func (s *MsgServer) Run() error {
 	for {
-		conn,err := s.listener.AcceptUnix()
+		conn, err := s.listener.AcceptUnix()
 		if err != nil {
 			s.disp.close()
 			s.listener.Close()
 			return err
 		}
 		if err := setPassCred(conn); err != nil {
-			return errors.New("Failed to set SO_PASSCRED on accepted socket connection:"+ err.Error())
+			return errors.New("Failed to set SO_PASSCRED on accepted socket connection:" + err.Error())
 		}
 		mc := &MsgConn{
-			conn: conn,
-			disp: s.disp,
-			oob: createOobBuffer(),
+			conn:    conn,
+			disp:    s.disp,
+			oob:     createOobBuffer(),
 			factory: s.factory,
-			idGen: s.idGen,
+			idGen:   s.idGen,
 			respMan: newResponseManager(),
 		}
 		go mc.readLoop()
@@ -82,22 +82,22 @@ func (s *MsgServer) Run() error {
 }
 
 func Connect(address string, factory MsgFactory, log *logging.Logger, handlers ...interface{}) (*MsgConn, error) {
-	md,err := createDispatcher(log, handlers...)
+	md, err := createDispatcher(log, handlers...)
 	if err != nil {
 		return nil, err
 	}
-	conn,err := net.DialUnix("unix", nil, &net.UnixAddr{address, "unix"})
+	conn, err := net.DialUnix("unix", nil, &net.UnixAddr{address, "unix"})
 	if err != nil {
 		return nil, err
 	}
 	done := make(chan bool)
 	idGen := newIdGen(done)
 	mc := &MsgConn{
-		conn: conn,
-		disp: md,
-		oob: createOobBuffer(),
+		conn:    conn,
+		disp:    md,
+		oob:     createOobBuffer(),
 		factory: factory,
-		idGen: idGen,
+		idGen:   idGen,
 		respMan: newResponseManager(),
 		onClose: func() {
 			md.close()
@@ -114,7 +114,7 @@ func newIdGen(done <-chan bool) <-chan int {
 	return ch
 }
 
-func idGenLoop(done <-chan bool, out chan <- int) {
+func idGenLoop(done <-chan bool, out chan<- int) {
 	current := int(1)
 	for {
 		select {
@@ -142,7 +142,7 @@ func (mc *MsgConn) logger() *logging.Logger {
 }
 
 func (mc *MsgConn) processOneMessage() bool {
-	m,err := mc.readMessage()
+	m, err := mc.readMessage()
 	if err != nil {
 		if err == io.EOF {
 			mc.Close()
@@ -216,7 +216,6 @@ func (mc *MsgConn) readMessage() (*Message, error) {
 //     conn.AddHandlers(fooHandler, simpleHandler)
 //
 
-
 func (mc *MsgConn) AddHandlers(args ...interface{}) error {
 	for len(args) > 0 {
 		if err := mc.disp.hmap.addHandler(args[0]); err != nil {
@@ -227,11 +226,11 @@ func (mc *MsgConn) AddHandlers(args ...interface{}) error {
 	return nil
 }
 
-func (mc *MsgConn) SendMsg(msg interface{}, fds... int) error {
+func (mc *MsgConn) SendMsg(msg interface{}, fds ...int) error {
 	return mc.sendMessage(msg, <-mc.idGen, fds...)
 }
 
-func (mc *MsgConn) ExchangeMsg(msg interface{}, fds... int) (ResponseReader, error) {
+func (mc *MsgConn) ExchangeMsg(msg interface{}, fds ...int) (ResponseReader, error) {
 	id := <-mc.idGen
 	rr := mc.respMan.register(id)
 
@@ -239,10 +238,10 @@ func (mc *MsgConn) ExchangeMsg(msg interface{}, fds... int) (ResponseReader, err
 		rr.Done()
 		return nil, err
 	}
-	return rr,nil
+	return rr, nil
 }
 
-func (mc *MsgConn) sendMessage(msg interface{}, msgID int, fds... int) error {
+func (mc *MsgConn) sendMessage(msg interface{}, msgID int, fds ...int) error {
 	msgType, err := getMessageType(msg)
 	if err != nil {
 		return err
@@ -272,9 +271,8 @@ func getMessageType(msg interface{}) (string, error) {
 	return string(t.Field(0).Tag), nil
 }
 
-
 func (mc *MsgConn) newBaseMessage(msgType string, msgID int, body interface{}) (*BaseMsg, error) {
-	bodyBytes,err := json.Marshal(body)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
@@ -289,13 +287,12 @@ func (mc *MsgConn) sendRaw(data []byte, fds ...int) error {
 	if len(fds) > 0 {
 		return mc.sendWithFds(data, fds)
 	}
-	_,err := mc.conn.Write(data)
+	_, err := mc.conn.Write(data)
 	return err
 }
 
 func (mc *MsgConn) sendWithFds(data []byte, fds []int) error {
 	oob := syscall.UnixRights(fds...)
-	_,_,err := mc.conn.WriteMsgUnix(data, oob, nil)
+	_, _, err := mc.conn.WriteMsgUnix(data, oob, nil)
 	return err
 }
-

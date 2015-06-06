@@ -1,7 +1,8 @@
 package xpra
+
 import (
-	"github.com/subgraph/oz"
 	"fmt"
+	"github.com/subgraph/oz"
 	"os"
 	"os/exec"
 )
@@ -37,4 +38,3 @@ func prepareServerArgs(config *oz.XServerConf, display uint64, workdir string) [
 	)
 	return args
 }
-

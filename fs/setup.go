@@ -1,13 +1,13 @@
 package fs
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path"
-	"syscall"
 	"os/user"
+	"path"
 	"strconv"
-	"errors"
+	"syscall"
 )
 
 var basicBindDirs = []string{
@@ -44,7 +44,7 @@ func (fs *Filesystem) Setup() error {
 		if err := fs.createXpraDir(); err != nil {
 			return err
 		}
-		item,err := fs.newItem(fs.xpra, fs.xpra, false)
+		item, err := fs.newItem(fs.xpra, fs.xpra, false)
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func (fs *Filesystem) Setup() error {
 }
 
 func (fs *Filesystem) createXpraDir() error {
-	uid,gid,err := userIds(fs.user)
+	uid, gid, err := userIds(fs.user)
 	if err != nil {
 		return err
 	}
@@ -72,15 +72,15 @@ func (fs *Filesystem) createXpraDir() error {
 }
 
 func userIds(user *user.User) (int, int, error) {
-	uid,err := strconv.Atoi(user.Uid)
+	uid, err := strconv.Atoi(user.Uid)
 	if err != nil {
-		return -1,-1, errors.New("failed to parse uid from user struct: "+ err.Error())
+		return -1, -1, errors.New("failed to parse uid from user struct: " + err.Error())
 	}
-	gid,err := strconv.Atoi(user.Gid)
+	gid, err := strconv.Atoi(user.Gid)
 	if err != nil {
-		return -1,-1, errors.New("failed to parse gid from user struct: "+ err.Error())
+		return -1, -1, errors.New("failed to parse gid from user struct: " + err.Error())
 	}
-	return uid,gid,nil
+	return uid, gid, nil
 }
 
 func (fs *Filesystem) setupRootfs() error {

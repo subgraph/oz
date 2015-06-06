@@ -65,18 +65,18 @@ var loadedProfiles []*Profile
 
 type Profiles []*Profile
 
-func (ps Profiles) GetProfileByName(name string) (*Profile,error) {
+func (ps Profiles) GetProfileByName(name string) (*Profile, error) {
 	if loadedProfiles == nil {
-		ps ,err := LoadProfiles(defaultProfileDirectory)
+		ps, err := LoadProfiles(defaultProfileDirectory)
 		if err != nil {
 			return nil, err
 		}
 		loadedProfiles = ps
 	}
 
-	for _,p := range loadedProfiles {
+	for _, p := range loadedProfiles {
 		if p.Name == name {
-			return p,nil
+			return p, nil
 		}
 	}
 	return nil, nil

@@ -1,7 +1,8 @@
 package ipc
+
 import (
-	"time"
 	"sync"
+	"time"
 )
 
 type ResponseReader interface {
@@ -10,10 +11,10 @@ type ResponseReader interface {
 }
 
 type responseWaiter struct {
-	rm *responseManager
-	id int
+	rm      *responseManager
+	id      int
 	timeout time.Time
-	ch chan *Message
+	ch      chan *Message
 }
 
 func (rw *responseWaiter) Chan() <-chan *Message {
@@ -28,7 +29,7 @@ func (rw *responseWaiter) Done() {
 }
 
 type responseManager struct {
-	lock sync.Locker
+	lock        sync.Locker
 	responseMap map[int]*responseWaiter
 }
 
@@ -64,7 +65,7 @@ func (rm *responseManager) handle(m *Message) bool {
 	return true
 }
 
-func (rm *responseManager) removeById(id int, klose bool) *responseWaiter{
+func (rm *responseManager) removeById(id int, klose bool) *responseWaiter {
 	rw := rm.responseMap[id]
 	if rw == nil {
 		return nil
@@ -75,4 +76,3 @@ func (rm *responseManager) removeById(id int, klose bool) *responseWaiter{
 	}
 	return rw
 }
-

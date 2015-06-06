@@ -1,13 +1,13 @@
 package oz
 
 import (
-	"syscall"
 	"github.com/op/go-logging"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
-func ReapChildProcs(log *logging.Logger,  callback func(int, syscall.WaitStatus)) chan os.Signal {
+func ReapChildProcs(log *logging.Logger, callback func(int, syscall.WaitStatus)) chan os.Signal {
 	sigs := make(chan os.Signal, 3)
 	signal.Notify(sigs, syscall.SIGCHLD)
 	go func() {
@@ -22,7 +22,7 @@ func ReapChildProcs(log *logging.Logger,  callback func(int, syscall.WaitStatus)
 func handleSIGCHLD(log *logging.Logger, callback func(int, syscall.WaitStatus)) {
 	var wstatus syscall.WaitStatus
 	for {
-		pid,err := syscall.Wait4(-1, &wstatus, syscall.WNOHANG, nil)
+		pid, err := syscall.Wait4(-1, &wstatus, syscall.WNOHANG, nil)
 		switch err {
 		case syscall.ECHILD:
 			return

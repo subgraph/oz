@@ -1,34 +1,34 @@
 package ozinit
 
 import (
-	"os"
+	"bufio"
+	"fmt"
+	"github.com/kr/pty"
+	"github.com/op/go-logging"
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/ipc"
-	"os/exec"
-	"syscall"
-	"github.com/op/go-logging"
-	"github.com/kr/pty"
-	"fmt"
 	"github.com/subgraph/oz/xpra"
+	"io"
+	"os"
+	"os/exec"
 	"os/user"
 	"strconv"
-	"io"
-	"bufio"
 	"strings"
+	"syscall"
 )
 
 const profileDirectory = "/var/lib/oz/cells.d"
 const socketAddress = "/tmp/oz-init-control"
 
 type initState struct {
-	log *logging.Logger
+	log     *logging.Logger
 	profile *oz.Profile
-	uid int
-	gid int
-	user *user.User
+	uid     int
+	gid     int
+	user    *user.User
 	display int
-	fs *fs.Filesystem
+	fs      *fs.Filesystem
 }
 
 // By convention oz-init writes log messages to stderr with a single character
@@ -38,7 +38,7 @@ func createLogger() *logging.Logger {
 	l := logging.MustGetLogger("oz-init")
 	be := logging.NewLogBackend(os.Stderr, "", 0)
 	f := logging.MustStringFormatter("%{level:.1s} %{message}")
-	fbe := logging.NewBackendFormatter(be,f)
+	fbe := logging.NewBackendFormatter(be, f)
 	logging.SetBackend(fbe)
 	return l
 }
@@ -65,29 +65,29 @@ func parseArgs() *initState {
 	uidval := getvar("INIT_UID")
 	dispval := os.Getenv("INIT_DISPLAY")
 
-	p,err := loadProfile(pname)
+	p, err := loadProfile(pname)
 	if err != nil {
 		log.Error("Could not load profile %s: %v", pname, err)
 		os.Exit(1)
 	}
-	uid,err := strconv.Atoi(uidval)
+	uid, err := strconv.Atoi(uidval)
 	if err != nil {
 		log.Error("Could not parse INIT_UID argument (%s) into an integer: %v", uidval, err)
 		os.Exit(1)
 	}
-	u,err := user.LookupId(uidval)
+	u, err := user.LookupId(uidval)
 	if err != nil {
 		log.Error("Failed to look up user with uid=%s: %v", uidval, err)
 		os.Exit(1)
 	}
-	gid,err := strconv.Atoi(u.Gid)
+	gid, err := strconv.Atoi(u.Gid)
 	if err != nil {
 		log.Error("Failed to parse gid value (%s) from user struct: %v", u.Gid, err)
 		os.Exit(1)
 	}
 	display := 0
 	if dispval != "" {
-		d,err := strconv.Atoi(dispval)
+		d, err := strconv.Atoi(dispval)
 		if err != nil {
 			log.Error("Unable to parse display (%s) into an integer: %v", dispval, err)
 			os.Exit(1)
@@ -96,13 +96,13 @@ func parseArgs() *initState {
 	}
 
 	return &initState{
-		log: log,
+		log:     log,
 		profile: p,
-		uid: uid,
-		gid: gid,
-		user: u,
+		uid:     uid,
+		gid:     gid,
+		user:    u,
 		display: display,
-		fs: fs.NewFromProfile(p, u, log),
+		fs:      fs.NewFromProfile(p, u, log),
 	}
 }
 
@@ -127,7 +127,7 @@ func (st *initState) runInit() {
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
-	s,err := ipc.NewServer(socketAddress, messageFactory, st.log,
+	s, err := ipc.NewServer(socketAddress, messageFactory, st.log,
 		handlePing,
 		st.handleRunShell,
 	)
@@ -152,14 +152,14 @@ func (st *initState) startXpraServer() {
 		return
 	}
 	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), workdir)
-	p,err := xpra.Process.StderrPipe()
+	p, err := xpra.Process.StderrPipe()
 	if err != nil {
 		st.log.Warning("Error creating stderr pipe for xpra output: %v", err)
 		os.Exit(1)
 	}
 	go st.readXpraOutput(p)
 	xpra.Process.Env = []string{
-		"HOME="+ st.user.HomeDir,
+		"HOME=" + st.user.HomeDir,
 	}
 	xpra.Process.SysProcAttr = &syscall.SysProcAttr{}
 	xpra.Process.SysProcAttr.Credential = &syscall.Credential{
@@ -192,11 +192,11 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 }
 
 func loadProfile(name string) (*oz.Profile, error) {
-	ps,err := oz.LoadProfiles(profileDirectory)
+	ps, err := oz.LoadProfiles(profileDirectory)
 	if err != nil {
 		return nil, err
 	}
-	for _,p := range ps {
+	for _, p := range ps {
 		if name == p.Name {
 			return p, nil
 		}
@@ -228,7 +228,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	cmd.Env = append(cmd.Env, "PATH=/usr/bin:/bin")
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
 	st.log.Info("Executing shell...")
-	f,err := ptyStart(cmd)
+	f, err := ptyStart(cmd)
 	defer f.Close()
 	if err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
@@ -238,7 +238,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 }
 
 func ptyStart(c *exec.Cmd) (ptty *os.File, err error) {
-	ptty,tty, err := pty.Open()
+	ptty, tty, err := pty.Open()
 	if err != nil {
 		return nil, err
 	}
@@ -261,4 +261,3 @@ func ptyStart(c *exec.Cmd) (ptty *os.File, err error) {
 func (is *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	is.log.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
 }
-

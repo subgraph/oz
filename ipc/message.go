@@ -2,13 +2,11 @@ package ipc
 
 import (
 	"encoding/json"
-	"syscall"
+	"errors"
 	"fmt"
 	"reflect"
-	"errors"
+	"syscall"
 )
-
-
 
 func NewMsgFactory(msgTypes ...interface{}) MsgFactory {
 	mf := (MsgFactory)(make(map[string]func() interface{}))
@@ -24,7 +22,7 @@ func NewMsgFactory(msgTypes ...interface{}) MsgFactory {
 type MsgFactory map[string](func() interface{})
 
 func (mf MsgFactory) create(msgType string) (interface{}, error) {
-	f,ok := mf[msgType]
+	f, ok := mf[msgType]
 	if !ok {
 		return nil, fmt.Errorf("cannot create msg type: %s", msgType)
 	}
@@ -52,19 +50,19 @@ func (mf MsgFactory) register(mt interface{}) error {
 }
 
 type Message struct {
-	Type string
+	Type  string
 	MsgID int
-	Body interface{}
+	Body  interface{}
 	Ucred *syscall.Ucred
 	Fds   []int
 	mconn *MsgConn
 }
 
 type BaseMsg struct {
-	Type string
-	MsgID int
+	Type       string
+	MsgID      int
 	IsResponse bool
-	Body json.RawMessage
+	Body       json.RawMessage
 }
 
 func (mc *MsgConn) parseMessage(data []byte) (*Message, error) {
@@ -72,7 +70,7 @@ func (mc *MsgConn) parseMessage(data []byte) (*Message, error) {
 	if err := json.Unmarshal(data, &base); err != nil {
 		return nil, err
 	}
-	body,err := mc.factory.create(base.Type)
+	body, err := mc.factory.create(base.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -83,11 +81,11 @@ func (mc *MsgConn) parseMessage(data []byte) (*Message, error) {
 	m.Type = base.Type
 	m.MsgID = base.MsgID
 	m.Body = body
-	return m,nil
+	return m, nil
 }
 
 func (m *Message) Free() {
-	for _,fd := range m.Fds {
+	for _, fd := range m.Fds {
 		syscall.Close(fd)
 	}
 	m.Fds = nil
@@ -117,6 +115,6 @@ func (m *Message) parseControlData(data []byte) error {
 	return nil
 }
 
-func (m *Message) Respond(msg interface{}, fds... int) error {
+func (m *Message) Respond(msg interface{}, fds ...int) error {
 	return m.mconn.sendMessage(msg, m.MsgID, fds...)
 }

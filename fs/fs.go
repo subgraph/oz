@@ -19,12 +19,12 @@ type directory struct {
 }
 
 type Filesystem struct {
-	log *logging.Logger
+	log          *logging.Logger
 	user         *user.User
-	name		 string
+	name         string
 	base         string
 	root         string
-	xpra 		 string
+	xpra         string
 	userID       string
 	noDefaults   bool
 	noSysAndProc bool
@@ -73,10 +73,10 @@ func (fs *Filesystem) newItem(path, target string, readonly bool) (*mountItem, e
 
 func NewFromProfile(profile *oz.Profile, user *user.User, log *logging.Logger) *Filesystem {
 	fs := NewFilesystem(profile.Name, user, log)
-	for _,wl := range profile.Whitelist {
+	for _, wl := range profile.Whitelist {
 		fs.addWhitelist(wl.Path, wl.Path, wl.ReadOnly)
 	}
-	for _,bl := range profile.Blacklist {
+	for _, bl := range profile.Blacklist {
 		fs.addBlacklist(bl.Path)
 	}
 	fs.noDefaults = profile.NoDefaults
@@ -210,9 +210,9 @@ func copyFileInfo(info os.FileInfo, target string) error {
 	return nil
 }
 
-func createSubdirs(base string, uid,gid int, mode os.FileMode, subdirs ...string) error {
+func createSubdirs(base string, uid, gid int, mode os.FileMode, subdirs ...string) error {
 	dir := base
-	for _,sd := range subdirs {
+	for _, sd := range subdirs {
 		dir = path.Join(dir, sd)
 		if err := os.Mkdir(dir, mode); err != nil && !os.IsExist(err) {
 			return err

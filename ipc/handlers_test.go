@@ -1,27 +1,28 @@
 package ipc
+
 import (
-	"testing"
-	"reflect"
 	"errors"
+	"reflect"
+	"testing"
 )
 
 func TestTypeCheckHandler(t *testing.T) {
-	type testStruct struct {}
+	type testStruct struct{}
 
-	cases := []interface{} {
+	cases := []interface{}{
 		"foo",
-		func(){},
-		func(a,b int){},
+		func() {},
+		func(a, b int) {},
 		func(a *testStruct, b *Message) {},
-		func(a,b *int) error{return nil},
-		func(a *testStruct, b int) error {return nil},
-		func(a *testStruct, b Message) error {return nil},
-		func(a *testStruct, b *Message) int{return 0},
-		func(a *testStruct, b *Message, c int) error {return nil},
+		func(a, b *int) error { return nil },
+		func(a *testStruct, b int) error { return nil },
+		func(a *testStruct, b Message) error { return nil },
+		func(a *testStruct, b *Message) int { return 0 },
+		func(a *testStruct, b *Message, c int) error { return nil },
 	}
 
-	for i,h := range cases {
-		if _,err := typeCheckHandler(h); err == nil {
+	for i, h := range cases {
+		if _, err := typeCheckHandler(h); err == nil {
 			t.Errorf("typeCheckHandler should return an error for case %d", i)
 		}
 	}
@@ -29,7 +30,7 @@ func TestTypeCheckHandler(t *testing.T) {
 
 func TestAddHandler(t *testing.T) {
 	hmap := handlerMap(make(map[string]reflect.Value))
-	type testStruct struct{
+	type testStruct struct {
 		t int "tst"
 	}
 	legit := func(ts *testStruct, m *Message) error { return nil }
@@ -48,8 +49,12 @@ func TestAddHandler(t *testing.T) {
 }
 
 func TestDispatch(t *testing.T) {
-	type testStruct struct{ t int "tester"}
-	type testStruct2 struct{ t int "tester2"}
+	type testStruct struct {
+		t int "tester"
+	}
+	type testStruct2 struct {
+		t int "tester2"
+	}
 	count := 0
 	h1 := func(ts *testStruct, m *Message) error {
 		count += 1

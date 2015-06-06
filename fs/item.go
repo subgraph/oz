@@ -2,12 +2,12 @@ package fs
 
 import (
 	"fmt"
+	"github.com/op/go-logging"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
-	"github.com/op/go-logging"
 )
 
 type MountFlag int

@@ -1,32 +1,32 @@
 package daemon
+
 import (
+	"bufio"
+	"fmt"
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
-	"os/exec"
-	"syscall"
-	"fmt"
-	"io"
-	"bufio"
-	"os/user"
 	"github.com/subgraph/oz/xpra"
+	"io"
 	"os"
+	"os/exec"
+	"os/user"
 	"path"
+	"syscall"
 )
 
 const initPath = "/usr/local/bin/oz-init"
 
-
 type Sandbox struct {
-	daemon *daemonState
-	id int
+	daemon  *daemonState
+	id      int
 	display int
 	profile *oz.Profile
-	init *exec.Cmd
-	cred *syscall.Credential
-	fs *fs.Filesystem
-	stderr io.ReadCloser
-	addr string
-	xpra *xpra.Xpra
+	init    *exec.Cmd
+	cred    *syscall.Credential
+	fs      *fs.Filesystem
+	stderr  io.ReadCloser
+	addr    string
+	xpra    *xpra.Xpra
 }
 
 /*
@@ -45,11 +45,11 @@ func createInitCommand(name, chroot string, uid uint32, display int) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot: chroot,
+		Chroot:     chroot,
 		Cloneflags: initCloneFlags,
 	}
 	cmd.Env = []string{
-		"INIT_PROFILE="+name,
+		"INIT_PROFILE=" + name,
 		fmt.Sprintf("INIT_UID=%d", uid),
 	}
 	if display > 0 {
@@ -58,8 +58,8 @@ func createInitCommand(name, chroot string, uid uint32, display int) *exec.Cmd {
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, uid,gid uint32) (*Sandbox, error) {
-	u,err := user.LookupId(fmt.Sprintf("%d", uid))
+func (d *daemonState) launch(p *oz.Profile, uid, gid uint32) (*Sandbox, error) {
+	u, err := user.LookupId(fmt.Sprintf("%d", uid))
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
 	}
@@ -74,7 +74,7 @@ func (d *daemonState) launch(p *oz.Profile, uid,gid uint32) (*Sandbox, error) {
 	}
 
 	cmd := createInitCommand(p.Name, fs.Root(), uid, display)
-	pp,err := cmd.StderrPipe()
+	pp, err := cmd.StderrPipe()
 	if err != nil {
 		fs.Cleanup()
 		return nil, fmt.Errorf("error creating stderr pipe for init process: %v", err)
@@ -85,25 +85,25 @@ func (d *daemonState) launch(p *oz.Profile, uid,gid uint32) (*Sandbox, error) {
 		return nil, err
 	}
 	sbox := &Sandbox{
-		daemon: d,
-		id: d.nextSboxId,
+		daemon:  d,
+		id:      d.nextSboxId,
 		display: display,
 		profile: p,
-		init: cmd,
-		cred: &syscall.Credential{Uid: uid, Gid: gid},
-		fs: fs,
-		addr: path.Join(fs.Root(), "tmp", "oz-init-control"),
-		stderr: pp,
+		init:    cmd,
+		cred:    &syscall.Credential{Uid: uid, Gid: gid},
+		fs:      fs,
+		addr:    path.Join(fs.Root(), "tmp", "oz-init-control"),
+		stderr:  pp,
 	}
 	go sbox.logMessages()
 	d.nextSboxId += 1
 	d.sandboxes = append(d.sandboxes, sbox)
-	return sbox,nil
+	return sbox, nil
 }
 
 func (sbox *Sandbox) remove() {
 	sboxes := []*Sandbox{}
-	for _,sb := range sbox.daemon.sandboxes {
+	for _, sb := range sbox.daemon.sandboxes {
 		if sb == sbox {
 			sb.fs.Cleanup()
 		} else {
@@ -142,7 +142,7 @@ func (sbox *Sandbox) logLine(line string) {
 
 func (sbox *Sandbox) getLogFunc(c byte) func(string, ...interface{}) {
 	log := sbox.daemon.log
-	switch(c) {
+	switch c {
 	case 'D':
 		return log.Debug
 	case 'I':

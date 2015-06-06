@@ -1,8 +1,9 @@
 package ozinit
+
 import (
-	"github.com/subgraph/oz/ipc"
 	"errors"
 	"fmt"
+	"github.com/subgraph/oz/ipc"
 )
 
 func clientConnect(addr string) (*ipc.MsgConn, error) {
@@ -10,7 +11,7 @@ func clientConnect(addr string) (*ipc.MsgConn, error) {
 }
 
 func clientSend(addr string, msg interface{}) (*ipc.Message, error) {
-	c,err := clientConnect(addr)
+	c, err := clientConnect(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -20,13 +21,13 @@ func clientSend(addr string, msg interface{}) (*ipc.Message, error) {
 		return nil, err
 	}
 
-	resp := <- rr.Chan()
+	resp := <-rr.Chan()
 	rr.Done()
 	return resp, nil
 }
 
 func Ping(addr string) error {
-	resp,err := clientSend(addr, new(PingMsg))
+	resp, err := clientSend(addr, new(PingMsg))
 	if err != nil {
 		return err
 	}
@@ -41,12 +42,12 @@ func Ping(addr string) error {
 }
 
 func RunShell(addr, term string) (int, error) {
-	c,err := clientConnect(addr)
+	c, err := clientConnect(addr)
 	if err != nil {
 		return 0, err
 	}
-	rr,err := c.ExchangeMsg(&RunShellMsg{Term: term})
-	resp := <- rr.Chan()
+	rr, err := c.ExchangeMsg(&RunShellMsg{Term: term})
+	resp := <-rr.Chan()
 	rr.Done()
 	c.Close()
 	if err != nil {
@@ -54,7 +55,7 @@ func RunShell(addr, term string) (int, error) {
 	}
 	switch body := resp.Body.(type) {
 	case *ErrorMsg:
-		return 0,errors.New(body.Msg)
+		return 0, errors.New(body.Msg)
 	case *OkMsg:
 		if len(resp.Fds) == 0 {
 			return 0, errors.New("RunShell message returned Ok, but no file descriptor received")
@@ -64,5 +65,3 @@ func RunShell(addr, term string) (int, error) {
 		return 0, fmt.Errorf("Unexpected message type received: %+v", body)
 	}
 }
-
-

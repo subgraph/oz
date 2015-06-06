@@ -1,4 +1,5 @@
 package ozinit
+
 import "github.com/subgraph/oz/ipc"
 
 type OkMsg struct {
@@ -23,4 +24,3 @@ var messageFactory = ipc.NewMsgFactory(
 	new(PingMsg),
 	new(RunShellMsg),
 )
-

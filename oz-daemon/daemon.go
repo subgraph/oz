@@ -5,20 +5,20 @@ import (
 
 	"github.com/op/go-logging"
 	"github.com/subgraph/oz"
-	"github.com/subgraph/oz/ipc"
-	"syscall"
 	"github.com/subgraph/oz/fs"
+	"github.com/subgraph/oz/ipc"
 	"os/user"
+	"syscall"
 )
 
 type daemonState struct {
-	log *logging.Logger
-	profiles oz.Profiles
-	sandboxes []*Sandbox
-	nextSboxId int
+	log         *logging.Logger
+	profiles    oz.Profiles
+	sandboxes   []*Sandbox
+	nextSboxId  int
 	nextDisplay int
-	memBackend *logging.ChannelMemoryBackend
-	backends []logging.Backend
+	memBackend  *logging.ChannelMemoryBackend
+	backends    []logging.Backend
 }
 
 func Main() {
@@ -41,7 +41,7 @@ func Main() {
 func initialize() *daemonState {
 	d := &daemonState{}
 	d.initializeLogging()
-	ps,err := oz.LoadProfiles("/var/lib/oz/cells.d")
+	ps, err := oz.LoadProfiles("/var/lib/oz/cells.d")
 	if err != nil {
 		d.log.Fatalf("Failed to load profiles: %v", err)
 	}
@@ -53,11 +53,10 @@ func initialize() *daemonState {
 	return d
 }
 
-
 func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	d.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
 
-	for _,sbox := range d.sandboxes {
+	for _, sbox := range d.sandboxes {
 		if sbox.init.Process.Pid == pid {
 			sbox.remove()
 			return
@@ -67,22 +66,22 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 }
 
 func runServer(log *logging.Logger, args ...interface{}) error {
-	s,err := ipc.NewServer(SocketName, messageFactory, log, args...)
+	s, err := ipc.NewServer(SocketName, messageFactory, log, args...)
 	if err != nil {
 		return err
 	}
 	return s.Run()
 }
 
-func (d * daemonState) handlePing(msg *PingMsg, m *ipc.Message) error {
+func (d *daemonState) handlePing(msg *PingMsg, m *ipc.Message) error {
 	d.Debug("received ping with data [%s]", msg.Data)
 	return m.Respond(&PingMsg{msg.Data})
 }
 
-func (d * daemonState) handleListProfiles(msg *ListProfilesMsg, m *ipc.Message) error {
+func (d *daemonState) handleListProfiles(msg *ListProfilesMsg, m *ipc.Message) error {
 	r := new(ListProfilesResp)
 	index := 1
-	for _,p := range d.profiles {
+	for _, p := range d.profiles {
 		r.Profiles = append(r.Profiles, Profile{Index: index, Name: p.Name, Path: p.Path})
 		index += 1
 	}
@@ -91,12 +90,12 @@ func (d * daemonState) handleListProfiles(msg *ListProfilesMsg, m *ipc.Message) 
 
 func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 	d.Debug("Launch message received: %+v", msg)
-	p,err := d.getProfileByIdxOrName(msg.Index, msg.Name)
+	p, err := d.getProfileByIdxOrName(msg.Index, msg.Name)
 	if err != nil {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
 	d.Debug("Would launch %s", p.Name)
-	_,err = d.launch(p, m.Ucred.Uid, m.Ucred.Gid)
+	_, err = d.launch(p, m.Ucred.Uid, m.Ucred.Gid)
 	if err != nil {
 		d.Warning("launch of %s failed: %v", p.Name, err)
 		return m.Respond(&ErrorMsg{err.Error()})
@@ -112,9 +111,9 @@ func (d *daemonState) getProfileByIdxOrName(index int, name string) (*oz.Profile
 		return d.profiles[index-1], nil
 	}
 
-	for _,p := range d.profiles {
+	for _, p := range d.profiles {
 		if p.Name == name {
-			return p,nil
+			return p, nil
 		}
 	}
 	return nil, fmt.Errorf("could not find profile name '%s'", name)
@@ -129,7 +128,7 @@ func (d *daemonState) handleListSandboxes(list *ListSandboxesMsg, msg *ipc.Messa
 }
 
 func (d *daemonState) handleClean(clean *CleanMsg, msg *ipc.Message) error {
-	p,err := d.getProfileByIdxOrName(clean.Index, clean.Name)
+	p, err := d.getProfileByIdxOrName(clean.Index, clean.Name)
 	if err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
 	}
@@ -140,7 +139,7 @@ func (d *daemonState) handleClean(clean *CleanMsg, msg *ipc.Message) error {
 		}
 	}
 	// XXX
-	u,_ := user.Current()
+	u, _ := user.Current()
 	fs := fs.NewFromProfile(p, u, d.log)
 	if err := fs.Cleanup(); err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
@@ -160,4 +159,3 @@ func (d *daemonState) handleLogs(logs *LogsMsg, msg *ipc.Message) error {
 	msg.Respond(&OkMsg{})
 	return nil
 }
-

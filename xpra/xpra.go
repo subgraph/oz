@@ -1,7 +1,8 @@
 package xpra
+
 import (
-	"os/exec"
 	"github.com/subgraph/oz"
+	"os/exec"
 )
 
 type Xpra struct {
@@ -18,7 +19,6 @@ type Xpra struct {
 
 	// Arguments passed to xpra command
 	xpraArgs []string
-
 }
 
 var xpraDefaultArgs = []string{
@@ -52,4 +52,3 @@ func getDefaultArgs(config *oz.XServerConf) []string {
 
 	return args
 }
-

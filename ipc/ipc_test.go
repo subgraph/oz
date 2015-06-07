@@ -34,11 +34,11 @@ func testConnect(handler func(*TestMsg, *Message) error) (*testConnection, error
 		tc.wg.Done()
 		return err
 	}
-	s,err  := NewServer(testSocket, testFactory, nil, wrapper)
+	s, err := NewServer(testSocket, testFactory, nil, wrapper)
 	if err != nil {
 		return nil, err
 	}
-	c,err := Connect(testSocket, testFactory, nil)
+	c, err := Connect(testSocket, testFactory, nil)
 	if err != nil {
 		return nil, err
 	}

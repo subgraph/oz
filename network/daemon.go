@@ -47,7 +47,7 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 	brL := br.NetInterface()
 	addrs, err := brL.Addrs()
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get bridgre interface addresses: %+v", err)
+		return nil, fmt.Errorf("Unable to get bridge interface addresses: %+v", err)
 	}
 	
 	// Build the ip range which we will use for the network

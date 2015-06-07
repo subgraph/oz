@@ -187,12 +187,12 @@ func (sbox *Sandbox) startXpraClient() {
 }
 
 func (sbox *Sandbox) setupXpraLogging() {
-	stdout,err := sbox.xpra.Process.StdoutPipe()
+	stdout, err := sbox.xpra.Process.StdoutPipe()
 	if err != nil {
 		sbox.daemon.Warning("Failed to create xpra stdout pipe: %v", err)
 		return
 	}
-	stderr,err := sbox.xpra.Process.StderrPipe()
+	stderr, err := sbox.xpra.Process.StderrPipe()
 	if err != nil {
 		stdout.Close()
 		sbox.daemon.Warning("Failed to create xpra stderr pipe: %v", err)

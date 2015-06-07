@@ -47,14 +47,22 @@ func findSandbox(id int) *Sandbox {
 }
 */
 
-const initCloneFlags = syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS | syscall.CLONE_NEWNET
-
-func createInitCommand(name, chroot string, uid uint32, display int, stn *network.SandboxNetwork) *exec.Cmd {
+func createInitCommand(name, chroot string, uid uint32, display int, stn *network.SandboxNetwork, nettype string) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
+
+	cloneFlags := uintptr(syscall.CLONE_NEWNS)
+	cloneFlags |= syscall.CLONE_NEWIPC
+	cloneFlags |= syscall.CLONE_NEWPID
+	cloneFlags |= syscall.CLONE_NEWUTS
+	
+	if nettype != "host" {
+		cloneFlags |= syscall.CLONE_NEWNET
+	}
+	
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Chroot:     chroot,
-		Cloneflags: initCloneFlags,
+		Cloneflags: cloneFlags,
 	}
 	cmd.Env = []string{
 		"INIT_PROFILE=" + name,
@@ -98,7 +106,7 @@ func (d *daemonState) launch(p *oz.Profile, uid, gid uint32, log *logging.Logger
 		}
 	}
 	
-	cmd := createInitCommand(p.Name, fs.Root(), uid, display, stn)
+	cmd := createInitCommand(p.Name, fs.Root(), uid, display, stn, p.Networking.Nettype)
 	log.Debug("Command environment: %+v", cmd.Env)
 	pp, err := cmd.StderrPipe()
 	if err != nil {

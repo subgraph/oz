@@ -108,7 +108,7 @@ func parseArgs() *initState {
 		gid:     gid,
 		user:    u,
 		display: display,
-		fs:      fs.NewFromProfile(p, u, log),
+		fs:      fs.NewFromProfile(p, u, config.SandboxPath, log),
 	}
 }
 

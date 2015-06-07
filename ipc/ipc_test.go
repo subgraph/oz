@@ -11,7 +11,7 @@ type TestMsg struct {
 }
 
 type testConnection struct {
-	server *MsgConn
+	server *MsgServer
 	client *MsgConn
 	wg     sync.WaitGroup
 	called bool
@@ -27,27 +27,23 @@ const testSocket = "@test"
 var testFactory = NewMsgFactory(new(TestMsg))
 
 func testConnect(handler func(*TestMsg, *Message) error) (*testConnection, error) {
-	s := NewMsgConn(testFactory, testSocket)
-	c := NewMsgConn(testFactory, testSocket)
-	tc := &testConnection{
-		server: s,
-		client: c,
-	}
+	tc := &testConnection{}
 	wrapper := func(tm *TestMsg, msg *Message) error {
 		err := handler(tm, msg)
 		tc.called = true
 		tc.wg.Done()
 		return err
 	}
-	if err := s.AddHandlers(wrapper); err != nil {
+	s, err := NewServer(testSocket, testFactory, nil, wrapper)
+	if err != nil {
 		return nil, err
 	}
-	if err := s.Listen(); err != nil {
+	c, err := Connect(testSocket, testFactory, nil)
+	if err != nil {
 		return nil, err
 	}
-	if err := c.Connect(); err != nil {
-		return nil, err
-	}
+	tc.server = s
+	tc.client = c
 	tc.wg.Add(1)
 	go tc.server.Run()
 	return tc, nil

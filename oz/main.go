@@ -108,9 +108,11 @@ func handleShell(c *cli.Context) {
 	sb, err := getSandboxById(id)
 	if err != nil {
 		fmt.Printf("Error retrieving sandbox list: %v\n", err)
+		os.Exit(1)
 	}
 	if sb == nil {
 		fmt.Printf("No sandbox found with id = %d\n", id)
+		os.Exit(1)
 	}
 	term := os.Getenv("TERM")
 	fd, err := ozinit.RunShell(sb.Address, term)

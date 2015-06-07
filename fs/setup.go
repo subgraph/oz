@@ -11,16 +11,16 @@ import (
 )
 
 var basicBindDirs = []string{
-	"/bin", "/lib", "/lib64", "/usr", "/etc", "/var/lib/oz",
+	"/bin", "/lib", "/lib64", "/usr", "/etc",
 }
 
 var basicEmptyDirs = []string{
 	"/sbin", "/var", "/var/lib",
 	"/var/cache", "/home", "/boot",
 	"/tmp", "/run", "/run/user",
-	"/run/lock", "/root", "/opt",
-	"/srv", "/dev", "/proc", "/sys",
-	"/mnt", "/media",
+	"/run/shm", "/run/lock", "/root",
+	"/opt", "/srv", "/dev", "/proc",
+	"/sys", "/mnt", "/media",
 }
 
 var basicBlacklist = []string{
@@ -39,7 +39,19 @@ var basicSymlinks = [][2]string{
 	{"/run/lock", "/var/lock"},
 }
 
-func (fs *Filesystem) Setup() error {
+func (fs *Filesystem) Setup(profilesPath string) error {
+	profilePathInBindDirs := false
+	for _, bd := range basicBindDirs {
+		if bd == profilesPath {
+			profilePathInBindDirs = true
+			break;
+		}
+	}
+
+	if profilePathInBindDirs == false {
+		basicBindDirs = append(basicBindDirs, profilesPath)
+	}
+
 	if fs.xpra != "" {
 		if err := fs.createXpraDir(); err != nil {
 			return err

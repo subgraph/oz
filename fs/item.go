@@ -116,7 +116,7 @@ func (mi *mountItem) bindItem() error {
 	target := mi.targetPath()
 	_, err = os.Stat(target)
 	if err == nil || !os.IsNotExist(err) {
-		mi.fs.log.Warning("Target (%s) already exists, ignoring", target)
+		mi.fs.log.Warning("Target (%s > %s) already exists, ignoring", src, target)
 		return nil
 	}
 	if sinfo.IsDir() {

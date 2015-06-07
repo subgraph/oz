@@ -3,10 +3,6 @@ package daemon
 import (
 	"bufio"
 	"fmt"
-	"github.com/subgraph/oz"
-	"github.com/subgraph/oz/fs"
-	"github.com/subgraph/oz/xpra"
-	"github.com/subgraph/oz/network"
 	"io"
 	"os"
 	"os/exec"
@@ -14,6 +10,13 @@ import (
 	"path"
 	"sync"
 	"syscall"
+	
+	"github.com/subgraph/oz"
+	"github.com/subgraph/oz/fs"
+	"github.com/subgraph/oz/xpra"
+	"github.com/subgraph/oz/network"
+	
+	"github.com/op/go-logging"
 )
 
 const initPath = "/usr/local/bin/oz-init"
@@ -43,9 +46,10 @@ func findSandbox(id int) *Sandbox {
 	return nil
 }
 */
+
 const initCloneFlags = syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID | syscall.CLONE_NEWUTS | syscall.CLONE_NEWNET
 
-func createInitCommand(name, chroot string, uid uint32, display int) *exec.Cmd {
+func createInitCommand(name, chroot string, uid uint32, display int, stn *network.SandboxNetwork) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -56,38 +60,59 @@ func createInitCommand(name, chroot string, uid uint32, display int) *exec.Cmd {
 		"INIT_PROFILE=" + name,
 		fmt.Sprintf("INIT_UID=%d", uid),
 	}
+	
+	if stn.Ip != "" {
+		cmd.Env = append(cmd.Env, "INIT_ADDR=" + stn.Ip)
+		cmd.Env = append(cmd.Env, "INIT_VHOST=" + stn.VethHost)
+		cmd.Env = append(cmd.Env, "INIT_VGUEST=" + stn.VethGuest)
+		cmd.Env = append(cmd.Env, "INIT_GATEWAY=" + stn.Gateway.String() + "/" + stn.Class)
+	}
+	
 	if display > 0 {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("INIT_DISPLAY=%d", display))
 	}
+	
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, uid, gid uint32) (*Sandbox, error) {
+func (d *daemonState) launch(p *oz.Profile, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
 	u, err := user.LookupId(fmt.Sprintf("%d", uid))
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
 	}
 	fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.log)
-	if err := fs.Setup(); err != nil {
+	if err := fs.Setup(d.config.ProfileDir); err != nil {
 		return nil, err
 	}
 	display := 0
-	if p.XServer.Enabled {
+	if p.XServer.Enabled  && p.Networking.Nettype == "host" {
 		display = d.nextDisplay
 		d.nextDisplay += 1
 	}
-
-	cmd := createInitCommand(p.Name, fs.Root(), uid, display)
+	
+	stn := new(network.SandboxNetwork)
+	if p.Networking.Nettype == "bridge" {
+		stn, err = network.PrepareSandboxNetwork(d.network, log)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to prepare veth network: %+v", err)
+		}
+	}
+	
+	cmd := createInitCommand(p.Name, fs.Root(), uid, display, stn)
+	log.Debug("Command environment: %+v", cmd.Env)
 	pp, err := cmd.StderrPipe()
 	if err != nil {
 		fs.Cleanup()
 		return nil, fmt.Errorf("error creating stderr pipe for init process: %v", err)
 
 	}
+	
 	if err := cmd.Start(); err != nil {
 		fs.Cleanup()
-		return nil, err
+		return nil, fmt.Errorf("Unable to start process: %+v", err)
 	}
+	
+	
 	sbox := &Sandbox{
 		daemon:  d,
 		id:      d.nextSboxId,
@@ -98,7 +123,17 @@ func (d *daemonState) launch(p *oz.Profile, uid, gid uint32) (*Sandbox, error) {
 		fs:      fs,
 		addr:    path.Join(fs.Root(), "tmp", "oz-init-control"),
 		stderr:  pp,
+		network: stn,
 	}
+	
+	if p.Networking.Nettype == "bridge" {
+		if err := network.NetInit(stn, d.network, cmd.Process.Pid, log); err != nil {
+			cmd.Process.Kill()
+			fs.Cleanup()
+			return nil, fmt.Errorf("Unable to create veth networking: %+v", err)
+		}
+	}
+	
 	sbox.ready.Add(1)
 	go sbox.logMessages()
 	if sbox.profile.XServer.Enabled {
@@ -112,11 +147,14 @@ func (d *daemonState) launch(p *oz.Profile, uid, gid uint32) (*Sandbox, error) {
 	return sbox, nil
 }
 
-func (sbox *Sandbox) remove() {
+func (sbox *Sandbox) remove(log *logging.Logger) {
 	sboxes := []*Sandbox{}
 	for _, sb := range sbox.daemon.sandboxes {
 		if sb == sbox {
 			sb.fs.Cleanup()
+			if sb.profile.Networking.Nettype == "bridge" {
+				sb.network.Cleanup(log)
+			}
 		} else {
 			sboxes = append(sboxes, sb)
 		}

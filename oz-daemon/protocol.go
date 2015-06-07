@@ -35,11 +35,6 @@ type LaunchMsg struct {
 	Name  string
 }
 
-type InitNetworkMsg struct {
-	Index int "NetworkBridge"
-	Name  string
-}
-
 type ListSandboxesMsg struct {
 	_ string "ListSandboxes"
 }

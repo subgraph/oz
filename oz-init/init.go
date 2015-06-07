@@ -3,13 +3,8 @@ package ozinit
 import (
 	"bufio"
 	"fmt"
-	"github.com/kr/pty"
-	"github.com/op/go-logging"
-	"github.com/subgraph/oz"
-	"github.com/subgraph/oz/fs"
-	"github.com/subgraph/oz/ipc"
-	"github.com/subgraph/oz/xpra"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -17,6 +12,15 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	
+	"github.com/subgraph/oz"
+	"github.com/subgraph/oz/fs"
+	"github.com/subgraph/oz/ipc"
+	"github.com/subgraph/oz/xpra"
+	"github.com/subgraph/oz/network"
+	
+	"github.com/kr/pty"
+	"github.com/op/go-logging"
 )
 
 const SocketAddress = "/tmp/oz-init-control"
@@ -31,6 +35,7 @@ type initState struct {
 	display   int
 	fs        *fs.Filesystem
 	xpraReady sync.WaitGroup
+	network   *network.SandboxNetwork
 }
 
 // By convention oz-init writes log messages to stderr with a single character
@@ -62,7 +67,12 @@ func parseArgs() *initState {
 	pname := getvar("INIT_PROFILE")
 	uidval := getvar("INIT_UID")
 	dispval := os.Getenv("INIT_DISPLAY")
-
+	
+	stnip := os.Getenv("INIT_ADDR")
+	stnvhost := os.Getenv("INIT_VHOST")
+	stnvguest := os.Getenv("INIT_VGUEST")
+	stngateway := os.Getenv("INIT_GATEWAY")
+	
 	var config *oz.Config
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
@@ -99,7 +109,21 @@ func parseArgs() *initState {
 		}
 		display = d
 	}
-
+	
+	stn := new(network.SandboxNetwork)
+	if stnip != "" {
+		gateway, _, err := net.ParseCIDR(stngateway)
+		if err != nil {
+			log.Error("Unable to parse network configuration gateway (%s): %v", stngateway, err)
+			os.Exit(1)
+		}
+		
+		stn.Ip        = stnip
+		stn.VethHost  = stnvhost
+		stn.VethGuest = stnvguest
+		stn.Gateway   = gateway
+	}
+	
 	return &initState{
 		log:     log,
 		config:  config,
@@ -109,11 +133,23 @@ func parseArgs() *initState {
 		user:    u,
 		display: display,
 		fs:      fs.NewFromProfile(p, u, config.SandboxPath, log),
+		network: stn,
 	}
 }
 
 func (st *initState) runInit() {
 	st.log.Info("Starting oz-init for profile: %s", st.profile.Name)
+	
+	if st.profile.Networking.Nettype != "host" {
+		//NetSetup(stn *SandboxNetwork, htn *HostNetwork) error
+		err := network.NetSetup(st.network)
+		if err != nil {
+			st.log.Error("Unable to setup networking: %+v", err)
+			os.Exit(1)
+		}
+	}
+	network.NetPrint(st.log)
+	
 	if syscall.Sethostname([]byte(st.profile.Name)) != nil {
 		st.log.Error("Failed to set hostname to (%s)", st.profile.Name)
 	}
@@ -124,7 +160,7 @@ func (st *initState) runInit() {
 		os.Exit(1)
 	}
 	oz.ReapChildProcs(st.log, st.handleChildExit)
-
+	
 	if st.profile.XServer.Enabled {
 		if st.display == 0 {
 			st.log.Error("Cannot start xpra because no display number was passed to oz-init")
@@ -204,7 +240,7 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 }
 
 func (st *initState) launchApplication() {
-	cmd := exec.Command(st.profile.Path)
+	cmd := exec.Command(st.profile.Path + ".unsafe")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stdout pipe: %v", err)
@@ -260,7 +296,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	if msg.Ucred == nil {
 		return msg.Respond(&ErrorMsg{"No credentials received for RunShell command"})
 	}
-	if msg.Ucred.Uid == 0 || msg.Ucred.Gid == 0 && !st.config.AllowRootShell {
+	if (msg.Ucred.Uid == 0 || msg.Ucred.Gid == 0) && st.config.AllowRootShell != true {
 		return msg.Respond(&ErrorMsg{"Cannot open shell because allowRootShell is disabled"})
 	}
 	st.log.Info("Starting shell with uid = %d, gid = %d", msg.Ucred.Uid, msg.Ucred.Gid)

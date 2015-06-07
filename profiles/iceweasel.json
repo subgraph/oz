@@ -12,13 +12,13 @@
 	]
 }
 , "whitelist": [
-	{"source":"/run/resolvconf"}
-	, {"source":"${HOME}/.mozilla"}
-	, {"source":"${HOME}/.cache/mozilla"}
-	, {"source":"${HOME}/Downloads/"}
+	{"path":"/run/resolvconf"}
+	, {"path":"${HOME}/.mozilla"}
+	, {"path":"${HOME}/.cache/mozilla"}
+	, {"path":"${HOME}/Downloads/"}
 
-	, {"source":"${HOME}/.config/gtk-3.0"}
-	, {"source":"${HOME}/.config/gtk-2.0"}
+	, {"path":"${HOME}/.config/gtk-3.0"}
+	, {"path":"${HOME}/.config/gtk-2.0"}
 ]
 , "blacklist": [
 ]

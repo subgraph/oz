@@ -7,7 +7,7 @@
 	, "window_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/office-mail.svg"
 	, "disable_audio":true
 }
-, "network":{
+, "networking":{
 	"nettype":"empty"
 	, "sockets": [
 		{"nettype":"client", "proto":"tcp", "port":9050}

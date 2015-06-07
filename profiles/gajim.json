@@ -6,15 +6,10 @@
 	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/gajim.svg"
 	, "disable_audio":true
 }
-, "network":{
+, "networking":{
 	"nettype":"empty"
 	, "sockets": [
 		{"nettype":"client", "proto":"tcp", "port":9050}
-		, {"nettype":"client", "destination": "xmpp.lalonde.me", "proto":"tcp", "port":5222}
-		, {"nettype":"client", "destination": "xmpp.lalonde.me", "proto":"tcp", "port":5269}
-		, {"nettype":"client", "destination": "xmpp.lalonde.me", "proto":"tcp", "port":5000}
-		, {"nettype":"client", "destination": "xmpp.lalonde.me", "proto":"tcp", "port":5280}
-		, {"nettype":"client", "destination": "xmpp.lalonde.me", "proto":"tcp", "port":5281}
 	]
 }
 , "whitelist": [

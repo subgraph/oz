@@ -7,7 +7,7 @@
 	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/liferea.svg"
 	, "_tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/liferea.svg"
 }
-, "network":{
+, "networking":{
 	"nettype":"bridge"
 	, "sockets": [
 		{"nettype":"client", "proto":"tcp", "port":9050}

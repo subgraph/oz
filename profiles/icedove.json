@@ -6,7 +6,7 @@
 	, "tray_icon": "/usr/share/icons/hicolor/scalable/apps/icedove.svg"
 	, "disable_audio": true
 }
-, "network":{
+, "networking":{
 	"nettype":"bridge"
 	, "sockets": [
 		{"nettype":"client", "proto":"tcp", "port":9050}

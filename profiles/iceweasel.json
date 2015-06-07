@@ -5,7 +5,7 @@
 	, "enable_tray": true
 	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/iceweasel.svg"
 }
-, "network":{
+, "networking":{
 	"nettype":"bridge"
 	, "sockets": [
 		{"nettype":"client", "proto":"tcp", "port":9050}

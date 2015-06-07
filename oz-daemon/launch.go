@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"os/user"
 	"path"
@@ -226,9 +225,34 @@ func (sbox *Sandbox) startXpraClient() {
 		sbox.fs.Xpra(),
 		sbox.profile.Name,
 		sbox.daemon.log)
-	sbox.xpra.Process.Stdout = os.Stdout
-	sbox.xpra.Process.Stderr = os.Stdout
+
+	if sbox.daemon.config.LogXpra {
+		sbox.setupXpraLogging()
+	}
 	if err := sbox.xpra.Process.Start(); err != nil {
 		sbox.daemon.Warning("Failed to start xpra client: %v", err)
+	}
+}
+
+func (sbox *Sandbox) setupXpraLogging() {
+	stdout, err := sbox.xpra.Process.StdoutPipe()
+	if err != nil {
+		sbox.daemon.Warning("Failed to create xpra stdout pipe: %v", err)
+		return
+	}
+	stderr, err := sbox.xpra.Process.StderrPipe()
+	if err != nil {
+		stdout.Close()
+		sbox.daemon.Warning("Failed to create xpra stderr pipe: %v", err)
+	}
+	go sbox.logPipeOutput(stdout, "xpra-stdout")
+	go sbox.logPipeOutput(stderr, "xpra-stderr")
+}
+
+func (sbox *Sandbox) logPipeOutput(p io.Reader, label string) {
+	scanner := bufio.NewScanner(p)
+	for scanner.Scan() {
+		line := scanner.Text()
+		sbox.daemon.log.Info("(%s) %s", label, line)
 	}
 }

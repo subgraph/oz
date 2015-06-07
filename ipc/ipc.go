@@ -42,12 +42,12 @@ func NewServer(address string, factory MsgFactory, log *logging.Logger, handlers
 	}
 
 	listener, err := net.ListenUnix("unix", &net.UnixAddr{address, "unix"})
-	if err := setPassCred(listener); err != nil {
-		return nil, errors.New("Failed to set SO_PASSCRED on listening socket: " + err.Error())
-	}
 	if err != nil {
 		md.close()
 		return nil, err
+	}
+	if err := setPassCred(listener); err != nil {
+		return nil, errors.New("Failed to set SO_PASSCRED on listening socket: " + err.Error())
 	}
 	done := make(chan bool)
 	idGen := newIdGen(done)
@@ -64,8 +64,6 @@ func (s *MsgServer) Run() error {
 	for {
 		conn, err := s.listener.AcceptUnix()
 		if err != nil {
-			s.disp.close()
-			s.listener.Close()
 			return err
 		}
 		if err := setPassCred(conn); err != nil {
@@ -82,6 +80,12 @@ func (s *MsgServer) Run() error {
 		go mc.readLoop()
 	}
 	return nil
+}
+
+func (s *MsgServer) Close() error {
+	s.disp.close()
+	close(s.done)
+	return s.listener.Close()
 }
 
 func Connect(address string, factory MsgFactory, log *logging.Logger, handlers ...interface{}) (*MsgConn, error) {

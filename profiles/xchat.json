@@ -6,7 +6,7 @@
 	, "tray_icon": "/usr/share/icons/gnome-colors-common/scalable/apps/xchat.svg"
 	, "disable_audio": true
 }
-, "network":{
+, "networking":{
 	"nettype":"empty"
 	, "sockets": [
 		{"nettype":"client", "destination": "10.10.0.90", "proto":"tcp", "port":57000}

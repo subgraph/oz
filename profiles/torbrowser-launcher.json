@@ -8,7 +8,7 @@
 	, "disable_clipboard": false
 	, "tray_icon":"/usr/share/pixmaps/torbrowser80.xpm"
 }
-, "network":{
+, "networking":{
 	"nettype":"empty"
 	, "sockets": [
 		{"nettype":"client", "proto":"tcp", "port":9050}

@@ -32,6 +32,8 @@ type Profile struct {
 	XServer XServerConf
 	// List of environment variables
 	Environment []EnvVar
+	// Networking
+	Networking NetworkProfile
 }
 
 type XServerConf struct {
@@ -57,6 +59,19 @@ type BlacklistItem struct {
 type EnvVar struct {
 	Name  string
 	Value string
+}
+
+// Container network definition
+type NetworkProfile struct {
+	// One of empty, host, bridge
+	Nettype string
+
+	// Name of the bridge to attach to
+	//Bridge string
+
+	// List of Sockets we want to attach to the jail
+	//  Applies to Nettype: bridge and empty only
+	//Sockets []nsnat.ConfigSocket
 }
 
 const defaultProfileDirectory = "/var/lib/oz/cells.d"

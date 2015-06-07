@@ -33,7 +33,6 @@ func Main() {
 		d.handlePing,
 		d.handleListProfiles,
 		d.handleLaunch,
-		d.handleInitBridgeNetwork,
 		d.handleListSandboxes,
 		d.handleClean,
 		d.handleLogs,
@@ -64,14 +63,23 @@ func initialize() *daemonState {
 	d.nextSboxId = 1
 	d.nextDisplay = 100
 	
-	d.log.Info("Initializing bridge networking")
-	htn, err := network.BridgeInit(d.log)
-	if err != nil {
-		d.log.Fatalf("Failed to initialize bridge networking: %+v", err)
+	for _, pp := range d.profiles {
+		if pp.Networking.Nettype == "bridge" {
+			d.log.Info("Initializing bridge networking")
+			htn, err := network.BridgeInit(d.config.BridgeMACAddr, d.config.NMIgnoreFile, d.log)
+			if err != nil {
+				d.log.Fatalf("Failed to initialize bridge networking: %+v", err)
+				return nil
+			}
+			
+			d.network = htn
+			
+			network.NetPrint(d.log)
+
+			break;
+		}
 	}
-	
-	d.network = htn
-	
+
 	return d
 }
 
@@ -80,7 +88,7 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 
 	for _, sbox := range d.sandboxes {
 		if sbox.init.Process.Pid == pid {
-			sbox.remove()
+			sbox.remove(d.log)
 			return
 		}
 	}
@@ -117,17 +125,11 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
 	d.Debug("Would launch %s", p.Name)
-	_, err = d.launch(p, m.Ucred.Uid, m.Ucred.Gid)
+	_, err = d.launch(p, m.Ucred.Uid, m.Ucred.Gid, d.log)
 	if err != nil {
 		d.Warning("launch of %s failed: %v", p.Name, err)
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
-	return m.Respond(&OkMsg{})
-}
-
-func (d *daemonState) handleInitBridgeNetwork(msg *InitNetworkMsg, m *ipc.Message) error {
-	d.Debug("Network bridge init message received: %+v", msg)
-	
 	return m.Respond(&OkMsg{})
 }
 

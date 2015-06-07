@@ -6,11 +6,13 @@ import (
 )
 
 type Config struct {
-	ProfileDir     	string `json:"profile_dir"`
-	ShellPath      	string `json:"shell_path"`
-	SandboxPath    	string `json:"sandbox_path"`
-	AllowRootShell 	bool   `json:"allow_root_shell"`
-	LogXpra        	bool   `json:"log_xpra"`
+	ProfileDir      string `json:"profile_dir"`
+	ShellPath       string `json:"shell_path"`
+	SandboxPath     string `json:"sandbox_path"`
+	BridgeMACAddr   string `json:"bridge_mac"`
+	NMIgnoreFile    string `json:"nm_ignore_file"`
+	AllowRootShell  bool   `json:"allow_root_shell"`
+	LogXpra         bool   `json:"log_xpra"`
 }
 
 const DefaultConfigPath = "/etc/oz/oz.conf"
@@ -20,6 +22,8 @@ func NewDefaultConfig() *Config {
 		ProfileDir:     "/var/lib/oz/cells.d",
 		ShellPath:      "/bin/bash",
 		SandboxPath:    "/srv/oz",
+		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",
+		BridgeMACAddr:  "6A:A8:2E:56:E8:9C",
 		AllowRootShell: false,
 		LogXpra:        false,
 	}

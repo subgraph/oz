@@ -2,9 +2,12 @@ package network
 
 import (
 	//Builtin
+	"fmt"
 	"net"
 	"strings"
 	"strconv"
+	
+	"github.com/op/go-logging"
 )
 
 const (
@@ -16,32 +19,35 @@ const (
 )
 
 type HostNetwork struct {
-	// Host bridge IP address
-	hostip net.IP
 	// Gateway ip (bridge ip)
-	gateway net.IP
+	Gateway net.IP
+	// Gateway ip (bridge ip)
+	GatewayNet *net.IPNet
 	// Bridge netmask
-	netmask net.IP
+	Netmask net.IP
 	// Broadcast ip
-	broadcast net.IP
+	Broadcast net.IP
 	// IP class (ie: /24)
-	class string
+	Class string
 	// Minimum longip available ip
-	min uint64
+	Min uint64
 	// Maximum longip available ip
-	max uint64
-
+	Max uint64
+	// Bridge interface MAC Address
+	BridgeMAC string
 }
 
 type SandboxNetwork struct {
 	// Name of the veth in the host
-	vethHost string
+	VethHost string
 	// Temporary name of the guest' veth in the host
-	vethGuest string
+	VethGuest string
 	// Guest ip address
-	ip string
-	
-	host *HostNetwork
+	Ip string
+	// Gateway ip (bridge ip)
+	Gateway net.IP
+	// IP class (ie: /24)
+	Class string
 }
 
 var privateNetworkRanges []string
@@ -63,6 +69,74 @@ func init() {
 		// Carrier grade NAT
 		"100.64.0.0/10",
 	}
+}
+
+
+// Print status of the network interfaces
+func NetPrint(log *logging.Logger) {
+	strLine := ""
+	ifs, _ := net.Interfaces()
+
+	strHeader := fmt.Sprintf("%-15.15s%-30.30s%-16.16s%-6.6s", "Interface", "IP", "Mask", "Status")
+	strHr := ""
+	ii := len(strHeader)
+	for i := 0; i < ii; i++ {
+		strHr += "-"
+	}
+
+	log.Info(strHr)
+
+	log.Info(strHeader)
+	
+	for _, netif := range ifs {
+		addrs, _ := netif.Addrs()
+
+		strLine = fmt.Sprintf("%-15.14s", netif.Name)
+
+		if len(addrs) > 0 {
+			strLine += fmt.Sprintf("%-30.30s", addrs[0])
+
+			bIP, brIP, _ := net.ParseCIDR(addrs[0].String())
+			if bIP.To4() != nil {
+				bMask := []byte(brIP.Mask)
+				strLine += fmt.Sprintf("%-16.16s", net.IPv4(bMask[0], bMask[1], bMask[2], bMask[3]).String())
+			} else {
+				strLine += fmt.Sprintf("%-16.16s", "")
+			}
+		} else {
+			strLine += fmt.Sprintf("%-30.30s%-16.16s", "", "")
+		}
+
+		if netif.Flags&net.FlagUp == 1 {
+			strLine += fmt.Sprintf("%-6.6s", "up")
+		} else {
+			strLine += fmt.Sprintf("%-6.6s", "down")
+		}
+
+		if len(addrs) > 1 {
+			strLine += fmt.Sprintf("")
+
+			for _, addr := range addrs[1:] {
+				strLine += fmt.Sprintf("%-15.15s%-30.30s", "", addr)
+
+				bIP, brIP, _ := net.ParseCIDR(addr.String())
+
+				if bIP.To4() != nil {
+					bMask := []byte(brIP.Mask)
+					strLine += fmt.Sprintf("%-20.20s", net.IPv4(bMask[0], bMask[1], bMask[2], bMask[3]).String())
+				} else {
+					strLine += fmt.Sprintf("%-16.16s", "")
+				}
+			}
+		}
+
+		strLine += fmt.Sprintf("\n")
+	
+		log.Info(strLine)
+	}
+	
+	log.Info(strHr)
+
 }
 
 

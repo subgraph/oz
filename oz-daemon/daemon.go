@@ -48,6 +48,7 @@ func initialize() *daemonState {
 		d.log.Info("Could not load config file (%s), using default config", oz.DefaultConfigPath)
 		config = oz.NewDefaultConfig()
 	}
+	d.log.Info("Oz Global Config: %+v", config)
 	d.config = config
 	ps, err := oz.LoadProfiles(config.ProfileDir)
 	if err != nil {
@@ -148,7 +149,7 @@ func (d *daemonState) handleClean(clean *CleanMsg, msg *ipc.Message) error {
 	}
 	// XXX
 	u, _ := user.Current()
-	fs := fs.NewFromProfile(p, u, d.log)
+	fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.log)
 	if err := fs.Cleanup(); err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
 	}

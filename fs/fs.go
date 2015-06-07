@@ -71,8 +71,8 @@ func (fs *Filesystem) newItem(path, target string, readonly bool) (*mountItem, e
 	}, nil
 }
 
-func NewFromProfile(profile *oz.Profile, user *user.User, log *logging.Logger) *Filesystem {
-	fs := NewFilesystem(profile.Name, user, log)
+func NewFromProfile(profile *oz.Profile, user *user.User, basePath string, log *logging.Logger) *Filesystem {
+	fs := NewFilesystem(profile.Name, user, basePath, log)
 	for _, wl := range profile.Whitelist {
 		fs.addWhitelist(wl.Path, wl.Path, wl.ReadOnly)
 	}
@@ -87,14 +87,14 @@ func NewFromProfile(profile *oz.Profile, user *user.User, log *logging.Logger) *
 	return fs
 }
 
-func NewFilesystem(name string, user *user.User, log *logging.Logger) *Filesystem {
+func NewFilesystem(name string, user *user.User, basePath string, log *logging.Logger) *Filesystem {
 	fs := new(Filesystem)
 	fs.log = log
 	fs.name = name
 	if log == nil {
 		fs.log = logging.MustGetLogger("oz")
 	}
-	fs.base = path.Join("/srv/oz", name)
+	fs.base = path.Join(basePath, name)
 	fs.root = path.Join(fs.base, "rootfs")
 	fs.user = user
 	fs.userID = strconv.Itoa(os.Getuid())

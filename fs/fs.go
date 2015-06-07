@@ -63,9 +63,13 @@ func (fs *Filesystem) newItem(path, target string, readonly bool) (*mountItem, e
 	if err != nil {
 		return nil, err
 	}
+	t, err := fs.resolveVars(target)
+	if err != nil {
+		return nil, err
+	}
 	return &mountItem{
 		path:   p,
-		target: target,
+		target: t,
 		//readonly: readonly,
 		fs: fs,
 	}, nil

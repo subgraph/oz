@@ -15,10 +15,10 @@
 	]
 }
 , "whitelist": [
-	{"source":"${HOME}/.local/share/torbrowser"}
-	, {"source":"${HOME}/.cache/torbrowser"}
-	, {"source":"${HOME}/.config/torbrowser"}
-	, {"source":"${HOME}/Downloads/TorBrowser"}
+	{"path":"${HOME}/.local/share/torbrowser"}
+	, {"path":"${HOME}/.cache/torbrowser"}
+	, {"path":"${HOME}/.config/torbrowser"}
+	, {"path":"${HOME}/Downloads/TorBrowser"}
 ]
 , "blacklist": [
 ]

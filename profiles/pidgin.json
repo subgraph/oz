@@ -9,7 +9,7 @@
 	"nettype":"bridge"
 }
 , "whitelist": [
-	{"source":"${HOME}/.purple"}
+	{"path":"${HOME}/.purple"}
 ]
 , "blacklist": [
 ]

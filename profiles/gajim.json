@@ -13,16 +13,16 @@
 	]
 }
 , "whitelist": [
-	{"source":"/run/resolvconf"}
-	, {"source":"/run/user/${UID}/keyring-*"}
-	, {"source":"${HOME}/.local/share/gajim"}
-	, {"source":"${HOME}/.cache/gajim"}
-	, {"source":"${HOME}/.config/gajim"}
-	, {"source":"${HOME}/.local/share/keyrings"}
+	{"path":"/run/resolvconf"}
+	, {"path":"/run/user/${UID}/keyring-*"}
+	, {"path":"${HOME}/.local/share/gajim"}
+	, {"path":"${HOME}/.cache/gajim"}
+	, {"path":"${HOME}/.config/gajim"}
+	, {"path":"${HOME}/.local/share/keyrings"}
 ]
 , "blacklist": [
-	{"source":"/run/user/${UID}/keyring-*/ssh"}
-	, {"source":"/run/user/${UID}/keyring-*/pkcs11"}
-	, {"source":"/run/user/${UID}/keyring-*/gpg"}
+	{"path":"/run/user/${UID}/keyring-*/ssh"}
+	, {"path":"/run/user/${UID}/keyring-*/pkcs11"}
+	, {"path":"/run/user/${UID}/keyring-*/gpg"}
 ]
 }

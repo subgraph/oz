@@ -13,16 +13,16 @@
 	]
 }
 , "whitelist": [
-	{"source":"/run/resolvconf"}
-	, {"source":"/run/user/${UID}/keyring"}
-	, {"source":"/tmp/gpg-*"}
-	, {"source":"${HOME}/.cache/icedove"}
-	, {"source":"${HOME}/.gnupg"}
-	, {"source":"${HOME}/..thunderbird"}
-	, {"source":"${HOME}/.icedove"}
+	{"path":"/run/resolvconf"}
+	, {"path":"/run/user/${UID}/keyring"}
+	, {"path":"/tmp/gpg-*"}
+	, {"path":"${HOME}/.cache/icedove"}
+	, {"path":"${HOME}/.gnupg"}
+	, {"path":"${HOME}/..thunderbird"}
+	, {"path":"${HOME}/.icedove"}
 
-	, {"source":"${HOME}/.config/gtk-3.0"}
-	, {"source":"${HOME}/.config/gtk-2.0"}
+	, {"path":"${HOME}/.config/gtk-3.0"}
+	, {"path":"${HOME}/.config/gtk-2.0"}
 ]
 , "_blacklist": [
 ]

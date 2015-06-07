@@ -13,11 +13,11 @@
 	]
 }
 , "whitelist": [
-	{"source":"${HOME}/.xpra/xchat"}
-	, {"source":"${HOME}/.xchat2"}
+	{"path":"${HOME}/.xpra/xchat"}
+	, {"path":"${HOME}/.xchat2"}
 
-	, {"source":"${HOME}/.config/gtk-3.0"}
-	, {"source":"${HOME}/.config/gtk-2.0"}
+	, {"path":"${HOME}/.config/gtk-3.0"}
+	, {"path":"${HOME}/.config/gtk-2.0"}
 ]
 , "blacklist": [
 ]

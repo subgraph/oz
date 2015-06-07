@@ -14,18 +14,18 @@
 	]
 }
 , "whitelist": [
-	{"source":"/run/resolvconf"}
+	{"path":"/run/resolvconf"}
 
-	, {"source":"${HOME}/.local/share/liferea"}
-	, {"source":"${HOME}/.cache/liferea"}
-	, {"source":"${HOME}/.config/liferea"}
+	, {"path":"${HOME}/.local/share/liferea"}
+	, {"path":"${HOME}/.cache/liferea"}
+	, {"path":"${HOME}/.config/liferea"}
 
-	, {"source":"${HOME}/.config/gtk-3.0"}
-	, {"source":"${HOME}/.config/gtk-2.0"}
+	, {"path":"${HOME}/.config/gtk-3.0"}
+	, {"path":"${HOME}/.config/gtk-2.0"}
 
-	, {"source":"${HOME}/.config/dconf"}
-	, {"source":"${HOME}/.cache/dconf"}
-	, {"source":"/run/user/${UID}/dconf"}
+	, {"path":"${HOME}/.config/dconf"}
+	, {"path":"${HOME}/.cache/dconf"}
+	, {"path":"/run/user/${UID}/dconf"}
 ]
 , "blacklist": [
 ]

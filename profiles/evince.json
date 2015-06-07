@@ -5,7 +5,7 @@
 	, "enable_tray": true
 	, "tray_icon":"/usr/share/icons/hicolor/48x48/apps/evince.png"
 	, "disable_audio": true
-	, "use_pulse_audio":" false
+	, "use_pulse_audio": false
 }
 , "networking":{
 	"nettype":"empty"

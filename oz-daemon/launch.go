@@ -75,9 +75,7 @@ func createInitCommand(name, chroot string, uid uint32, display int, stn *networ
 		cmd.Env = append(cmd.Env, "INIT_GATEWAY=" + stn.Gateway.String() + "/" + stn.Class)
 	}
 	
-	if display > 0 {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("INIT_DISPLAY=%d", display))
-	}
+	cmd.Env = append(cmd.Env, fmt.Sprintf("INIT_DISPLAY=%d", display))
 	
 	return cmd
 }

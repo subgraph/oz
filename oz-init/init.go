@@ -162,10 +162,10 @@ func (st *initState) runInit() {
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 	
 	if st.profile.XServer.Enabled {
-		if st.display == 0 {
-			st.log.Error("Cannot start xpra because no display number was passed to oz-init")
-			os.Exit(1)
-		}
+		//if st.display == 0 {
+		//	st.log.Error("Cannot start xpra because no display number was passed to oz-init")
+		//	os.Exit(1)
+		//}
 		st.xpraReady.Add(1)
 		st.startXpraServer()
 	}

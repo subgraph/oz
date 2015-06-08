@@ -141,7 +141,6 @@ func (st *initState) runInit() {
 	st.log.Info("Starting oz-init for profile: %s", st.profile.Name)
 	
 	if st.profile.Networking.Nettype != "host" {
-		//NetSetup(stn *SandboxNetwork, htn *HostNetwork) error
 		err := network.NetSetup(st.network)
 		if err != nil {
 			st.log.Error("Unable to setup networking: %+v", err)
@@ -162,10 +161,6 @@ func (st *initState) runInit() {
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 	
 	if st.profile.XServer.Enabled {
-		//if st.display == 0 {
-		//	st.log.Error("Cannot start xpra because no display number was passed to oz-init")
-		//	os.Exit(1)
-		//}
 		st.xpraReady.Add(1)
 		st.startXpraServer()
 	}

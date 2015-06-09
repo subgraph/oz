@@ -108,6 +108,13 @@ func NewFilesystem(name string, user *user.User, basePath string, log *logging.L
 	return fs
 }
 
+func (fs *Filesystem) GetHomeDir() (string, error) {
+	if fs.user == nil {
+		return "", fmt.Errorf("Home directory not set")
+	}
+	return fs.user.HomeDir, nil
+}
+
 /*
 func xcreateEmptyDirectories(base string, paths []string) error {
 	for _, p := range paths {

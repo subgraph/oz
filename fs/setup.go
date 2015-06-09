@@ -38,7 +38,7 @@ var basicSymlinks = [][2]string{
 	{"/run", "/var/run"},
 	{"/tmp", "/var/tmp"},
 	{"/run/lock", "/var/lock"},
-	// Devices
+	{"/dev/shm", "/run/shm"},
 }
 
 var deviceSymlinks = [][2]string{
@@ -47,7 +47,6 @@ var deviceSymlinks = [][2]string{
 	{"/proc/self/fd/0", "/dev/stdin"},
 	{"/proc/self/fd/1", "/dev/stdout"},
 	{"/dev/pts/ptmx", "/dev/ptmx"},
-	{"/dev/shm", "/run/shm"},
 }
 
 type fsDeviceDefinition struct {

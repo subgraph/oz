@@ -85,7 +85,7 @@ func (d *daemonState) launch(p *oz.Profile, uid, gid uint32, log *logging.Logger
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
 	}
-	fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.log)
+	fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.config.UseFullDev, d.log)
 	if err := fs.Setup(d.config.ProfileDir); err != nil {
 		return nil, err
 	}

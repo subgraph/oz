@@ -24,20 +24,24 @@ func (fs *Filesystem) OzInit() error {
 }
 
 func (fs *Filesystem) ozinitMountDev() error {
-	flags := uintptr(syscall.MS_NOSUID | syscall.MS_REC | syscall.MS_NOEXEC)
-	if err := syscall.Mount("none", "/dev", "devtmpfs", flags, ""); err != nil {
-		fs.log.Warning("Failed to mount devtmpfs: %v", err)
-		return err
-	}
+	if fs.fullDevices {
+		flags := uintptr(syscall.MS_NOSUID | syscall.MS_REC | syscall.MS_NOEXEC)
+		if err := syscall.Mount("none", "/dev", "devtmpfs", flags, ""); err != nil {
+			fs.log.Warning("Failed to mount devtmpfs: %v", err)
+			return err
+		}
 
-	if err := mountSpecial("/dev/shm", "tmpfs"); err != nil {
-		fs.log.Warning("Failed to mount shm directory: %v", err)
-		return err
+		if err := mountSpecial("/dev/shm", "tmpfs"); err != nil {
+			fs.log.Warning("Failed to mount shm directory: %v", err)
+			return err
+		}
 	}
+	
 	if err := mountSpecial("/dev/pts", "devpts"); err != nil {
 		fs.log.Warning("Failed to mount pts directory: %v", err)
 		return err
 	}
+
 	return nil
 }
 
@@ -87,6 +91,15 @@ func (fs *Filesystem) ozinitCreateSymlinks() error {
 			return err
 		}
 	}
+	
+	if fs.fullDevices == false {
+		for _, sl := range deviceSymlinks {
+			if err := syscall.Symlink(sl[0], sl[1]); err != nil {
+				return err
+			}
+		}
+	}
+	
 	return nil
 }
 

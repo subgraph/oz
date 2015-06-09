@@ -28,6 +28,7 @@ type Filesystem struct {
 	userID       string
 	noDefaults   bool
 	noSysAndProc bool
+	fullDevices  bool
 	whitelist    []*mountItem
 	blacklist    []*mountItem
 }
@@ -75,7 +76,7 @@ func (fs *Filesystem) newItem(path, target string, readonly bool) (*mountItem, e
 	}, nil
 }
 
-func NewFromProfile(profile *oz.Profile, user *user.User, basePath string, log *logging.Logger) *Filesystem {
+func NewFromProfile(profile *oz.Profile, user *user.User, basePath string, UseFullDev bool, log *logging.Logger) *Filesystem {
 	fs := NewFilesystem(profile.Name, user, basePath, log)
 	for _, wl := range profile.Whitelist {
 		fs.addWhitelist(wl.Path, wl.Path, wl.ReadOnly)
@@ -85,6 +86,7 @@ func NewFromProfile(profile *oz.Profile, user *user.User, basePath string, log *
 	}
 	fs.noDefaults = profile.NoDefaults
 	fs.noSysAndProc = profile.NoSysProc
+	fs.fullDevices = UseFullDev
 	if profile.XServer.Enabled {
 		fs.xpra = path.Join(user.HomeDir, ".Xoz", profile.Name)
 	}

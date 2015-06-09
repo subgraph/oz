@@ -2,11 +2,14 @@ package fs
 
 import (
 	"errors"
-	"github.com/op/go-logging"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"syscall"
+	
+	// External
+	"github.com/op/go-logging"
 )
 
 func (fs *Filesystem) Cleanup() error {
@@ -36,6 +39,10 @@ func (mnts mountEntries) unmountAll(log *logging.Logger) (bool, error) {
 	reterr := error(nil)
 	atLeastOne := false
 	for _, m := range mnts {
+		log.Debug("Unmounting mountpoint: %s", m.dir)
+		if _, err := os.Stat(m.dir); os.IsNotExist(err) {
+			continue
+		}
 		if err := syscall.Unmount(m.dir, 0); err != nil {
 			log.Warning("Failed to unmount mountpoint %s: %v", m.dir, err)
 			reterr = err

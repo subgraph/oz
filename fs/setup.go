@@ -18,9 +18,10 @@ var basicEmptyDirs = []string{
 	"/sbin", "/var", "/var/lib",
 	"/var/cache", "/home", "/boot",
 	"/tmp", "/run", "/run/user",
-	"/run/shm", "/run/lock", "/root",
+	"/run/lock", "/root",
 	"/opt", "/srv", "/dev", "/proc",
 	"/sys", "/mnt", "/media",
+	//"/run/shm", 
 }
 
 var basicBlacklist = []string{
@@ -37,6 +38,47 @@ var basicSymlinks = [][2]string{
 	{"/run", "/var/run"},
 	{"/tmp", "/var/tmp"},
 	{"/run/lock", "/var/lock"},
+	// Devices
+}
+
+var deviceSymlinks = [][2]string{
+	{"/proc/self/fd", "/dev/fd"},
+	{"/proc/self/fd/2", "/dev/stderr"},
+	{"/proc/self/fd/0", "/dev/stdin"},
+	{"/proc/self/fd/1", "/dev/stdout"},
+	{"/dev/pts/ptmx", "/dev/ptmx"},
+	{"/dev/shm", "/run/shm"},
+}
+
+type fsDeviceDefinition struct {
+	path string
+	mode uint32
+	dev int
+	perm uint32
+}
+
+const ugorw = syscall.S_IRUSR|syscall.S_IWUSR | syscall.S_IRGRP|syscall.S_IWGRP | syscall.S_IROTH|syscall.S_IWOTH
+const urwgr = syscall.S_IRUSR|syscall.S_IWUSR | syscall.S_IRGRP
+const urw = syscall.S_IRUSR|syscall.S_IWUSR
+
+var basicDevices = []fsDeviceDefinition{
+	{path: "/dev/full", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 7), perm: 0666},
+	{path: "/dev/null", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 3), perm: 0666},
+	{path: "/dev/random", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 8), perm: 0666},
+	
+	{path: "/dev/console", mode: syscall.S_IFCHR|urw, dev: _makedev(5, 1), perm: 0600},
+	{path: "/dev/tty", mode: syscall.S_IFCHR|ugorw, dev: _makedev(5, 0), perm: 0666},
+	{path: "/dev/tty1", mode: syscall.S_IFREG|urwgr, dev: 0, perm: 0640},
+	{path: "/dev/tty2", mode: syscall.S_IFREG|urwgr, dev: 0, perm: 0640},
+	{path: "/dev/tty3", mode: syscall.S_IFREG|urwgr, dev: 0, perm: 0640},
+	{path: "/dev/tty4", mode: syscall.S_IFREG|urwgr, dev: 0, perm: 0640},
+	
+	{path: "/dev/urandom", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 9), perm: 0666},
+	{path: "/dev/zero", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 5), perm: 0666},
+}
+
+func _makedev(x, y int) int {
+	return (((x)<<8) | (y))
 }
 
 func (fs *Filesystem) Setup(profilesPath string) error {
@@ -68,6 +110,12 @@ func (fs *Filesystem) Setup(profilesPath string) error {
 	if err := fs.setupChroot(); err != nil {
 		return err
 	}
+	if fs.fullDevices == false {
+		if err := fs.setupDev(); err != nil {
+			return err
+		}
+	}
+	
 	return fs.setupMountItems()
 }
 
@@ -104,14 +152,17 @@ func (fs *Filesystem) setupRootfs() error {
 	if err := syscall.Mount(fs.base, fs.base, "tmpfs", flags, data); err != nil {
 		return fmt.Errorf("failed to create base tmpfs at %s: %v", fs.base, err)
 	}
+/*
+// Currently unused
 	// create extra directories
-	extra := []string{"sockets"}
+	extra := []string{"sockets", "dev"}
 	for _, sub := range extra {
 		d := path.Join(fs.base, sub)
 		if err := os.Mkdir(d, 0755); err != nil {
 			return fmt.Errorf("unable to create directory (%s): %v", d, err)
 		}
 	}
+*/
 	return nil
 }
 
@@ -130,6 +181,33 @@ func (fs *Filesystem) setupChroot() error {
 		return err
 	}
 	return setupTmp(fs.root)
+}
+
+func (fs *Filesystem) setupDev() error {
+	devPath := path.Join(fs.root, "dev")
+	flags := uintptr(syscall.MS_NOSUID | syscall.MS_NOEXEC)
+	if err := syscall.Mount("none", devPath, "tmpfs", flags, ""); err != nil {
+		fs.log.Warning("Failed to mount devtmpfs: %v", err)
+		return err
+	}
+	
+	for _, dev := range basicDevices {
+		path := path.Join(fs.root, dev.path)
+		if err := syscall.Mknod(path, dev.mode, dev.dev); err != nil {
+			return fmt.Errorf("Failed to mknod device %s: %+v", path, err)
+		}
+		if err := os.Chmod(path, os.FileMode(dev.perm)); err != nil {
+			return fmt.Errorf("Unable to set permissions for device %s: %+v", dev.path, err)
+		}
+	}
+
+	shmPath := path.Join(devPath, "shm")
+	if err := mountSpecial(shmPath, "tmpfs"); err != nil {
+		fs.log.Warning("Failed to mount shm directory: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func bindBasicDirectories(root string, dirs []string) error {

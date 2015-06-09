@@ -170,7 +170,7 @@ func (d *daemonState) handleClean(clean *CleanMsg, msg *ipc.Message) error {
 	}
 	// XXX
 	u, _ := user.Current()
-	fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.log)
+	fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.config.UseFullDev, d.log)
 	if err := fs.Cleanup(); err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
 	}

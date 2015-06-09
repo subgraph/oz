@@ -11,6 +11,7 @@ type Config struct {
 	SandboxPath     string `json:"sandbox_path"`
 	BridgeMACAddr   string `json:"bridge_mac"`
 	NMIgnoreFile    string `json:"nm_ignore_file"`
+	UseFullDev      bool   `json:"use_full_dev"`
 	AllowRootShell  bool   `json:"allow_root_shell"`
 	LogXpra         bool   `json:"log_xpra"`
 }
@@ -24,6 +25,7 @@ func NewDefaultConfig() *Config {
 		SandboxPath:    "/srv/oz",
 		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",
 		BridgeMACAddr:  "6A:A8:2E:56:E8:9C",
+		UseFullDev:     false,
 		AllowRootShell: false,
 		LogXpra:        false,
 	}

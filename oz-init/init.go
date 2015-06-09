@@ -310,6 +310,9 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 			cmd.Env = append(cmd.Env, "HOME="+homedir)
 		}
 	}
+	if st.profile.XServer.Enabled {
+		cmd.Env = append(cmd.Env, "DISPLAY=:" + strconv.Itoa(st.display))
+	}
 	cmd.Env = append(cmd.Env, "PATH=/usr/bin:/bin")
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
 	st.log.Info("Executing shell...")

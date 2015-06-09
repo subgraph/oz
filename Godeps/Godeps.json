@@ -1,0 +1,40 @@
+{
+	"ImportPath": "github.com/subgraph/oz",
+	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-107-g942282e",
+			"Rev": "942282e931e8286aa802a30b01fa7e16befb50f3"
+		},
+		{
+			"ImportPath": "github.com/j-keck/arping",
+			"Rev": "7aa611681473b9c5af382b96b6aa1df0b89f5c97"
+		},
+		{
+			"ImportPath": "github.com/kr/pty",
+			"Comment": "release.r56-28-g5cf931e",
+			"Rev": "5cf931ef8f76dccd0910001d74a58a7fca84a83d"
+		},
+		{
+			"ImportPath": "github.com/milosgajdos83/libcontainer-milosgajdos83/netlink",
+			"Rev": "10ee77c7b33d22a6b1d7ac98db67d3b43890e73d"
+		},
+		{
+			"ImportPath": "github.com/milosgajdos83/libcontainer-milosgajdos83/system",
+			"Rev": "10ee77c7b33d22a6b1d7ac98db67d3b43890e73d"
+		},
+		{
+			"ImportPath": "github.com/milosgajdos83/tenus",
+			"Comment": "0.0.1-5-g216f6bb",
+			"Rev": "216f6bbb92148737a8b06b7a990875c85493aa59"
+		},
+		{
+			"ImportPath": "github.com/op/go-logging",
+			"Rev": "e8d5414f0947014548c2334044a0fac13187dfee"
+		}
+	]
+}

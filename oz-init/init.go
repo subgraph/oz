@@ -132,7 +132,7 @@ func parseArgs() *initState {
 		gid:     gid,
 		user:    u,
 		display: display,
-		fs:      fs.NewFromProfile(p, u, config.SandboxPath, log),
+		fs:      fs.NewFromProfile(p, u, config.SandboxPath, config.UseFullDev, log),
 		network: stn,
 	}
 }

@@ -71,10 +71,9 @@ func handleLaunch(c *cli.Context) {
 		fmt.Println("Argument needed to launch command")
 		os.Exit(1)
 	}
-	err := daemon.Launch(c.Args()[0])
+	err := daemon.Launch(c.Args()[0], os.Environ())
 	if err != nil {
 		fmt.Printf("launch command failed: %v\n", err)
-
 	}
 }
 

@@ -247,7 +247,7 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 }
 
 func (st *initState) launchApplication() {
-	cmd := exec.Command(st.profile.Path /*+ ".unsafe"*/)
+	cmd := exec.Command(st.profile.Path + ".unsafe")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stdout pipe: %v", err)

@@ -98,6 +98,21 @@ func Clean(arg string) error {
 	}
 }
 
+func KillSandbox(id int) error {
+	resp, err := clientSend(&KillSandboxMsg{Id: id})
+	if err != nil {
+		return err
+	}
+	switch body := resp.Body.(type) {
+	case *ErrorMsg:
+		return errors.New(body.Msg)
+	case *OkMsg:
+		return nil
+	default:
+		return fmt.Errorf("Unexpected message received %+v", body)
+	}
+}
+
 func parseProfileArg(arg string) (int, string, error) {
 	if len(arg) == 0 {
 		return 0, "", errors.New("profile argument needed")

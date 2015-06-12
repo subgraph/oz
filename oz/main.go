@@ -43,6 +43,10 @@ func main() {
 			Action: handleClean,
 		},
 		{
+			Name:   "kill",
+			Action: handleKill,
+		},
+		{
 			Name:   "logs",
 			Action: handleLogs,
 			Flags: []cli.Flag{
@@ -153,6 +157,21 @@ func handleClean(c *cli.Context) {
 	}
 }
 
+func handleKill(c *cli.Context) {
+	if len(c.Args()) == 0 {
+		fmt.Println("Need a sandbox id to kill\n")
+		os.Exit(1)
+	}
+	id, err := strconv.Atoi(c.Args()[0])
+	if err != nil {
+		fmt.Printf("Could not parse id value %s\n", c.Args()[0])
+		os.Exit(1)
+	}
+	if err := daemon.KillSandbox(id); err != nil {
+		fmt.Println("Kill command failed:", err)
+	}
+
+}
 func handleLogs(c *cli.Context) {
 	follow := c.Bool("f")
 	ch, err := daemon.Logs(0, follow)

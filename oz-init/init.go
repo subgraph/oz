@@ -21,6 +21,7 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/op/go-logging"
+	"os/signal"
 )
 
 const SocketAddress = "/tmp/oz-init-control"
@@ -151,6 +152,8 @@ func parseArgs() *initState {
 
 func (st *initState) runInit() {
 	st.log.Info("Starting oz-init for profile: %s", st.profile.Name)
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGTERM, os.Interrupt)
 
 	if st.profile.Networking.Nettype != "host" {
 		err := network.NetSetup(st.network)
@@ -191,6 +194,8 @@ func (st *initState) runInit() {
 		st.log.Warning("Failed to chown oz-init control socket: %v", err)
 	}
 	os.Stderr.WriteString("OK\n")
+
+	go st.processSignals(sigs, s)
 
 	if err := s.Run(); err != nil {
 		st.log.Warning("MsgServer.Run() return err: %v", err)
@@ -247,7 +252,7 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 }
 
 func (st *initState) launchApplication() {
-	cmd := exec.Command(st.profile.Path + ".unsafe")
+	cmd := exec.Command(st.profile.Path)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stdout pipe: %v", err)
@@ -360,4 +365,12 @@ func ptyStart(c *exec.Cmd) (ptty *os.File, err error) {
 
 func (is *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	is.log.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
+}
+
+func (st *initState) processSignals(c <-chan os.Signal, s *ipc.MsgServer) {
+	for {
+		sig := <-c
+		st.log.Info("Recieved signal (%v)", sig)
+		s.Close()
+	}
 }

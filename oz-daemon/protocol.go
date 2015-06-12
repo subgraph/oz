@@ -50,6 +50,10 @@ type ListSandboxesResp struct {
 	Sandboxes []SandboxInfo "ListSandboxesResp"
 }
 
+type KillSandboxMsg struct {
+	Id int "KillSandbox"
+}
+
 type CleanMsg struct {
 	Index int "Clean"
 	Name  string
@@ -73,6 +77,7 @@ var messageFactory = ipc.NewMsgFactory(
 	new(LaunchMsg),
 	new(ListSandboxesMsg),
 	new(ListSandboxesResp),
+	new(KillSandboxMsg),
 	new(CleanMsg),
 	new(LogsMsg),
 	new(LogData),

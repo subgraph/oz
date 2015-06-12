@@ -11,6 +11,7 @@ import (
 	"github.com/subgraph/oz/network"
 
 	"github.com/op/go-logging"
+	"os"
 )
 
 type daemonState struct {
@@ -35,6 +36,7 @@ func Main() {
 		d.handleLaunch,
 		d.handleListSandboxes,
 		d.handleClean,
+		d.handleKillSandbox,
 		d.handleLogs,
 	)
 	if err != nil {
@@ -131,6 +133,26 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
 	return m.Respond(&OkMsg{})
+}
+
+func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) error {
+	sbox := d.sandboxById(msg.Id)
+	if sbox == nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+	}
+	if err := sbox.init.Process.Signal(os.Interrupt); err != nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
+	}
+	return m.Respond(&OkMsg{})
+}
+
+func (d *daemonState) sandboxById(id int) *Sandbox {
+	for _, sb := range d.sandboxes {
+		if sb.id == id {
+			return sb
+		}
+	}
+	return nil
 }
 
 func (d *daemonState) getProfileByIdxOrName(index int, name string) (*oz.Profile, error) {

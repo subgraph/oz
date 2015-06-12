@@ -1,6 +1,6 @@
 package network
 
-import(
+import (
 	//Builtin
 	"errors"
 	"fmt"
@@ -21,35 +21,35 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 	if os.Getpid() == 1 {
 		panic(errors.New("Cannot use netinit from child."))
 	}
-	
+
 	htn := &HostNetwork{
 		BridgeMAC: bridgeMAC,
 	}
-	
+
 	if _, err := os.Stat(nmIgnoreFile); os.IsNotExist(err) {
 		log.Warning("Warning! Network Manager may not properly configured to ignore the bridge interface! This may result in management conflicts!")
 	}
-	
+
 	br, err := tenus.BridgeFromName(ozDefaultInterfaceBridge)
 	if err != nil {
 		log.Info("Bridge not found, attempting to create a new one")
-		
+
 		br, err = tenus.NewBridgeWithName(ozDefaultInterfaceBridge)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to create bridge %+v", err)
 		}
 	}
-	
-	if err:= htn.configureBridgeInterface(br, log); err != nil {
+
+	if err := htn.configureBridgeInterface(br, log); err != nil {
 		return nil, err
 	}
-	
+
 	brL := br.NetInterface()
 	addrs, err := brL.Addrs()
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get bridge interface addresses: %+v", err)
 	}
-	
+
 	// Build the ip range which we will use for the network
 	if err := htn.buildBridgeNetwork(addrs); err != nil {
 		return nil, err
@@ -61,19 +61,19 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 
 func PrepareSandboxNetwork(htn *HostNetwork, log *logging.Logger) (*SandboxNetwork, error) {
 	stn := new(SandboxNetwork)
-	
+
 	stn.VethHost = tenus.MakeNetInterfaceName(ozDefaultInterfacePrefix)
 	stn.VethGuest = stn.VethHost + "1"
-	
+
 	stn.Gateway = htn.Gateway
 	stn.Class = htn.Class
-	
+
 	// Allocate a new IP address
 	stn.Ip = getFreshIP(htn.Min, htn.Max, log)
 	if stn.Ip == "" {
 		return nil, errors.New("Unable to acquire random IP")
 	}
-	
+
 	return stn, nil
 }
 
@@ -81,11 +81,11 @@ func NetInit(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.L
 	if os.Getpid() == 1 {
 		panic(errors.New("Cannot use netSetup from child."))
 	}
-	
+
 	// Seed random number generator (poorly but we're not doing crypto)
 	rand.Seed(time.Now().Unix() ^ int64((os.Getpid() + childPid)))
 
-	log.Info("Configuring host veth pair '%s' with: %s", stn.VethHost, stn.Ip + "/" + htn.Class)
+	log.Info("Configuring host veth pair '%s' with: %s", stn.VethHost, stn.Ip+"/"+htn.Class)
 
 	// Fetch the bridge from the ifname
 	br, err := tenus.BridgeFromName(ozDefaultInterfaceBridge)
@@ -100,7 +100,7 @@ func NetInit(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.L
 	//if err := htn.configureBridgeInterface(br, log); err != nil {
 	//	return fmt.Errorf("Unable to reconfigure bridge: %+v", err)
 	//}
-	
+
 	// Create the veth pair
 	veth, err := tenus.NewVethPairWithOptions(stn.VethHost, tenus.VethOptions{PeerName: stn.VethGuest})
 	if err != nil {
@@ -134,7 +134,7 @@ func NetInit(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.L
 	if err != nil {
 		return fmt.Errorf("Unable to parse ip %s, %s.", stn.Ip, err)
 	}
-	
+
 	// Set interface address in the namespace
 	if err := veth.SetPeerLinkNetInNs(pid, vethGuestIp, vethGuestIpNet, nil); err != nil {
 		return fmt.Errorf("Unable to parse ip link in namespace, %s.", err)
@@ -148,23 +148,23 @@ func (stn *SandboxNetwork) Cleanup(log *logging.Logger) {
 	if os.Getpid() == 1 {
 		panic(errors.New("Cannot use Cleanup from child."))
 	}
-	
+
 	if _, err := net.InterfaceByName(stn.VethHost); err != nil {
 		log.Info("No veth found to cleanup")
 		return
 	}
-	
+
 	tenus.DeleteLink(stn.VethHost)
 }
 
-func (htn *HostNetwork) configureBridgeInterface(br tenus.Bridger, log *logging.Logger) error  {
+func (htn *HostNetwork) configureBridgeInterface(br tenus.Bridger, log *logging.Logger) error {
 	// Set the bridge mac address so it can be fucking ignored by Network-Manager.
 	if htn.BridgeMAC != "" {
 		if err := br.SetLinkMacAddress(htn.BridgeMAC); err != nil {
 			return fmt.Errorf("Unable to set MAC address for gateway", err)
 		}
 	}
-	
+
 	if htn.Gateway == nil {
 		// Lookup an empty ip range
 		brIp, brIpNet, err := findEmptyRange()
@@ -175,7 +175,7 @@ func (htn *HostNetwork) configureBridgeInterface(br tenus.Bridger, log *logging.
 		htn.GatewayNet = brIpNet
 		log.Info("Found available range: %+v", htn.GatewayNet.String())
 	}
-	
+
 	if err := br.SetLinkIp(htn.Gateway, htn.GatewayNet); err != nil {
 		if os.IsExist(err) {
 			log.Info("Bridge IP appears to be already assigned")
@@ -192,7 +192,7 @@ func (htn *HostNetwork) configureBridgeInterface(br tenus.Bridger, log *logging.
 	return nil
 }
 
-func (htn *HostNetwork)buildBridgeNetwork(addrs []net.Addr) error {
+func (htn *HostNetwork) buildBridgeNetwork(addrs []net.Addr) error {
 	// Try to build the network config from the bridge's address
 	addrIndex := -1
 	for i, addr := range addrs {
@@ -219,11 +219,11 @@ func (htn *HostNetwork)buildBridgeNetwork(addrs []net.Addr) error {
 		}
 
 	}
-	
+
 	if addrIndex < 0 {
 		return errors.New("Could not find IPv4 for bridge interface")
 	}
-	
+
 	return nil
 }
 

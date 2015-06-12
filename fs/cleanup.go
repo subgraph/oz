@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 	"syscall"
-	
+
 	// External
 	"github.com/op/go-logging"
 )

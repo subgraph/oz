@@ -21,7 +21,7 @@ var basicEmptyDirs = []string{
 	"/run/lock", "/root",
 	"/opt", "/srv", "/dev", "/proc",
 	"/sys", "/mnt", "/media",
-	//"/run/shm", 
+	//"/run/shm",
 }
 
 var basicBlacklist = []string{
@@ -52,32 +52,32 @@ var deviceSymlinks = [][2]string{
 type fsDeviceDefinition struct {
 	path string
 	mode uint32
-	dev int
+	dev  int
 	perm uint32
 }
 
-const ugorw = syscall.S_IRUSR|syscall.S_IWUSR | syscall.S_IRGRP|syscall.S_IWGRP | syscall.S_IROTH|syscall.S_IWOTH
-const urwgr = syscall.S_IRUSR|syscall.S_IWUSR | syscall.S_IRGRP
-const urw = syscall.S_IRUSR|syscall.S_IWUSR
+const ugorw = syscall.S_IRUSR | syscall.S_IWUSR | syscall.S_IRGRP | syscall.S_IWGRP | syscall.S_IROTH | syscall.S_IWOTH
+const urwgr = syscall.S_IRUSR | syscall.S_IWUSR | syscall.S_IRGRP
+const urw = syscall.S_IRUSR | syscall.S_IWUSR
 
 var basicDevices = []fsDeviceDefinition{
-	{path: "/dev/full", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 7), perm: 0666},
-	{path: "/dev/null", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 3), perm: 0666},
-	{path: "/dev/random", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 8), perm: 0666},
-	
-	{path: "/dev/console", mode: syscall.S_IFCHR|urw, dev: _makedev(5, 1), perm: 0600},
-	{path: "/dev/tty", mode: syscall.S_IFCHR|ugorw, dev: _makedev(5, 0), perm: 0666},
-	{path: "/dev/tty1", mode: syscall.S_IFREG|urwgr, dev: 0, perm: 0640},
-	{path: "/dev/tty2", mode: syscall.S_IFREG|urwgr, dev: 0, perm: 0640},
-	{path: "/dev/tty3", mode: syscall.S_IFREG|urwgr, dev: 0, perm: 0640},
-	{path: "/dev/tty4", mode: syscall.S_IFREG|urwgr, dev: 0, perm: 0640},
-	
-	{path: "/dev/urandom", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 9), perm: 0666},
-	{path: "/dev/zero", mode: syscall.S_IFCHR|ugorw, dev: _makedev(1, 5), perm: 0666},
+	{path: "/dev/full", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 7), perm: 0666},
+	{path: "/dev/null", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 3), perm: 0666},
+	{path: "/dev/random", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 8), perm: 0666},
+
+	{path: "/dev/console", mode: syscall.S_IFCHR | urw, dev: _makedev(5, 1), perm: 0600},
+	{path: "/dev/tty", mode: syscall.S_IFCHR | ugorw, dev: _makedev(5, 0), perm: 0666},
+	{path: "/dev/tty1", mode: syscall.S_IFREG | urwgr, dev: 0, perm: 0640},
+	{path: "/dev/tty2", mode: syscall.S_IFREG | urwgr, dev: 0, perm: 0640},
+	{path: "/dev/tty3", mode: syscall.S_IFREG | urwgr, dev: 0, perm: 0640},
+	{path: "/dev/tty4", mode: syscall.S_IFREG | urwgr, dev: 0, perm: 0640},
+
+	{path: "/dev/urandom", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 9), perm: 0666},
+	{path: "/dev/zero", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 5), perm: 0666},
 }
 
 func _makedev(x, y int) int {
-	return (((x)<<8) | (y))
+	return (((x) << 8) | (y))
 }
 
 func (fs *Filesystem) Setup(profilesPath string) error {
@@ -85,7 +85,7 @@ func (fs *Filesystem) Setup(profilesPath string) error {
 	for _, bd := range basicBindDirs {
 		if bd == profilesPath {
 			profilePathInBindDirs = true
-			break;
+			break
 		}
 	}
 
@@ -114,7 +114,7 @@ func (fs *Filesystem) Setup(profilesPath string) error {
 			return err
 		}
 	}
-	
+
 	return fs.setupMountItems()
 }
 
@@ -151,17 +151,17 @@ func (fs *Filesystem) setupRootfs() error {
 	if err := syscall.Mount(fs.base, fs.base, "tmpfs", flags, data); err != nil {
 		return fmt.Errorf("failed to create base tmpfs at %s: %v", fs.base, err)
 	}
-/*
-// Currently unused
-	// create extra directories
-	extra := []string{"sockets", "dev"}
-	for _, sub := range extra {
-		d := path.Join(fs.base, sub)
-		if err := os.Mkdir(d, 0755); err != nil {
-			return fmt.Errorf("unable to create directory (%s): %v", d, err)
-		}
-	}
-*/
+	/*
+	   // Currently unused
+	   	// create extra directories
+	   	extra := []string{"sockets", "dev"}
+	   	for _, sub := range extra {
+	   		d := path.Join(fs.base, sub)
+	   		if err := os.Mkdir(d, 0755); err != nil {
+	   			return fmt.Errorf("unable to create directory (%s): %v", d, err)
+	   		}
+	   	}
+	*/
 	return nil
 }
 
@@ -189,7 +189,7 @@ func (fs *Filesystem) setupDev() error {
 		fs.log.Warning("Failed to mount devtmpfs: %v", err)
 		return err
 	}
-	
+
 	for _, dev := range basicDevices {
 		path := path.Join(fs.root, dev.path)
 		if err := syscall.Mknod(path, dev.mode, dev.dev); err != nil {

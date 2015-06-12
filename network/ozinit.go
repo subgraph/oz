@@ -10,7 +10,7 @@ import (
 
 	// Internal
 	"github.com/op/go-logging"
-	
+
 	//External
 	"github.com/j-keck/arping"
 	"github.com/milosgajdos83/tenus"
@@ -50,17 +50,17 @@ func setupLoopback(stn *SandboxNetwork) error {
 	if err != nil {
 		return fmt.Errorf("Unable to bring loopback interface up, %s.", err)
 	}
-	
+
 	return nil
 }
 
 func setupVEth(stn *SandboxNetwork) error {
 	ifc, err := tenus.NewLinkFrom(stn.VethGuest)
-	
+
 	if err != nil {
 		return fmt.Errorf("Unable to fetch inteface %s, %s.", stn.VethGuest, err)
 	}
-	
+
 	// Bring the link down to prepare for renaming
 	if err = ifc.SetLinkDown(); err != nil {
 		return fmt.Errorf("Unable to bring interface %s down, %s.", stn.VethGuest, err)
@@ -86,7 +86,7 @@ func setupVEth(stn *SandboxNetwork) error {
 	if err = ifc.SetLinkDefaultGw(&stn.Gateway); err != nil {
 		return fmt.Errorf("Unable to set default route %s.", err)
 	}
-	
+
 	return nil
 }
 

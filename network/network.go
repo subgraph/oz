@@ -4,9 +4,9 @@ import (
 	//Builtin
 	"fmt"
 	"net"
-	"strings"
 	"strconv"
-	
+	"strings"
+
 	"github.com/op/go-logging"
 )
 
@@ -71,7 +71,6 @@ func init() {
 	}
 }
 
-
 // Print status of the network interfaces
 func NetPrint(log *logging.Logger) {
 	strLine := ""
@@ -87,7 +86,7 @@ func NetPrint(log *logging.Logger) {
 	log.Info(strHr)
 
 	log.Info(strHeader)
-	
+
 	for _, netif := range ifs {
 		addrs, _ := netif.Addrs()
 
@@ -131,14 +130,13 @@ func NetPrint(log *logging.Logger) {
 		}
 
 		strLine += fmt.Sprintf("\n")
-	
+
 		log.Info(strLine)
 	}
-	
+
 	log.Info(strHr)
 
 }
-
 
 // Convert longip to net.IP
 func inet_ntoa(ipnr uint64) net.IP {

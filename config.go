@@ -6,14 +6,14 @@ import (
 )
 
 type Config struct {
-	ProfileDir      string `json:"profile_dir"`
-	ShellPath       string `json:"shell_path"`
-	SandboxPath     string `json:"sandbox_path"`
-	BridgeMACAddr   string `json:"bridge_mac"`
-	NMIgnoreFile    string `json:"nm_ignore_file"`
-	UseFullDev      bool   `json:"use_full_dev"`
-	AllowRootShell  bool   `json:"allow_root_shell"`
-	LogXpra         bool   `json:"log_xpra"`
+	ProfileDir     string `json:"profile_dir"`
+	ShellPath      string `json:"shell_path"`
+	SandboxPath    string `json:"sandbox_path"`
+	BridgeMACAddr  string `json:"bridge_mac"`
+	NMIgnoreFile   string `json:"nm_ignore_file"`
+	UseFullDev     bool   `json:"use_full_dev"`
+	AllowRootShell bool   `json:"allow_root_shell"`
+	LogXpra        bool   `json:"log_xpra"`
 }
 
 const DefaultConfigPath = "/etc/oz/oz.conf"

@@ -36,7 +36,7 @@ func (fs *Filesystem) ozinitMountDev() error {
 			return err
 		}
 	}
-	
+
 	if err := mountSpecial("/dev/pts", "devpts"); err != nil {
 		fs.log.Warning("Failed to mount pts directory: %v", err)
 		return err
@@ -91,7 +91,7 @@ func (fs *Filesystem) ozinitCreateSymlinks() error {
 			return err
 		}
 	}
-	
+
 	if fs.fullDevices == false {
 		for _, sl := range deviceSymlinks {
 			if err := syscall.Symlink(sl[0], sl[1]); err != nil {
@@ -99,7 +99,7 @@ func (fs *Filesystem) ozinitCreateSymlinks() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 

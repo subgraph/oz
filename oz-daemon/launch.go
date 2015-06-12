@@ -36,16 +36,6 @@ type Sandbox struct {
 	network *network.SandboxNetwork
 }
 
-/*
-func findSandbox(id int) *Sandbox {
-	for _, sb := range sandboxes {
-		if sb.id == id {
-			return sb
-		}
-	}
-	return nil
-}
-*/
 
 func createInitCommand(name, chroot string, env []string, uid uint32, display int, stn *network.SandboxNetwork, nettype string) *exec.Cmd {
 	cmd := exec.Command(initPath)

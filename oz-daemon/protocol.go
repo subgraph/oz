@@ -33,6 +33,7 @@ type ListProfilesResp struct {
 type LaunchMsg struct {
 	Index int "Launch"
 	Name  string
+	Env   []string
 }
 
 type ListSandboxesMsg struct {

@@ -12,23 +12,25 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	
+
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/ipc"
-	"github.com/subgraph/oz/xpra"
 	"github.com/subgraph/oz/network"
-	
+	"github.com/subgraph/oz/xpra"
+
 	"github.com/kr/pty"
 	"github.com/op/go-logging"
 )
 
 const SocketAddress = "/tmp/oz-init-control"
+const EnvPrefix = "INIT_ENV_"
 
 type initState struct {
 	log       *logging.Logger
 	profile   *oz.Profile
 	config    *oz.Config
+	launchEnv []string
 	uid       int
 	gid       int
 	user      *user.User
@@ -67,12 +69,12 @@ func parseArgs() *initState {
 	pname := getvar("INIT_PROFILE")
 	uidval := getvar("INIT_UID")
 	dispval := os.Getenv("INIT_DISPLAY")
-	
+
 	stnip := os.Getenv("INIT_ADDR")
 	stnvhost := os.Getenv("INIT_VHOST")
 	stnvguest := os.Getenv("INIT_VGUEST")
 	stngateway := os.Getenv("INIT_GATEWAY")
-	
+
 	var config *oz.Config
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
@@ -109,7 +111,7 @@ func parseArgs() *initState {
 		}
 		display = d
 	}
-	
+
 	stn := new(network.SandboxNetwork)
 	if stnip != "" {
 		gateway, _, err := net.ParseCIDR(stngateway)
@@ -117,29 +119,39 @@ func parseArgs() *initState {
 			log.Error("Unable to parse network configuration gateway (%s): %v", stngateway, err)
 			os.Exit(1)
 		}
-		
-		stn.Ip        = stnip
-		stn.VethHost  = stnvhost
+
+		stn.Ip = stnip
+		stn.VethHost = stnvhost
 		stn.VethGuest = stnvguest
-		stn.Gateway   = gateway
+		stn.Gateway = gateway
 	}
-	
+
+	env := []string{}
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, EnvPrefix) {
+			e = e[len(EnvPrefix):]
+			log.Debug("Adding (%s) to launch environment", e)
+			env = append(env, e)
+		}
+	}
+
 	return &initState{
-		log:     log,
-		config:  config,
-		profile: p,
-		uid:     uid,
-		gid:     gid,
-		user:    u,
-		display: display,
-		fs:      fs.NewFromProfile(p, u, config.SandboxPath, config.UseFullDev, log),
-		network: stn,
+		log:       log,
+		config:    config,
+		launchEnv: env,
+		profile:   p,
+		uid:       uid,
+		gid:       gid,
+		user:      u,
+		display:   display,
+		fs:        fs.NewFromProfile(p, u, config.SandboxPath, config.UseFullDev, log),
+		network:   stn,
 	}
 }
 
 func (st *initState) runInit() {
 	st.log.Info("Starting oz-init for profile: %s", st.profile.Name)
-	
+
 	if st.profile.Networking.Nettype != "host" {
 		err := network.NetSetup(st.network)
 		if err != nil {
@@ -148,7 +160,7 @@ func (st *initState) runInit() {
 		}
 	}
 	network.NetPrint(st.log)
-	
+
 	if syscall.Sethostname([]byte(st.profile.Name)) != nil {
 		st.log.Error("Failed to set hostname to (%s)", st.profile.Name)
 	}
@@ -159,7 +171,7 @@ func (st *initState) runInit() {
 		os.Exit(1)
 	}
 	oz.ReapChildProcs(st.log, st.handleChildExit)
-	
+
 	if st.profile.XServer.Enabled {
 		st.xpraReady.Add(1)
 		st.startXpraServer()
@@ -235,7 +247,7 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 }
 
 func (st *initState) launchApplication() {
-	cmd := exec.Command(st.profile.Path + ".unsafe")
+	cmd := exec.Command(st.profile.Path /*+ ".unsafe"*/)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stdout pipe: %v", err)
@@ -251,9 +263,9 @@ func (st *initState) launchApplication() {
 		Uid: uint32(st.uid),
 		Gid: uint32(st.gid),
 	}
-	cmd.Env = []string{
+	cmd.Env = append(st.launchEnv,
 		fmt.Sprintf("DISPLAY=:%d", st.display),
-	}
+	)
 	if err := cmd.Start(); err != nil {
 		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
 		return
@@ -311,7 +323,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 		}
 	}
 	if st.profile.XServer.Enabled {
-		cmd.Env = append(cmd.Env, "DISPLAY=:" + strconv.Itoa(st.display))
+		cmd.Env = append(cmd.Env, "DISPLAY=:"+strconv.Itoa(st.display))
 	}
 	cmd.Env = append(cmd.Env, "PATH=/usr/bin:/bin")
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))

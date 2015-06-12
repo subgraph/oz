@@ -9,7 +9,7 @@ import (
 	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/ipc"
 	"github.com/subgraph/oz/network"
-	
+
 	"github.com/op/go-logging"
 )
 
@@ -62,7 +62,7 @@ func initialize() *daemonState {
 	oz.ReapChildProcs(d.log, d.handleChildExit)
 	d.nextSboxId = 1
 	d.nextDisplay = 100
-	
+
 	for _, pp := range d.profiles {
 		if pp.Networking.Nettype == "bridge" {
 			d.log.Info("Initializing bridge networking")
@@ -71,12 +71,12 @@ func initialize() *daemonState {
 				d.log.Fatalf("Failed to initialize bridge networking: %+v", err)
 				return nil
 			}
-			
+
 			d.network = htn
-			
+
 			network.NetPrint(d.log)
 
-			break;
+			break
 		}
 	}
 
@@ -125,7 +125,7 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
 	d.Debug("Would launch %s", p.Name)
-	_, err = d.launch(p, m.Ucred.Uid, m.Ucred.Gid, d.log)
+	_, err = d.launch(p, msg.Env, m.Ucred.Uid, m.Ucred.Gid, d.log)
 	if err != nil {
 		d.Warning("launch of %s failed: %v", p.Name, err)
 		return m.Respond(&ErrorMsg{err.Error()})

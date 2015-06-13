@@ -51,8 +51,13 @@ func initialize() *daemonState {
 	var config *oz.Config
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
-		d.log.Info("Could not load config file (%s), using default config", oz.DefaultConfigPath)
-		config = oz.NewDefaultConfig()
+		if os.IsNotExist(err) {
+			d.log.Info("Configuration file (%s) is missing, using defaults.", oz.DefaultConfigPath)
+			config = oz.NewDefaultConfig()
+		} else {
+			d.log.Error("Could not load configuration: %s", oz.DefaultConfigPath, err)
+			os.Exit(1)
+		}
 	}
 	d.log.Info("Oz Global Config: %+v", config)
 	d.config = config

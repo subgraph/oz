@@ -79,8 +79,13 @@ func parseArgs() *initState {
 	var config *oz.Config
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
-		log.Info("Could not load config file (%s), using default config", oz.DefaultConfigPath)
-		config = oz.NewDefaultConfig()
+		if os.IsNotExist(err) {
+			log.Info("Configuration file (%s) is missing, using defaults.", oz.DefaultConfigPath)
+			config = oz.NewDefaultConfig()
+		} else {
+			log.Error("Could not load configuration: %s", oz.DefaultConfigPath, err)
+			os.Exit(1)
+		}
 	}
 
 	p, err := loadProfile(config.ProfileDir, pname)

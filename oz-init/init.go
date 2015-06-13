@@ -32,11 +32,15 @@ type initState struct {
 	profile   *oz.Profile
 	config    *oz.Config
 	launchEnv []string
+	lock      sync.Mutex
+	children  map[int]*exec.Cmd
 	uid       int
 	gid       int
 	user      *user.User
 	display   int
 	fs        *fs.Filesystem
+	ipcServer *ipc.MsgServer
+	xpra      *xpra.Xpra
 	xpraReady sync.WaitGroup
 	network   *network.SandboxNetwork
 }
@@ -146,6 +150,7 @@ func parseArgs() *initState {
 		config:    config,
 		launchEnv: env,
 		profile:   p,
+		children:  make(map[int]*exec.Cmd),
 		uid:       uid,
 		gid:       gid,
 		user:      u,
@@ -202,6 +207,8 @@ func (st *initState) runInit() {
 
 	go st.processSignals(sigs, s)
 
+	st.ipcServer = s
+
 	if err := s.Run(); err != nil {
 		st.log.Warning("MsgServer.Run() return err: %v", err)
 	}
@@ -233,6 +240,7 @@ func (st *initState) startXpraServer() {
 	if err := xpra.Process.Start(); err != nil {
 		st.log.Warning("Failed to start xpra server: %v", err)
 	}
+	st.xpra = xpra
 }
 
 func (st *initState) readXpraOutput(r io.ReadCloser) {
@@ -280,6 +288,8 @@ func (st *initState) launchApplication() {
 		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
 		return
 	}
+	st.addChildProcess(cmd)
+
 	go st.readApplicationOutput(stdout, "stdout")
 	go st.readApplicationOutput(stderr, "stderr")
 }
@@ -345,6 +355,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	if err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
 	}
+	st.addChildProcess(cmd)
 	err = msg.Respond(&OkMsg{}, int(f.Fd()))
 	return err
 }
@@ -370,14 +381,70 @@ func ptyStart(c *exec.Cmd) (ptty *os.File, err error) {
 	return ptty, nil
 }
 
-func (is *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
-	is.log.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
+func (st *initState) addChildProcess(cmd *exec.Cmd) {
+	st.lock.Lock()
+	defer st.lock.Unlock()
+	st.children[cmd.Process.Pid] = cmd
+}
+
+func (st *initState) removeChildProcess(pid int) bool {
+	st.lock.Lock()
+	defer st.lock.Unlock()
+	if _, ok := st.children[pid]; ok {
+		delete(st.children, pid)
+		return true
+	}
+	return false
+}
+
+func (st *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
+	st.log.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
+	st.removeChildProcess(pid)
 }
 
 func (st *initState) processSignals(c <-chan os.Signal, s *ipc.MsgServer) {
 	for {
 		sig := <-c
 		st.log.Info("Recieved signal (%v)", sig)
-		s.Close()
+		st.shutdown()
 	}
+}
+
+func (st *initState) shutdown() {
+	for _, c := range st.childrenVector() {
+		c.Process.Signal(os.Interrupt)
+	}
+
+	st.shutdownXpra()
+
+	if st.ipcServer != nil {
+		st.ipcServer.Close()
+	}
+}
+
+func (st *initState) shutdownXpra() {
+	if st.xpra == nil {
+		return
+	}
+	out, err := st.xpra.Stop()
+	if err != nil {
+		st.log.Warning("Error running xpra stop: %v", err)
+		return
+	}
+
+	for _, line := range strings.Split(string(out), "\n") {
+		if len(line) > 0 {
+			st.log.Debug("(xpra stop) %s", line)
+		}
+	}
+}
+
+func (st *initState) childrenVector() []*exec.Cmd {
+	st.lock.Lock()
+	defer st.lock.Unlock()
+	cs := make([]*exec.Cmd, 0, len(st.children))
+	for _, v := range st.children {
+		cs = append(cs, v)
+	}
+	return cs
 }

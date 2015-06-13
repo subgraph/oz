@@ -1,6 +1,7 @@
 package xpra
 
 import (
+	"fmt"
 	"github.com/subgraph/oz"
 	"os/exec"
 )
@@ -51,4 +52,14 @@ func getDefaultArgs(config *oz.XServerConf) []string {
 	}
 
 	return args
+}
+
+func (x *Xpra) Stop() ([]byte, error) {
+	cmd := exec.Command("/usr/bin/xpra",
+		"--socket-dir="+x.WorkDir,
+		"stop",
+		fmt.Sprintf(":%d", x.Display),
+	)
+	cmd.Env = []string{"TMPDIR=" + x.WorkDir}
+	return cmd.Output()
 }

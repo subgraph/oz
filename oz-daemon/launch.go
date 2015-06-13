@@ -36,7 +36,6 @@ type Sandbox struct {
 	network *network.SandboxNetwork
 }
 
-
 func createInitCommand(name, chroot string, env []string, uid uint32, display int, stn *network.SandboxNetwork, nettype string) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"

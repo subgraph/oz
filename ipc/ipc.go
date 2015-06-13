@@ -31,6 +31,7 @@ type MsgConn struct {
 }
 
 type MsgServer struct {
+	isClosed bool
 	log      *logging.Logger
 	disp     *msgDispatcher
 	factory  MsgFactory
@@ -66,9 +67,12 @@ func NewServer(address string, factory MsgFactory, log *logging.Logger, handlers
 }
 
 func (s *MsgServer) Run() error {
-	for {
+	for !s.isClosed {
 		conn, err := s.listener.AcceptUnix()
 		if err != nil {
+			if s.isClosed {
+				return nil
+			}
 			return err
 		}
 		if err := setPassCred(conn); err != nil {
@@ -90,6 +94,10 @@ func (s *MsgServer) Run() error {
 }
 
 func (s *MsgServer) Close() error {
+	if s.isClosed {
+		return nil
+	}
+	s.isClosed = true
 	s.disp.close()
 	close(s.done)
 	return s.listener.Close()

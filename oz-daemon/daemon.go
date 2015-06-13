@@ -3,6 +3,7 @@ package daemon
 import (
 	"fmt"
 	"os/user"
+	"strings"
 	"syscall"
 
 	"github.com/subgraph/oz"
@@ -127,12 +128,48 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
 	d.Debug("Would launch %s", p.Name)
-	_, err = d.launch(p, msg.Env, m.Ucred.Uid, m.Ucred.Gid, d.log)
+	env := d.sanitizeEnvironment(p, msg.Env)
+	_, err = d.launch(p, env, m.Ucred.Uid, m.Ucred.Gid, d.log)
 	if err != nil {
 		d.Warning("launch of %s failed: %v", p.Name, err)
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
 	return m.Respond(&OkMsg{})
+}
+
+func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) ([]string) {
+	newEnv := []string{}
+	
+	for _, EnvItem := range d.config.EnvironmentVars {
+		for _, OldItem := range oldEnv {
+			if strings.HasPrefix(OldItem, EnvItem+"=") {
+				newEnv = append(newEnv, EnvItem+"="+strings.Replace(OldItem, EnvItem+"=", "", 1))
+
+				break
+			}
+		}
+	}
+
+	for _, EnvItem := range p.Environment {
+		if EnvItem.Value != "" {
+			d.log.Info("Setting environment variable: %s=%s\n", EnvItem.Name, EnvItem.Value)
+
+			newEnv = append(newEnv, EnvItem.Name+"="+EnvItem.Value)
+		} else {
+			for _, OldItem := range oldEnv {
+				if strings.HasPrefix(OldItem, EnvItem.Name+"=") {
+					NewValue := strings.Replace(OldItem, EnvItem.Name+"=", "", 1)
+					newEnv = append(newEnv, EnvItem.Name+"="+NewValue)
+
+					d.log.Info("Cloning environment variable: %s=%s\n", EnvItem.Name, NewValue)
+
+					break
+				}
+			}
+		}
+	}
+	
+	return newEnv
 }
 
 func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) error {

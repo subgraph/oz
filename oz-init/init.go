@@ -144,7 +144,11 @@ func parseArgs() *initState {
 			env = append(env, e)
 		}
 	}
-
+	
+	if p.XServer.Enabled {
+		env = append(env, "DISPLAY=:"+strconv.Itoa(display))
+	}
+	
 	return &initState{
 		log:       log,
 		config:    config,
@@ -281,9 +285,7 @@ func (st *initState) launchApplication() {
 		Uid: uint32(st.uid),
 		Gid: uint32(st.gid),
 	}
-	cmd.Env = append(st.launchEnv,
-		fmt.Sprintf("DISPLAY=:%d", st.display),
-	)
+	cmd.Env = append(cmd.Env, st.launchEnv...)
 	if err := cmd.Start(); err != nil {
 		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
 		return
@@ -333,8 +335,9 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 		Uid: msg.Ucred.Uid,
 		Gid: msg.Ucred.Gid,
 	}
+	cmd.Env = append(cmd.Env, st.launchEnv...)
 	if rs.Term != "" {
-		cmd.Env = append(st.launchEnv, "TERM="+rs.Term)
+		cmd.Env = append(cmd.Env, "TERM="+rs.Term)
 	}
 	if msg.Ucred.Uid != 0 && msg.Ucred.Gid != 0 {
 		if homedir, _ := st.fs.GetHomeDir(); homedir != "" {
@@ -342,11 +345,6 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 			cmd.Env = append(cmd.Env, "HOME="+homedir)
 		}
 	}
-	/*
-	if st.profile.XServer.Enabled {
-		cmd.Env = append(cmd.Env, "DISPLAY=:"+strconv.Itoa(st.display))
-	}
-	*/
 	cmd.Env = append(cmd.Env, "PATH=/usr/bin:/bin")
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
 	st.log.Info("Executing shell...")

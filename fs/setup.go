@@ -179,14 +179,17 @@ func (fs *Filesystem) setupChroot() error {
 	if err != nil {
 		return err
 	}
-	return setupTmp(fs.root)
+	return nil
 }
 
 func (fs *Filesystem) setupDev() error {
 	devPath := path.Join(fs.root, "dev")
 	flags := uintptr(syscall.MS_NOSUID | syscall.MS_NOEXEC)
 	if err := syscall.Mount("none", devPath, "tmpfs", flags, ""); err != nil {
-		fs.log.Warning("Failed to mount devtmpfs: %v", err)
+		fs.log.Warning("Failed to mount new tmpfs: %s (%v)", devPath, err)
+		return err
+	}
+	if err := os.Chmod(devPath, 0755); err != nil {
 		return err
 	}
 
@@ -199,13 +202,7 @@ func (fs *Filesystem) setupDev() error {
 			return fmt.Errorf("Unable to set permissions for device %s: %+v", dev.path, err)
 		}
 	}
-
-	shmPath := path.Join(devPath, "shm")
-	if err := mountSpecial(shmPath, "tmpfs"); err != nil {
-		fs.log.Warning("Failed to mount shm directory: %v", err)
-		return err
-	}
-
+	
 	return nil
 }
 

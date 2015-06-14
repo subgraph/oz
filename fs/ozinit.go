@@ -30,14 +30,19 @@ func (fs *Filesystem) ozinitMountDev() error {
 			fs.log.Warning("Failed to mount devtmpfs: %v", err)
 			return err
 		}
-
-		if err := mountSpecial("/dev/shm", "tmpfs"); err != nil {
-			fs.log.Warning("Failed to mount shm directory: %v", err)
-			return err
-		}
+	}
+	
+	if err := mountSpecial("/dev/shm", "tmpfs", true); err != nil {
+		fs.log.Warning("Failed to mount shm directory: %v", err)
+		return err
+	}
+	
+	if err := mountSpecial("/tmp", "tmpfs", true); err != nil {
+		fs.log.Warning("Failed to mount shm directory: %v", err)
+		return err
 	}
 
-	if err := mountSpecial("/dev/pts", "devpts"); err != nil {
+	if err := mountSpecial("/dev/pts", "devpts", false); err != nil {
 		fs.log.Warning("Failed to mount pts directory: %v", err)
 		return err
 	}
@@ -45,8 +50,11 @@ func (fs *Filesystem) ozinitMountDev() error {
 	return nil
 }
 
-func mountSpecial(path, mtype string) error {
+func mountSpecial(path, mtype string, nodevs bool) error {
 	flags := uintptr(syscall.MS_NOSUID | syscall.MS_REC | syscall.MS_NOEXEC)
+	if nodevs {
+		flags = flags | syscall.MS_NODEV
+	}
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return err
 	}

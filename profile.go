@@ -130,6 +130,8 @@ func LoadProfiles(dir string) (Profiles, error) {
 			ps = append(ps, p)
 		}
 	}
+	
+	loadedProfiles = ps
 	return ps, nil
 }
 

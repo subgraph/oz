@@ -41,6 +41,20 @@ func (fs *Filesystem) Xpra() string {
 	return fs.xpra
 }
 
+func (fs *Filesystem) AddBindWhitelist(path, target string, readonly bool) error {
+	for _, fsitem := range fs.whitelist {
+		if fsitem.path == path {
+			return nil
+		}
+	}
+	item, err := fs.newItem(path, target, readonly)
+	if err != nil {
+		return err
+	}
+	fs.whitelist = append(fs.whitelist, item)
+	return item.bindItem()
+}
+
 func (fs *Filesystem) addWhitelist(path, target string, readonly bool) error {
 	item, err := fs.newItem(path, target, readonly)
 	if err != nil {

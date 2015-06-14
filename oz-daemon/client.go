@@ -3,8 +3,10 @@ package daemon
 import (
 	"errors"
 	"fmt"
-	"github.com/subgraph/oz/ipc"
+	"os"
 	"strconv"
+	
+	"github.com/subgraph/oz/ipc"
 )
 
 func clientConnect() (*ipc.MsgConn, error) {
@@ -56,9 +58,12 @@ func Launch(arg string, args, env []string) error {
 	if err != nil {
 		return err
 	}
+	pwd, _ := os.Getwd()
+	
 	resp, err := clientSend(&LaunchMsg{
 		Index: idx,
 		Name:  name,
+		Pwd:   pwd,
 		Args:  args,
 		Env:   env,
 	})

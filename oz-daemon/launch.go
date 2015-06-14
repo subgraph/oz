@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"os/user"
 	"path"
+	"path/filepath"
 	"sync"
 	"syscall"
 
@@ -72,7 +74,7 @@ func createInitCommand(initPath, name, chroot string, env []string, uid uint32, 
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, args, env []string, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
+func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
 	u, err := user.LookupId(fmt.Sprintf("%d", uid))
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
@@ -135,7 +137,7 @@ func (d *daemonState) launch(p *oz.Profile, args, env []string, uid, gid uint32,
 	
 	go func () {
 		sbox.ready.Wait()
-		go sbox.launchProgram(args, log)
+		go sbox.launchProgram(pwd, args, log)
 	}()
 	
 	if sbox.profile.XServer.Enabled {
@@ -149,7 +151,19 @@ func (d *daemonState) launch(p *oz.Profile, args, env []string, uid, gid uint32,
 	return sbox, nil
 }
 
-func (sbox *Sandbox) launchProgram(args []string, log *logging.Logger) {
+func (sbox *Sandbox) launchProgram(pwd string, args []string, log *logging.Logger) {
+	for _, fpath := range args {
+		if _, err := os.Stat(fpath); err == nil {
+			if filepath.IsAbs(fpath) == false {
+				fpath = path.Join(pwd, fpath)
+			}
+			log.Info("Adding file `%s` to sandbox `%s`.", fpath, sbox.profile.Name)
+			if err := sbox.fs.AddBindWhitelist(fpath, fpath, false); err != nil {
+				log.Warning("Error adding file `%s`!", fpath)
+			}
+		}
+	}
+
 	err := ozinit.RunProgram(sbox.addr, args)
 	if err != nil {
 		log.Error("start shell command failed: %v", err)

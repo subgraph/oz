@@ -2,15 +2,53 @@ package main
 
 import (
 	"fmt"
-	"github.com/codegangsta/cli"
-	"github.com/subgraph/oz/oz-daemon"
-	"github.com/subgraph/oz/oz-init"
 	"io"
 	"os"
+	"path"
 	"strconv"
+
+	"github.com/subgraph/oz/oz-daemon"
+	"github.com/subgraph/oz/oz-init"
+
+	"github.com/codegangsta/cli"
 )
 
+type fnRunType func()
+
+var runFunc fnRunType
+var runBasename string
+
+func init() {
+	runBasename = path.Base(os.Args[0])
+
+	switch runBasename {
+	case "oz":
+		runFunc = runApplication
+	default:
+		// TODO: Exit if already inside sandbox should only happen
+		runFunc = runSandbox
+	}
+}
+
 func main() {
+	runFunc()
+}
+
+func runSandbox() {
+	hostname, _ := os.Hostname()
+	if runBasename == hostname {
+		fmt.Fprintf(os.Stderr, "Cannot launch from inside a sandbox.\n")
+		os.Exit(1)
+	}
+
+	err := daemon.Launch(runBasename, os.Args[1:], os.Environ())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "launch command failed: %v.\n", err)
+		os.Exit(1)
+	}
+}
+
+func runApplication() {
 	app := cli.NewApp()
 
 	app.Name = "oz"
@@ -75,9 +113,10 @@ func handleLaunch(c *cli.Context) {
 		fmt.Println("Argument needed to launch command")
 		os.Exit(1)
 	}
-	err := daemon.Launch(c.Args()[0], os.Environ())
+	err := daemon.Launch(c.Args()[0], c.Args()[1:], os.Environ())
 	if err != nil {
 		fmt.Printf("launch command failed: %v\n", err)
+		os.Exit(1)
 	}
 }
 

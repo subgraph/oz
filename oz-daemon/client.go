@@ -51,7 +51,7 @@ func ListSandboxes() ([]SandboxInfo, error) {
 	return body.Sandboxes, nil
 }
 
-func Launch(arg string, env []string) error {
+func Launch(arg string, args, env []string) error {
 	idx, name, err := parseProfileArg(arg)
 	if err != nil {
 		return err
@@ -59,6 +59,7 @@ func Launch(arg string, env []string) error {
 	resp, err := clientSend(&LaunchMsg{
 		Index: idx,
 		Name:  name,
+		Args:  args,
 		Env:   env,
 	})
 	if err != nil {

@@ -19,8 +19,6 @@ import (
 	"github.com/subgraph/oz/oz-init"
 )
 
-const initPath = "/usr/local/bin/oz-init"
-
 type Sandbox struct {
 	daemon  *daemonState
 	id      int
@@ -36,7 +34,7 @@ type Sandbox struct {
 	network *network.SandboxNetwork
 }
 
-func createInitCommand(name, chroot string, env []string, uid uint32, display int, stn *network.SandboxNetwork, nettype string) *exec.Cmd {
+func createInitCommand(initPath, name, chroot string, env []string, uid uint32, display int, stn *network.SandboxNetwork, nettype string) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 
@@ -74,7 +72,7 @@ func createInitCommand(name, chroot string, env []string, uid uint32, display in
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, env []string, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
+func (d *daemonState) launch(p *oz.Profile, args, env []string, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
 	u, err := user.LookupId(fmt.Sprintf("%d", uid))
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
@@ -97,7 +95,7 @@ func (d *daemonState) launch(p *oz.Profile, env []string, uid, gid uint32, log *
 		}
 	}
 
-	cmd := createInitCommand(p.Name, fs.Root(), env, uid, display, stn, p.Networking.Nettype)
+	cmd := createInitCommand(d.config.InitPath, p.Name, fs.Root(), env, uid, display, stn, p.Networking.Nettype)
 	log.Debug("Command environment: %+v", cmd.Env)
 	pp, err := cmd.StderrPipe()
 	if err != nil {
@@ -131,9 +129,15 @@ func (d *daemonState) launch(p *oz.Profile, env []string, uid, gid uint32, log *
 			return nil, fmt.Errorf("Unable to create veth networking: %+v", err)
 		}
 	}
-
+	
 	sbox.ready.Add(1)
 	go sbox.logMessages()
+	
+	go func () {
+		sbox.ready.Wait()
+		go sbox.launchProgram(args, log)
+	}()
+	
 	if sbox.profile.XServer.Enabled {
 		go func() {
 			sbox.ready.Wait()
@@ -143,6 +147,13 @@ func (d *daemonState) launch(p *oz.Profile, env []string, uid, gid uint32, log *
 	d.nextSboxId += 1
 	d.sandboxes = append(d.sandboxes, sbox)
 	return sbox, nil
+}
+
+func (sbox *Sandbox) launchProgram(args []string, log *logging.Logger) {
+	err := ozinit.RunProgram(sbox.addr, args)
+	if err != nil {
+		log.Error("start shell command failed: %v", err)
+	}
 }
 
 func (sbox *Sandbox) remove(log *logging.Logger) {

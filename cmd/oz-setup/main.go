@@ -99,7 +99,7 @@ func handleInstall(c *cli.Context) {
 	pname := c.Args()[0]
 	OzProfile, err := loadProfile(pname, OzConfig.ProfileDir)
 	if err != nil || OzProfile == nil {
-		installExit(c.Bool("hook"), fmt.Errorf("Unable to load profiles for %s.\n", pname))
+		installExit(c.Bool("hook"), fmt.Errorf("Unable to load profiles for %s (%v).\n", pname, err))
 		return // For clarity
 	}
 

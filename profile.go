@@ -97,6 +97,23 @@ func (ps Profiles) GetProfileByName(name string) (*Profile, error) {
 	return nil, nil
 }
 
+func (ps Profiles) GetProfileByPath(bpath string) (*Profile, error) {
+	if loadedProfiles == nil {
+		ps, err := LoadProfiles(defaultProfileDirectory)
+		if err != nil {
+			return nil, err
+		}
+		loadedProfiles = ps
+	}
+
+	for _, p := range loadedProfiles {
+		if p.Path == bpath {
+			return p, nil
+		}
+	}
+	return nil, nil
+}
+
 func LoadProfiles(dir string) (Profiles, error) {
 	fs, err := ioutil.ReadDir(dir)
 	if err != nil {

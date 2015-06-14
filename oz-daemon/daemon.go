@@ -132,12 +132,17 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 	if err != nil {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
-	d.Debug("Would launch %s", p.Name)
-	env := d.sanitizeEnvironment(p, msg.Env)
-	_, err = d.launch(p, env, m.Ucred.Uid, m.Ucred.Gid, d.log)
-	if err != nil {
-		d.Warning("launch of %s failed: %v", p.Name, err)
-		return m.Respond(&ErrorMsg{err.Error()})
+	if sbox := d.getRunningSandboxByName(p.Name); sbox != nil {
+		d.Info("Found running sandbox for `%s`, running program there", p.Name)
+		sbox.launchProgram(msg.Args, d.log)
+	} else {
+		d.Debug("Would launch %s", p.Name)
+		env := d.sanitizeEnvironment(p, msg.Env)
+		_, err = d.launch(p, msg.Args, env, m.Ucred.Uid, m.Ucred.Gid, d.log)
+		if err != nil {
+			d.Warning("Launch of %s failed: %v", p.Name, err)
+			return m.Respond(&ErrorMsg{err.Error()})
+		}
 	}
 	return m.Respond(&OkMsg{})
 }
@@ -211,6 +216,16 @@ func (d *daemonState) getProfileByIdxOrName(index int, name string) (*oz.Profile
 		}
 	}
 	return nil, fmt.Errorf("could not find profile name '%s'", name)
+}
+
+func (d *daemonState) getRunningSandboxByName(name string) *Sandbox {
+	for _, sb := range d.sandboxes {
+		if sb.profile.Name == name {
+			return sb
+		}
+	}
+	
+	return nil
 }
 
 func (d *daemonState) handleListSandboxes(list *ListSandboxesMsg, msg *ipc.Message) error {

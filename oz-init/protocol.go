@@ -18,9 +18,14 @@ type RunShellMsg struct {
 	Term string "RunShell"
 }
 
+type RunProgramMsg struct {
+	Args []string "RunProgram"
+}
+
 var messageFactory = ipc.NewMsgFactory(
 	new(OkMsg),
 	new(ErrorMsg),
 	new(PingMsg),
 	new(RunShellMsg),
+	new(RunProgramMsg),
 )

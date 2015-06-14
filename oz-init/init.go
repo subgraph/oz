@@ -181,7 +181,10 @@ func (st *initState) runInit() {
 	if syscall.Sethostname([]byte(st.profile.Name)) != nil {
 		st.log.Error("Failed to set hostname to (%s)", st.profile.Name)
 	}
-	st.log.Info("Hostname set to (%s)", st.profile.Name)
+	if syscall.Setdomainname([]byte("local")) != nil {
+		st.log.Error("Failed to set domainname")
+	}
+	st.log.Info("Hostname set to (%s.local)", st.profile.Name)
 
 	if err := st.fs.OzInit(); err != nil {
 		st.log.Error("Error: setting up filesystem failed: %v\n", err)
@@ -194,10 +197,10 @@ func (st *initState) runInit() {
 		st.startXpraServer()
 	}
 	st.xpraReady.Wait()
-	st.launchApplication()
 
 	s, err := ipc.NewServer(SocketAddress, messageFactory, st.log,
 		handlePing,
+		st.handleRunProgram,
 		st.handleRunShell,
 	)
 	if err != nil {
@@ -268,17 +271,21 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 	}
 }
 
-func (st *initState) launchApplication() {
-	cmd := exec.Command(st.profile.Path)
+func (st *initState) launchApplication(cmdArgs []string) (*exec.Cmd, error) {
+	suffix := ""
+	if st.config.DivertSuffix != "" {
+		suffix = "."+st.config.DivertSuffix
+	}
+	cmd := exec.Command(st.profile.Path+suffix)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stdout pipe: %v", err)
-		return
+		return nil, err
 	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stderr pipe: %v", err)
-		return
+		return nil, err
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Credential = &syscall.Credential{
@@ -286,14 +293,17 @@ func (st *initState) launchApplication() {
 		Gid: uint32(st.gid),
 	}
 	cmd.Env = append(cmd.Env, st.launchEnv...)
+	cmd.Args = append(cmd.Args, cmdArgs...)
 	if err := cmd.Start(); err != nil {
 		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
-		return
+		return nil, err
 	}
 	st.addChildProcess(cmd)
 
 	go st.readApplicationOutput(stdout, "stdout")
 	go st.readApplicationOutput(stderr, "stderr")
+	
+	return cmd, nil
 }
 
 func (st *initState) readApplicationOutput(r io.ReadCloser, label string) {
@@ -319,6 +329,18 @@ func loadProfile(dir, name string) (*oz.Profile, error) {
 
 func handlePing(ping *PingMsg, msg *ipc.Message) error {
 	return msg.Respond(&PingMsg{Data: ping.Data})
+}
+
+func (st *initState) handleRunProgram(rp *RunProgramMsg, msg *ipc.Message) error {
+	st.log.Info("Run program message received: %+v", rp)
+	_, err := st.launchApplication(rp.Args)
+	if err != nil {
+		err := msg.Respond(&ErrorMsg{Msg: err.Error()})
+		return err
+	} else {
+		err := msg.Respond(&OkMsg{})
+		return err
+	}
 }
 
 func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {

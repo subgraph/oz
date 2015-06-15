@@ -1,5 +1,6 @@
 {
 "path": "/usr/bin/evince"
+, "allow_files": true
 , "xserver": {
 	"enabled": true
 	, "enable_tray": true

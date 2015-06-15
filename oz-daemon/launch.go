@@ -161,18 +161,20 @@ func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, uid,
 }
 
 func (sbox *Sandbox) launchProgram(pwd string, args []string, log *logging.Logger) {
-	for _, fpath := range args {
-		if _, err := os.Stat(fpath); err == nil {
-			if filepath.IsAbs(fpath) == false {
-				fpath = path.Join(pwd, fpath)
-			}
-			log.Info("Adding file `%s` to sandbox `%s`.", fpath, sbox.profile.Name)
-			if err := sbox.fs.AddBindWhitelist(fpath, fpath, false); err != nil {
-				log.Warning("Error adding file `%s`!", fpath)
+	if sbox.profile.AllowFiles {
+		for _, fpath := range args {
+			if _, err := os.Stat(fpath); err == nil {
+				if filepath.IsAbs(fpath) == false {
+					fpath = path.Join(pwd, fpath)
+				}
+				log.Info("Adding file `%s` to sandbox `%s`.", fpath, sbox.profile.Name)
+				if err := sbox.fs.AddBindWhitelist(fpath, fpath, false); err != nil {
+					log.Warning("Error adding file `%s`!", fpath)
+				}
 			}
 		}
 	}
-
+	
 	err := ozinit.RunProgram(sbox.addr, pwd, args)
 	if err != nil {
 		log.Error("start shell command failed: %v", err)

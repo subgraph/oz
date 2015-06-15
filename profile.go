@@ -26,6 +26,8 @@ type Profile struct {
 	// Also disables default blacklist items (/sbin, /usr/sbin, /usr/bin/sudo)
 	// Normally not used
 	NoDefaults bool
+	// Allow bind mounting of files passed as arguments inside the container
+	AllowFiles bool `json:"allow_files"`
 	// List of paths to bind mount inside jail
 	Whitelist []WhitelistItem
 	// List of paths to blacklist inside jail

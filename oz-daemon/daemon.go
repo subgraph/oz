@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"fmt"
-	"os/user"
 	"strings"
 	"syscall"
 
@@ -253,9 +252,7 @@ func (d *daemonState) handleClean(clean *CleanMsg, msg *ipc.Message) error {
 			return msg.Respond(&ErrorMsg{errmsg})
 		}
 	}
-	// XXX
-	u, _ := user.Current()
-	fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.config.UseFullDev, d.log)
+	fs := fs.NewFromProfile(p, nil, d.config.SandboxPath, d.config.UseFullDev, d.log)
 	if err := fs.Cleanup(); err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
 	}

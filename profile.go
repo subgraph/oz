@@ -18,15 +18,15 @@ type Profile struct {
 	Watchdog string
 	// Optional wrapper binary to use when launching command (ex: tsocks)
 	Wrapper string
-	// If true launch one container per instance, otherwise run all instances in same container
+	// If true launch one sandbox per instance, otherwise run all instances in same sandbox
 	Multi bool
-	// Disable mounting of sys and proc inside the container
+	// Disable mounting of sys and proc inside the sandbox
 	NoSysProc bool
 	// Disable bind mounting of default directories (etc,usr,bin,lib,lib64)
 	// Also disables default blacklist items (/sbin, /usr/sbin, /usr/bin/sudo)
 	// Normally not used
 	NoDefaults bool
-	// Allow bind mounting of files passed as arguments inside the container
+	// Allow bind mounting of files passed as arguments inside the sandbox
 	AllowFiles bool `json:"allow_files"`
 	// List of paths to bind mount inside jail
 	Whitelist []WhitelistItem
@@ -65,7 +65,7 @@ type EnvVar struct {
 	Value string
 }
 
-// Container network definition
+// Sandbox network definition
 type NetworkProfile struct {
 	// One of empty, host, bridge
 	Nettype string `json:"type"`

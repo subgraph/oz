@@ -10,18 +10,18 @@ import (
 )
 
 type Config struct {
-	ProfileDir      string   `json:"profile_dir"`
-	ShellPath       string   `json:"shell_path"`
-	InitPath        string   `json:"init_path"`
-	ClientPath      string   `json:"client_path"`
-	SandboxPath     string   `json:"sandbox_path"`
-	BridgeMACAddr   string   `json:"bridge_mac"`
-	DivertSuffix    string   `json:"divert_suffix"`
-	NMIgnoreFile    string   `json:"nm_ignore_file"`
-	UseFullDev      bool     `json:"use_full_dev"`
-	AllowRootShell  bool     `json:"allow_root_shell"`
-	LogXpra         bool     `json:"log_xpra"`
-	EnvironmentVars []string `json:"environment_vars"`
+	ProfileDir      string   `json:"profile_dir" desc:"Directory containing the sandbox profiles"`
+	ShellPath       string   `json:"shell_path" desc:"Path of the shell using when entering a sandbox"`
+	InitPath        string   `json:"init_path" desc:"Path to the 'oz-init' binary"`
+	ClientPath      string   `json:"client_path" desc:"Path to the 'oz' client binary "`
+	SandboxPath     string   `json:"sandbox_path" desc:"Path of the sandboxes base"`
+	BridgeMACAddr   string   `json:"bridge_mac" desc:"MAC Address of the bridge interface"`
+	DivertSuffix    string   `json:"divert_suffix" desc:"Suffix using for dpkg-divert of application executables"`
+	NMIgnoreFile    string   `json:"nm_ignore_file" desc:"Path to the NetworkManager ignore config file"`
+	UseFullDev      bool     `json:"use_full_dev" desc:"Give sandboxes full access to devices instead of a restricted set"`
+	AllowRootShell  bool     `json:"allow_root_shell" desc:"Allow entering a sandbox shell as root"`
+	LogXpra         bool     `json:"log_xpra" desc:"Log output of Xpra"`
+	EnvironmentVars []string `json:"environment_vars" desc:"Default environment variables passed to sandboxes"`
 }
 
 const OzVersion         = "0.0.1"

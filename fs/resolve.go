@@ -20,6 +20,7 @@ func (fs *Filesystem) resolveVars(p string) (string, error) {
 	const pathVar = "${PATH}/"
 	const homeVar = "${HOME}"
 	const uidVar = "${UID}"
+	const userVar = "${USER}"
 
 	switch {
 	case strings.HasPrefix(p, pathVar):
@@ -32,8 +33,11 @@ func (fs *Filesystem) resolveVars(p string) (string, error) {
 	case strings.HasPrefix(p, homeVar):
 		return path.Join(fs.user.HomeDir, p[len(homeVar):]), nil
 
-	case strings.HasPrefix(p, uidVar):
-		return strings.Replace(p, uidVar, fs.userID, -1), nil
+	case strings.Contains(p, uidVar):
+		return strings.Replace(p, uidVar, fs.user.Uid, -1), nil
+
+	case strings.Contains(p, userVar):
+		return strings.Replace(p, userVar, fs.user.Username, -1), nil
 	}
 	return p, nil
 }

@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/user"
 	"path"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -25,7 +24,6 @@ type Filesystem struct {
 	base         string
 	root         string
 	xpra         string
-	userID       string
 	noDefaults   bool
 	noSysAndProc bool
 	fullDevices  bool
@@ -117,7 +115,6 @@ func NewFilesystem(name string, user *user.User, basePath string, log *logging.L
 	fs.base = path.Join(basePath, name)
 	fs.root = path.Join(fs.base, "rootfs")
 	fs.user = user
-	fs.userID = strconv.Itoa(os.Getuid())
 
 	return fs
 }

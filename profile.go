@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	
+	"github.com/subgraph/oz/network"
 )
 
 type Profile struct {
@@ -64,14 +66,14 @@ type EnvVar struct {
 // Container network definition
 type NetworkProfile struct {
 	// One of empty, host, bridge
-	Nettype string
+	Nettype string `json:"type"`
 
 	// Name of the bridge to attach to
 	//Bridge string
 
 	// List of Sockets we want to attach to the jail
 	//  Applies to Nettype: bridge and empty only
-	//Sockets []nsnat.ConfigSocket
+	Sockets []network.ProxyConfig
 }
 
 const defaultProfileDirectory = "/var/lib/oz/cells.d"

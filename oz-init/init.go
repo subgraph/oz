@@ -299,8 +299,13 @@ func (st *initState) launchApplication(pwd string, cmdArgs []string) (*exec.Cmd,
 		Gid: uint32(st.gid),
 	}
 	cmd.Env = append(cmd.Env, st.launchEnv...)
+	
 	cmd.Args = append(cmd.Args, cmdArgs...)
-	cmd.Dir = pwd
+	
+	if _, err := os.Stat(pwd); err == nil {
+		cmd.Dir = pwd
+	}
+	
 	if err := cmd.Start(); err != nil {
 		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
 		return nil, err

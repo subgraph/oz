@@ -20,6 +20,7 @@ type RunShellMsg struct {
 
 type RunProgramMsg struct {
 	Args []string "RunProgram"
+	Pwd  string
 }
 
 var messageFactory = ipc.NewMsgFactory(

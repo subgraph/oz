@@ -16,9 +16,9 @@ import (
 	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/network"
 	"github.com/subgraph/oz/xpra"
+	"github.com/subgraph/oz/oz-init"
 
 	"github.com/op/go-logging"
-	"github.com/subgraph/oz/oz-init"
 )
 
 type Sandbox struct {
@@ -146,6 +146,7 @@ func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, uid,
 			go sbox.startXpraClient()
 		}()
 	}
+	
 	d.nextSboxId += 1
 	d.sandboxes = append(d.sandboxes, sbox)
 	return sbox, nil
@@ -164,7 +165,7 @@ func (sbox *Sandbox) launchProgram(pwd string, args []string, log *logging.Logge
 		}
 	}
 
-	err := ozinit.RunProgram(sbox.addr, args)
+	err := ozinit.RunProgram(sbox.addr, pwd, args)
 	if err != nil {
 		log.Error("start shell command failed: %v", err)
 	}

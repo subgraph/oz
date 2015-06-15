@@ -145,6 +145,8 @@ func parseArgs() *initState {
 		}
 	}
 	
+	env = append(env, "PATH=/usr/bin:/bin")
+	
 	if p.XServer.Enabled {
 		env = append(env, "DISPLAY=:"+strconv.Itoa(display))
 	}
@@ -169,6 +171,10 @@ func (st *initState) runInit() {
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, syscall.SIGTERM, os.Interrupt)
 
+	if homedir, _ := st.fs.GetHomeDir(); homedir != "" {
+		st.launchEnv = append(st.launchEnv, "HOME="+homedir)
+	}
+	
 	if st.profile.Networking.Nettype != "host" {
 		err := network.NetSetup(st.network)
 		if err != nil {
@@ -271,7 +277,7 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 	}
 }
 
-func (st *initState) launchApplication(cmdArgs []string) (*exec.Cmd, error) {
+func (st *initState) launchApplication(pwd string, cmdArgs []string) (*exec.Cmd, error) {
 	suffix := ""
 	if st.config.DivertSuffix != "" {
 		suffix = "."+st.config.DivertSuffix
@@ -294,6 +300,7 @@ func (st *initState) launchApplication(cmdArgs []string) (*exec.Cmd, error) {
 	}
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 	cmd.Args = append(cmd.Args, cmdArgs...)
+	cmd.Dir = pwd
 	if err := cmd.Start(); err != nil {
 		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
 		return nil, err
@@ -333,7 +340,7 @@ func handlePing(ping *PingMsg, msg *ipc.Message) error {
 
 func (st *initState) handleRunProgram(rp *RunProgramMsg, msg *ipc.Message) error {
 	st.log.Info("Run program message received: %+v", rp)
-	_, err := st.launchApplication(rp.Args)
+	_, err := st.launchApplication(rp.Pwd, rp.Args)
 	if err != nil {
 		err := msg.Respond(&ErrorMsg{Msg: err.Error()})
 		return err
@@ -364,10 +371,8 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	if msg.Ucred.Uid != 0 && msg.Ucred.Gid != 0 {
 		if homedir, _ := st.fs.GetHomeDir(); homedir != "" {
 			cmd.Dir = homedir
-			cmd.Env = append(cmd.Env, "HOME="+homedir)
 		}
 	}
-	cmd.Env = append(cmd.Env, "PATH=/usr/bin:/bin")
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
 	st.log.Info("Executing shell...")
 	f, err := ptyStart(cmd)

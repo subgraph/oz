@@ -31,7 +31,7 @@ type ProxyConfig struct {
 
 	// Optional: Destination address
 	// In client mode: the host side address to connect to
-	// In server mode: the container side address to bind to
+	// In server mode: the sandbox side address to bind to
 	// If left empty, localhost is used
 	Destination string
 }

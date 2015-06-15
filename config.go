@@ -24,6 +24,7 @@ type Config struct {
 	EnvironmentVars []string `json:"environment_vars"`
 }
 
+const OzVersion         = "0.0.1"
 const DefaultConfigPath = "/etc/oz/oz.conf"
 
 func NewDefaultConfig() *Config {

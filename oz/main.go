@@ -55,6 +55,8 @@ func runApplication() {
 	app.Usage = "command line interface to Oz sandboxes"
 	app.Author = "Subgraph"
 	app.Email = "info@subgraph.com"
+	app.Version = OzVersion
+	app.EnableBashCompletion = true
 	app.Commands = []cli.Command{
 		{
 			Name:   "profiles",
@@ -78,7 +80,7 @@ func runApplication() {
 		},
 		{
 			Name:   "shell",
-			Usage:  "start a shell in a running container",
+			Usage:  "start a shell in a running sandbox",
 			Action: handleShell,
 		},
 		{
@@ -129,11 +131,11 @@ func handleLaunch(c *cli.Context) {
 func handleList(c *cli.Context) {
 	sboxes, err := daemon.ListSandboxes()
 	if err != nil {
-		fmt.Printf("Error listing running containers: %v\n", err)
+		fmt.Printf("Error listing running sandboxes: %v\n", err)
 		os.Exit(1)
 	}
 	if len(sboxes) == 0 {
-		fmt.Println("No running containers")
+		fmt.Println("No running sandboxes")
 		return
 	}
 	for _, sb := range sboxes {

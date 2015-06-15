@@ -31,11 +31,12 @@ type ListProfilesResp struct {
 }
 
 type LaunchMsg struct {
-	Index int "Launch"
-	Name  string
-	Pwd   string
-	Args  []string
-	Env   []string
+	Index  int "Launch"
+	Name   string
+	Pwd    string
+	Args   []string
+	Env    []string
+	Noexec bool
 }
 
 type ListSandboxesMsg struct {

@@ -53,7 +53,7 @@ func ListSandboxes() ([]SandboxInfo, error) {
 	return body.Sandboxes, nil
 }
 
-func Launch(arg string, args, env []string) error {
+func Launch(arg string, args, env []string, noexec bool) error {
 	idx, name, err := parseProfileArg(arg)
 	if err != nil {
 		return err
@@ -61,11 +61,12 @@ func Launch(arg string, args, env []string) error {
 	pwd, _ := os.Getwd()
 	
 	resp, err := clientSend(&LaunchMsg{
-		Index: idx,
-		Name:  name,
-		Pwd:   pwd,
-		Args:  args,
-		Env:   env,
+		Index:  idx,
+		Name:   name,
+		Pwd:    pwd,
+		Args:   args,
+		Env:    env,
+		Noexec: noexec,
 	})
 	if err != nil {
 		return err

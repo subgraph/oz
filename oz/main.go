@@ -41,7 +41,7 @@ func runSandbox() {
 		os.Exit(1)
 	}
 
-	err := daemon.Launch(runBasename, os.Args[1:], os.Environ())
+	err := daemon.Launch(runBasename, os.Args[1:], os.Environ(), false)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "launch command failed: %v.\n", err)
 		os.Exit(1)
@@ -65,6 +65,11 @@ func runApplication() {
 			Name:   "launch",
 			Usage:  "launch an application profile",
 			Action: handleLaunch,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name: "noexec, n",
+				},
+			},
 		},
 		{
 			Name:   "list",
@@ -109,11 +114,12 @@ func handleProfiles(c *cli.Context) {
 }
 
 func handleLaunch(c *cli.Context) {
+	noexec := c.Bool("noexec")
 	if len(c.Args()) == 0 {
 		fmt.Println("Argument needed to launch command")
 		os.Exit(1)
 	}
-	err := daemon.Launch(c.Args()[0], c.Args()[1:], os.Environ())
+	err := daemon.Launch(c.Args()[0], c.Args()[1:], os.Environ(), noexec)
 	if err != nil {
 		fmt.Printf("launch command failed: %v\n", err)
 		os.Exit(1)

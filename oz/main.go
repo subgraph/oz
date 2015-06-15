@@ -7,6 +7,7 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/oz-daemon"
 	"github.com/subgraph/oz/oz-init"
 
@@ -55,7 +56,7 @@ func runApplication() {
 	app.Usage = "command line interface to Oz sandboxes"
 	app.Author = "Subgraph"
 	app.Email = "info@subgraph.com"
-	app.Version = OzVersion
+	app.Version = oz.OzVersion
 	app.EnableBashCompletion = true
 	app.Commands = []cli.Command{
 		{

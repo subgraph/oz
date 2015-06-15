@@ -74,7 +74,7 @@ func createInitCommand(initPath, name, chroot string, env []string, uid uint32, 
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
+func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, noexec bool, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
 	u, err := user.LookupId(fmt.Sprintf("%d", uid))
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
@@ -145,11 +145,13 @@ func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, uid,
 		}()
 	}
 
-	go func () {
-		sbox.ready.Wait()
-		go sbox.launchProgram(pwd, args, log)
-	}()
-	
+	if !noexec {
+		go func () {
+			sbox.ready.Wait()
+			go sbox.launchProgram(pwd, args, log)
+		}()
+	}
+
 	if sbox.profile.XServer.Enabled {
 		go func() {
 			sbox.ready.Wait()

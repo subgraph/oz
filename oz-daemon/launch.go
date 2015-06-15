@@ -135,16 +135,18 @@ func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, uid,
 	sbox.ready.Add(1)
 	go sbox.logMessages()
 	
-	go func () {
-		sbox.ready.Wait()
-
-		if p.Networking.Nettype != "host" && len(p.Networking.Sockets) > 0 {
+	if p.Networking.Nettype != "host" && len(p.Networking.Sockets) > 0 {
+		go func() {
+			sbox.ready.Wait()
 			err := network.ProxySetup(sbox.init.Process.Pid, p.Networking.Sockets, d.log, sbox.ready)
 			if err != nil {
 				log.Warning("Unable to create connection proxy: %+s", err)
 			}
-		}
-	
+		}()
+	}
+
+	go func () {
+		sbox.ready.Wait()
 		go sbox.launchProgram(pwd, args, log)
 	}()
 	

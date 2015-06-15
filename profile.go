@@ -15,7 +15,7 @@ type Profile struct {
 	// Path to binary to launch
 	Path string
 	// Path of the config file
-	ConfigPath string `json:"-"`
+	ProfilePath string `json:"-"`
 	// Optional path of binary to watch for watchdog purposes if different than Path
 	Watchdog string
 	// Optional wrapper binary to use when launching command (ex: tsocks)
@@ -153,6 +153,6 @@ func loadProfileFile(file string) (*Profile, error) {
 	if p.Name == "" {
 		p.Name = path.Base(p.Path)
 	}
-	p.ConfigPath = file
+	p.ProfilePath = file
 	return p, nil
 }

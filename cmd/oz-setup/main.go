@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"reflect"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -31,7 +33,7 @@ func main() {
 	app.Usage = "command line interface to install, remove, and create Oz sandboxes\nYou can specify a package name, a binary path, or a Oz profile file "
 	app.Author = "Subgraph"
 	app.Email = "info@subgraph.com"
-	app.Version = "0.0.1"
+	app.Version = oz.OzVersion
 	app.EnableBashCompletion = true
 
 	flagsHookMode := []cli.Flag{
@@ -91,7 +93,62 @@ func handleConfigcheck(c *cli.Context) {
 }
 
 func handleConfigshow(c *cli.Context) {
-	handleConfigcheck(c)
+	config, err := oz.LoadConfig(oz.DefaultConfigPath)
+	useDefaults := false
+	if err != nil {
+		if os.IsNotExist(err) {
+			config = oz.NewDefaultConfig()
+			useDefaults = true
+		} else {
+			fmt.Fprintf(os.Stderr, "Could not load configuration: %s", oz.DefaultConfigPath, err)
+			os.Exit(1)
+		}
+	}
+
+	v := reflect.ValueOf(*config)
+	vt := reflect.TypeOf(*config)
+	maxFieldLength := 0
+	for i := 0; i < v.NumField(); i++ {
+		flen := len(vt.Field(i).Tag.Get("json"))
+		if flen > maxFieldLength {
+			maxFieldLength = flen
+		}
+	}
+	maxValueLength := 0
+	for i := 0; i < v.NumField(); i++ {
+		sval := fmt.Sprintf("%v", v.Field(i).Interface())
+		flen := len(sval)
+		if flen > maxValueLength {
+			maxValueLength = flen
+		}
+	}
+
+	sfmt := "%-" + strconv.Itoa(maxFieldLength) + "s: %-" + strconv.Itoa(maxValueLength) + "v"
+	hfmt := "%-" + strconv.Itoa(maxFieldLength) + "s: %s\n"
+
+	if !useDefaults {
+		fmt.Printf(hfmt, "Config file", oz.DefaultConfigPath)
+	} else {
+		fmt.Printf(hfmt, "Config file", "Not found - using defaults")
+	}
+
+	for i := 0; i < len(fmt.Sprintf(sfmt, "", "")); i++ {
+		fmt.Print("=")
+	}
+	fmt.Println("")
+
+	for i := 0; i < v.NumField(); i++ {
+		fval := fmt.Sprintf("%v", v.Field(i).Interface())
+		fmt.Printf(sfmt, vt.Field(i).Tag.Get("json"), fval)
+		desc := vt.Field(i).Tag.Get("desc")
+		if desc != "" {
+			fmt.Printf(" # %s", desc)
+		}
+
+		fmt.Println("")
+	}
+
+	os.Exit(0)
 }
 
 func handleInstall(c *cli.Context) {

@@ -26,7 +26,6 @@ func init() {
 	case "oz":
 		runFunc = runApplication
 	default:
-		// TODO: Exit if already inside sandbox should only happen
 		runFunc = runSandbox
 	}
 }

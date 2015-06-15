@@ -7,9 +7,9 @@
 	, "disable_audio":true
 }
 , "networking":{
-	"nettype":"empty"
+	"type":"empty"
 	, "sockets": [
-		{"nettype":"client", "proto":"tcp", "port":9050}
+		{"type":"client", "proto":"tcp", "port":9050}
 	]
 }
 , "whitelist": [

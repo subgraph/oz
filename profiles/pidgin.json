@@ -6,7 +6,7 @@
 	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/pidgin-menu.svg"
 }
 , "networking":{
-	"nettype":"bridge"
+	"type":"bridge"
 }
 , "whitelist": [
 	{"path":"${HOME}/.purple"}

@@ -6,9 +6,9 @@
 	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/iceweasel.svg"
 }
 , "networking":{
-	"nettype":"bridge"
+	"type":"bridge"
 	, "sockets": [
-		{"nettype":"client", "proto":"tcp", "port":9050}
+		{"type":"client", "proto":"tcp", "port":9050}
 	]
 }
 , "whitelist": [

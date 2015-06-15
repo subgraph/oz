@@ -9,10 +9,10 @@
 	, "use_pulse_audio": false
 }
 , "networking":{
-	"nettype":"empty"
+	"type":"empty"
 	, "sockets": [
-		{"nettype":"client", "proto":"tcp", "port":9050}
-		, {"nettype":"client", "proto":"tcp", "port":30003}
+		{"type":"client", "proto":"tcp", "port":9050}
+		, {"type":"client", "proto":"tcp", "port":30003}
 	]
 }
 , "whitelist": [

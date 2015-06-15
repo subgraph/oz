@@ -8,7 +8,7 @@
 	, "use_pulse_audio": false
 }
 , "networking":{
-	"nettype":"empty"
+	"type":"empty"
 }
 , "whitelist": [
 ]

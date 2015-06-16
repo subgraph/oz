@@ -88,8 +88,23 @@ func main() {
 }
 
 func handleConfigcheck(c *cli.Context) {
-	fmt.Println("Here be dragons!")
-	os.Exit(1)
+	_, err := oz.LoadConfig(oz.DefaultConfigPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "Could not load configuration `%s`: %v\n", oz.DefaultConfigPath, err)
+			os.Exit(1)
+		}
+	}
+
+	OzConfig = loadConfig()
+	_, err = oz.LoadProfiles(OzConfig.ProfileDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to load profiles from `%s`: %v\n", OzConfig.ProfileDir, err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Configurations and profiles ok!")
+	os.Exit(0)
 }
 
 func handleConfigshow(c *cli.Context) {
@@ -100,7 +115,7 @@ func handleConfigshow(c *cli.Context) {
 			config = oz.NewDefaultConfig()
 			useDefaults = true
 		} else {
-			fmt.Fprintf(os.Stderr, "Could not load configuration: %s", oz.DefaultConfigPath, err)
+			fmt.Fprintf(os.Stderr, "Could not load configuration `%s`: %v\n", oz.DefaultConfigPath, err)
 			os.Exit(1)
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -63,6 +64,17 @@ func Main() {
 
 func parseArgs() *initState {
 	log := createLogger()
+
+	if os.Getuid() != 0 {
+		log.Error("oz-init must run as root\n")
+		os.Exit(1)
+	}
+	pcontents, _ := ioutil.ReadFile("/proc/1/cmdline")
+	if len(pcontents) > 0 {
+		log.Error("What are you doing? Oz-init cannot be launched manually")
+		os.Exit(1)
+	}
+
 	getvar := func(name string) string {
 		val := os.Getenv(name)
 		if val == "" {

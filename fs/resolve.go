@@ -31,12 +31,21 @@ func (fs *Filesystem) resolveVars(p string) (string, error) {
 		return resolved, nil
 
 	case strings.HasPrefix(p, homeVar):
+		if fs.user == nil {
+			return p, nil
+		}
 		return path.Join(fs.user.HomeDir, p[len(homeVar):]), nil
 
 	case strings.Contains(p, uidVar):
+		if fs.user == nil {
+			return p, nil
+		}
 		return strings.Replace(p, uidVar, fs.user.Uid, -1), nil
 
 	case strings.Contains(p, userVar):
+		if fs.user == nil {
+			return p, nil
+		}
 		return strings.Replace(p, userVar, fs.user.Username, -1), nil
 	}
 	return p, nil

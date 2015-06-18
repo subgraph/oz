@@ -11,7 +11,7 @@ var xpraServerDefaultArgs = []string{
 	"--no-mdns",
 	//"--pulseaudio",
 	"--no-pulseaudio",
-	"--input-method=SCIM",
+	"--input-method=keep",
 }
 
 func NewServer(config *oz.XServerConf, display uint64, workdir string) *Xpra {

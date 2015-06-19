@@ -43,6 +43,13 @@ func main() {
 		},
 	}
 
+	flagsForce := []cli.Flag{
+		cli.BoolFlag{
+			Name:  "force, f",
+			Usage: "Force the command to run through non fatal errors",
+		},
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:  "config",
@@ -64,13 +71,13 @@ func main() {
 			Name:   "install",
 			Usage:  "install binary diversion for a program",
 			Action: handleInstall,
-			Flags:  flagsHookMode,
+			Flags:  append(flagsForce, flagsHookMode...),
 		},
 		{
 			Name:   "remove",
 			Usage:  "remove a binary diversion for a program",
 			Action: handleRemove,
-			Flags:  flagsHookMode,
+			Flags:  append(flagsForce, flagsHookMode...),
 		},
 		{
 			Name:   "status",
@@ -147,8 +154,8 @@ func handleConfigshow(c *cli.Context) {
 		fmt.Printf(hfmt, "Config file", "Not found - using defaults")
 	}
 
-	for i := 0; i < len(fmt.Sprintf(sfmt, "", "")); i++ {
-		fmt.Print("=")
+	for i := 0; i < len(fmt.Sprintf(sfmt, "", ""))+2; i++ {
+		fmt.Print("#")
 	}
 	fmt.Println("")
 
@@ -180,39 +187,52 @@ func handleInstall(c *cli.Context) {
 		return // For clarity
 	}
 
-	isInstalled, err := isDivertInstalled(OzProfile.Path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unknown error: %+v\n", err)
-		os.Exit(1)
-	}
-	if isInstalled == true {
-		fmt.Println("Divert already installed for ", OzProfile.Path)
-		os.Exit(0)
+	divertInstall := func(cpath string) {
+		isInstalled, err := isDivertInstalled(cpath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unknown error: %+v\n", err)
+			os.Exit(1)
+		}
+		if isInstalled == true {
+			fmt.Println("Divert already installed for ", cpath)
+			if c.Bool("force") {
+				return
+			}
+			os.Exit(0)
+		}
+
+		dpkgArgs := []string{
+			"--add",
+			"--package",
+			"oz",
+			"--rename",
+			"--divert",
+			getBinaryPath(cpath),
+			cpath,
+		}
+
+		_, err = exec.Command(PathDpkgDivert, dpkgArgs...).Output()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Dpkg divert command `%s %+s` failed: %s", PathDpkgDivert, dpkgArgs, err)
+			os.Exit(1)
+		}
+
+		err = syscall.Symlink(OzConfig.ClientPath, cpath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create symlink %s", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Successfully installed Oz sandbox for: %s.\n", cpath)
 	}
 
-	dpkgArgs := []string{
-		"--add",
-		"--package",
-		"oz",
-		"--rename",
-		"--divert",
-		getBinaryPath(OzProfile.Path),
-		OzProfile.Path,
+	paths := append([]string{}, OzProfile.Path)
+	paths = append(paths, OzProfile.Paths...)
+	for _, pp := range paths {
+		divertInstall(pp)
 	}
 
-	_, err = exec.Command(PathDpkgDivert, dpkgArgs...).Output()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Dpkg divert command `%s %+s` failed: %s", PathDpkgDivert, dpkgArgs, err)
-		os.Exit(1)
-	}
-
-	err = syscall.Symlink(OzConfig.ClientPath, OzProfile.Path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create symlink %s", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Successfully installed Oz sandbox for: %s.\n", OzProfile.Path)
+	fmt.Printf("Successfully installed Oz sandbox for: %s.\n", OzProfile.Name)
 }
 
 func handleRemove(c *cli.Context) {
@@ -229,33 +249,46 @@ func handleRemove(c *cli.Context) {
 		return // For clarity
 	}
 
-	isInstalled, err := isDivertInstalled(OzProfile.Path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unknown error: %+v\n", err)
-		os.Exit(1)
-	}
-	if isInstalled == false {
-		fmt.Println("Divert is not installed for ", OzProfile.Path)
-		os.Exit(0)
+	divertRemove := func(cpath string) {
+		isInstalled, err := isDivertInstalled(cpath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unknown error: %+v\n", err)
+			os.Exit(1)
+		}
+		if isInstalled == false {
+			fmt.Println("Divert is not installed for ", cpath)
+			if c.Bool("force") {
+				return
+			}
+			os.Exit(0)
+		}
+
+		os.Remove(cpath)
+
+		dpkgArgs := []string{
+			"--rename",
+			"--package",
+			"oz",
+			"--remove",
+			cpath,
+		}
+
+		_, err = exec.Command(PathDpkgDivert, dpkgArgs...).Output()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Dpkg divert command `%s %+s` failed: %s", PathDpkgDivert, dpkgArgs, err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Successfully remove jail for: %s.\n", cpath)
 	}
 
-	os.Remove(OzProfile.Path)
-
-	dpkgArgs := []string{
-		"--rename",
-		"--package",
-		"oz",
-		"--remove",
-		OzProfile.Path,
+	paths := append([]string{}, OzProfile.Path)
+	paths = append(paths, OzProfile.Paths...)
+	for _, pp := range paths {
+		divertRemove(pp)
 	}
 
-	_, err = exec.Command(PathDpkgDivert, dpkgArgs...).Output()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Dpkg divert command `%s %+s` failed: %s", PathDpkgDivert, dpkgArgs, err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Successfully remove jail for: %s.\n", OzProfile.Path)
+	fmt.Printf("Successfully remove jail for: %s.\n", OzProfile.Name)
 }
 
 func handleStatus(c *cli.Context) {
@@ -263,7 +296,7 @@ func handleStatus(c *cli.Context) {
 	pname := c.Args()[0]
 	OzProfile, err := loadProfile(pname, OzConfig.ProfileDir)
 	if err != nil || OzProfile == nil {
-		fmt.Fprintf(os.Stderr, "Unable to load profiles (%s).\n", err)
+		fmt.Fprintf(os.Stderr, "Unable to load profiles (%s): %v.\n", pname, err)
 		os.Exit(1)
 	}
 
@@ -272,17 +305,25 @@ func handleStatus(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	isInstalled, err := isDivertInstalled(OzProfile.Path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unknown error: %+v\n", err)
-		os.Exit(1)
-	}
-	if isInstalled {
-		fmt.Println("Package divert is \033[0;32minstalled\033[0m for: ", OzProfile.Path)
-	} else {
-		fmt.Println("Package divert is \033[0;31mnot installed\033[0m for: ", OzProfile.Path)
+	checkInstalled := func(cpath string) {
+		isInstalled, err := isDivertInstalled(cpath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unknown error: %+v\n", err)
+			os.Exit(1)
+		}
+		sfmt := "%-37s\033[0m%s\n"
+		if isInstalled {
+			fmt.Printf("\033[0;32m"+sfmt, "Package divert is installed for: ", cpath)
+		} else {
+			fmt.Printf("\033[0;31m"+sfmt, "Package divert is not installed for: ", cpath)
+		}
 	}
 
+	paths := append([]string{}, OzProfile.Path)
+	paths = append(paths, OzProfile.Paths...)
+	for _, pp := range paths {
+		checkInstalled(pp)
+	}
 }
 
 func handleCreate(c *cli.Context) {
@@ -366,10 +407,15 @@ func loadConfig() *oz.Config {
 func loadProfile(name, profileDir string) (*oz.Profile, error) {
 	ps, err := oz.LoadProfiles(profileDir)
 	if err != nil {
+		fmt.Println("DERP1")
 		return nil, err
 	}
 
-	return ps.GetProfileByName(name)
+	p, err := ps.GetProfileByName(name)
+	if err != nil || p == nil {
+		return ps.GetProfileByPath(name)
+	}
+	return p, nil
 
 }
 

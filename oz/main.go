@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 
 	"github.com/subgraph/oz"
@@ -41,7 +42,14 @@ func runSandbox() {
 		os.Exit(1)
 	}
 
-	err := daemon.Launch(runBasename, os.Args[1:], os.Environ(), false)
+	name := "0"
+	cpath := os.Args[0]
+	if !filepath.IsAbs(os.Args[0]) {
+		// TODO: Check for executable in path...
+		name = cpath
+		cpath = ""
+	}
+	err := daemon.Launch(name, cpath, os.Args[1:], os.Environ(), false)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "launch command failed: %v.\n", err)
 		os.Exit(1)
@@ -121,7 +129,7 @@ func handleLaunch(c *cli.Context) {
 		fmt.Println("Argument needed to launch command")
 		os.Exit(1)
 	}
-	err := daemon.Launch(c.Args()[0], c.Args()[1:], os.Environ(), noexec)
+	err := daemon.Launch(c.Args()[0], "", c.Args()[1:], os.Environ(), noexec)
 	if err != nil {
 		fmt.Printf("launch command failed: %v\n", err)
 		os.Exit(1)

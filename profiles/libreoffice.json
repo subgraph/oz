@@ -1,0 +1,31 @@
+{
+"name": "libreoffice"
+, "path": "/usr/bin/libreoffice"
+, "paths": [
+	"/usr/bin/lowriter"
+	, "/usr/bin/lobase"
+	, "/usr/bin/localc"
+	, "/usr/share/libreoffice/bin/lo-xlate-lang"
+	, "/usr/bin/loffice"
+	, "/usr/bin/unopkg"
+	, "/usr/bin/lofromtemplate"
+	, "/usr/bin/soffice"
+	, "/usr/bin/lodraw"
+	, "/usr/bin/loimpress"
+	, "/usr/bin/lomath"
+	, "/usr/bin/loweb"
+	, "/usr/bin/lowriter"
+]
+, "allow_files": true
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon":"/usr/share/icons/gnome/scalable/apps/libreoffice-startcenter.svg"
+	, "window_icon":"/usr/share/icons/gnome/scalable/apps/libreoffice-startcenter.svg"
+	, "disable_audio": true
+	, "use_pulse_audio": false
+}
+, "networking":{
+	"type":"empty"
+}
+}

@@ -32,6 +32,7 @@ type ListProfilesResp struct {
 
 type LaunchMsg struct {
 	Index  int "Launch"
+	Path   string
 	Name   string
 	Pwd    string
 	Args   []string

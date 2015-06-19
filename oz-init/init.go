@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -69,8 +68,9 @@ func parseArgs() *initState {
 		log.Error("oz-init must run as root\n")
 		os.Exit(1)
 	}
-	pcontents, _ := ioutil.ReadFile("/proc/1/cmdline")
-	if len(pcontents) > 0 {
+	// We should check that the file contains config.InitPath, but
+	// since proc is not mounted in this state is still doesn't exist.
+	if _, err := os.Stat("/proc/1/cmdline"); !os.IsNotExist(err) {
 		log.Error("What are you doing? Oz-init cannot be launched manually")
 		os.Exit(1)
 	}
@@ -156,13 +156,13 @@ func parseArgs() *initState {
 			env = append(env, e)
 		}
 	}
-	
+
 	env = append(env, "PATH=/usr/bin:/bin")
-	
+
 	if p.XServer.Enabled {
 		env = append(env, "DISPLAY=:"+strconv.Itoa(display))
 	}
-	
+
 	return &initState{
 		log:       log,
 		config:    config,
@@ -186,8 +186,8 @@ func (st *initState) runInit() {
 	if homedir, _ := st.fs.GetHomeDir(); homedir != "" {
 		st.launchEnv = append(st.launchEnv, "HOME="+homedir)
 	}
-	
-	if st.profile.Networking.Nettype != "host" {
+
+	if st.profile.Networking.Nettype != network.TYPE_HOST {
 		err := network.NetSetup(st.network)
 		if err != nil {
 			st.log.Error("Unable to setup networking: %+v", err)
@@ -289,12 +289,15 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 	}
 }
 
-func (st *initState) launchApplication(pwd string, cmdArgs []string) (*exec.Cmd, error) {
+func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*exec.Cmd, error) {
 	suffix := ""
 	if st.config.DivertSuffix != "" {
 		suffix = "."+st.config.DivertSuffix
 	}
-	cmd := exec.Command(st.profile.Path+suffix)
+	if cpath == "" {
+		cpath = st.profile.Path
+	}
+	cmd := exec.Command(cpath+suffix)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stdout pipe: %v", err)
@@ -311,13 +314,13 @@ func (st *initState) launchApplication(pwd string, cmdArgs []string) (*exec.Cmd,
 		Gid: uint32(st.gid),
 	}
 	cmd.Env = append(cmd.Env, st.launchEnv...)
-	
+
 	cmd.Args = append(cmd.Args, cmdArgs...)
-	
+
 	if _, err := os.Stat(pwd); err == nil {
 		cmd.Dir = pwd
 	}
-	
+
 	if err := cmd.Start(); err != nil {
 		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
 		return nil, err
@@ -326,7 +329,7 @@ func (st *initState) launchApplication(pwd string, cmdArgs []string) (*exec.Cmd,
 
 	go st.readApplicationOutput(stdout, "stdout")
 	go st.readApplicationOutput(stderr, "stderr")
-	
+
 	return cmd, nil
 }
 
@@ -357,7 +360,7 @@ func handlePing(ping *PingMsg, msg *ipc.Message) error {
 
 func (st *initState) handleRunProgram(rp *RunProgramMsg, msg *ipc.Message) error {
 	st.log.Info("Run program message received: %+v", rp)
-	_, err := st.launchApplication(rp.Pwd, rp.Args)
+	_, err := st.launchApplication(rp.Path, rp.Pwd, rp.Args)
 	if err != nil {
 		err := msg.Respond(&ErrorMsg{Msg: err.Error()})
 		return err

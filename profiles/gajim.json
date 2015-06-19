@@ -1,5 +1,10 @@
 {
-"path": "/usr/bin/gajim"
+"name": "gajim"
+, "path": "/usr/bin/gajim"
+, "paths": [
+	"/usr/bin/gajim-history-manager"
+	, "/usr/bin/gajim-remote"
+]
 , "xserver": {
 	"enabled": true
 	, "enable_tray": true

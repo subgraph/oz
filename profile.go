@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
-	
+
 	"github.com/subgraph/oz/network"
 )
 
@@ -14,6 +14,8 @@ type Profile struct {
 	Name string
 	// Path to binary to launch
 	Path string
+	// List of path to binaries matching this sandbox
+	Paths []string
 	// Path of the config file
 	ProfilePath string `json:"-"`
 	// Optional path of binary to watch for watchdog purposes if different than Path
@@ -70,7 +72,7 @@ type EnvVar struct {
 // Sandbox network definition
 type NetworkProfile struct {
 	// One of empty, host, bridge
-	Nettype string `json:"type"`
+	Nettype network.NetType `json:"type"`
 
 	// Name of the bridge to attach to
 	//Bridge string
@@ -85,6 +87,20 @@ const defaultProfileDirectory = "/var/lib/oz/cells.d"
 var loadedProfiles []*Profile
 
 type Profiles []*Profile
+
+func NewDefaultProfile() *Profile {
+	return &Profile{
+		Multi:      false,
+		AllowFiles: false,
+		XServer:    XServerConf{
+			Enabled:       true,
+			EnableTray:    false,
+			UseDBUS:       false,
+			UsePulseAudio: false,
+			DisableAudio:  true,
+		},
+	}
+}
 
 func (ps Profiles) GetProfileByName(name string) (*Profile, error) {
 	if loadedProfiles == nil {
@@ -116,6 +132,11 @@ func (ps Profiles) GetProfileByPath(bpath string) (*Profile, error) {
 		if p.Path == bpath {
 			return p, nil
 		}
+		for _, pp := range p.Paths {
+			if pp == bpath {
+				return p, nil
+			}
+		}
 	}
 	return nil, nil
 }
@@ -136,7 +157,7 @@ func LoadProfiles(dir string) (Profiles, error) {
 			ps = append(ps, p)
 		}
 	}
-	
+
 	loadedProfiles = ps
 	return ps, nil
 }

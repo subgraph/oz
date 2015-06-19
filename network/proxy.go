@@ -10,17 +10,32 @@ import(
 	"sync"
 
 	"github.com/subgraph/oz/ns"
-	
+
 	"github.com/op/go-logging"
+)
+
+type ProxyType string
+
+const(
+	PROXY_CLIENT ProxyType = "client"
+	PROXY_SERVER ProxyType = "server"
+)
+
+type ProtoType string
+
+const(
+	PROTO_TCP ProtoType = "tcp"
+	PROTO_UDP ProtoType = "udp"
+	PROTO_SOCKET ProtoType = "socket"
 )
 
 // Socket list, used to hold ports that should be forwarded
 type ProxyConfig struct {
 	// One of client, server
-	Nettype string `json:"type"`
+	Nettype ProxyType `json:"type"`
 
 	// One of tcp, udp, socket
-	Proto string
+	Proto ProtoType
 
 	// TCP or UDP port number
 	Port int
@@ -40,12 +55,12 @@ var wgProxy sync.WaitGroup
 
 func ProxySetup(childPid int, ozSockets []ProxyConfig, log *logging.Logger, ready sync.WaitGroup) error {
 	for _, socket := range ozSockets {
-		if socket.Nettype == "" || socket.Nettype == "client" {
+		if socket.Nettype == "" || socket.Nettype == PROXY_CLIENT {
 			err := newProxyClient(childPid, socket.Proto, socket.Destination, socket.Port, log, ready)
 			if err != nil {
 				return fmt.Errorf("Unable to setup client socket forwarding %+v, %s", socket, err)
 			}
-		} else if socket.Nettype == "server" {
+		} else if socket.Nettype == PROXY_SERVER {
 			err := newProxyServer(childPid, socket.Proto, socket.Destination, socket.Port, log, ready)
 			if err != nil {
 				return fmt.Errorf("Unable to setup server socket forwarding %+s, %s", socket, err)
@@ -59,8 +74,8 @@ func ProxySetup(childPid int, ozSockets []ProxyConfig, log *logging.Logger, read
 /**
  * Listener/Client
 **/
-func proxyClientConn(conn *net.Conn, proto, rAddr string, ready sync.WaitGroup) error {
-	rConn, err := net.Dial(proto, rAddr)
+func proxyClientConn(conn *net.Conn, proto ProtoType, rAddr string, ready sync.WaitGroup) error {
+	rConn, err := net.Dial(string(proto), rAddr)
 	if err != nil {
 		return fmt.Errorf("Socket: %+v.\n", err)
 	}
@@ -71,7 +86,7 @@ func proxyClientConn(conn *net.Conn, proto, rAddr string, ready sync.WaitGroup) 
 	return nil
 }
 
-func newProxyClient(pid int, proto, dest string, port int, log *logging.Logger, ready sync.WaitGroup) error {
+func newProxyClient(pid int, proto ProtoType, dest string, port int, log *logging.Logger, ready sync.WaitGroup) error {
 	if dest == "" {
 		dest = "127.0.0.1"
 	}
@@ -104,7 +119,7 @@ func newProxyClient(pid int, proto, dest string, port int, log *logging.Logger, 
 	return nil
 }
 
-func proxySocketListener(pid int, proto, lAddr string) (net.Listener, error) {
+func proxySocketListener(pid int, proto ProtoType, lAddr string) (net.Listener, error) {
 	fd, err := ns.OpenProcess(pid, ns.CLONE_NEWNET)
 	defer ns.Close(fd)
 	if err != nil {
@@ -114,7 +129,7 @@ func proxySocketListener(pid int, proto, lAddr string) (net.Listener, error) {
 	return nsSocketListener(fd, proto, lAddr)
 }
 
-func nsSocketListener(fd uintptr, proto, lAddr string) (net.Listener, error) {
+func nsSocketListener(fd uintptr, proto ProtoType, lAddr string) (net.Listener, error) {
 	origNs, _ := ns.OpenProcess(os.Getpid(), ns.CLONE_NEWNET)
 	defer ns.Close(origNs)
 	defer ns.Set(origNs, ns.CLONE_NEWNET)
@@ -124,14 +139,14 @@ func nsSocketListener(fd uintptr, proto, lAddr string) (net.Listener, error) {
 		return nil, err
 	}
 
-	return net.Listen(proto, lAddr)
+	return net.Listen(string(proto), lAddr)
 
 }
 
 /**
  * Connect/Server
 **/
-func proxyServerConn(pid int, conn *net.Conn, proto, rAddr string, log *logging.Logger, ready sync.WaitGroup) (error) {
+func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log *logging.Logger, ready sync.WaitGroup) (error) {
 	rConn, err := socketConnect(pid, proto, rAddr)
 	if err != nil {
 		log.Error("Socket: %+v.", err)
@@ -144,7 +159,7 @@ func proxyServerConn(pid int, conn *net.Conn, proto, rAddr string, log *logging.
 	return nil
 }
 
-func newProxyServer(pid int, proto, dest string, port int, log *logging.Logger, ready sync.WaitGroup) (error) {
+func newProxyServer(pid int, proto ProtoType, dest string, port int, log *logging.Logger, ready sync.WaitGroup) (error) {
 	if dest == "" {
 		dest = "127.0.0.1"
 	}
@@ -154,7 +169,7 @@ func newProxyServer(pid int, proto, dest string, port int, log *logging.Logger, 
 
 	log.Info("Starting socket server forwarding: %s://%s.", proto, lAddr)
 
-	listen, err := net.Listen(proto, lAddr)
+	listen, err := net.Listen(string(proto), lAddr)
 	if err != nil {
 		return err
 	}
@@ -177,7 +192,7 @@ func newProxyServer(pid int, proto, dest string, port int, log *logging.Logger, 
 	return nil
 }
 
-func socketConnect(pid int, proto, rAddr string) (net.Conn, error) {
+func socketConnect(pid int, proto ProtoType, rAddr string) (net.Conn, error) {
 	fd, err := ns.OpenProcess(pid, ns.CLONE_NEWNET)
 	defer ns.Close(fd)
 	if err != nil {
@@ -187,7 +202,7 @@ func socketConnect(pid int, proto, rAddr string) (net.Conn, error) {
 	return nsProxySocketConnect(fd, proto, rAddr)
 }
 
-func nsProxySocketConnect(fd uintptr, proto, rAddr string) (net.Conn, error) {
+func nsProxySocketConnect(fd uintptr, proto ProtoType, rAddr string) (net.Conn, error) {
 	origNs, _ := ns.OpenProcess(os.Getpid(), ns.CLONE_NEWNET)
 	defer ns.Close(origNs)
 	defer ns.Set(origNs, ns.CLONE_NEWNET)
@@ -197,6 +212,6 @@ func nsProxySocketConnect(fd uintptr, proto, rAddr string) (net.Conn, error) {
 		return nil, err
 	}
 
-	return net.Dial(proto, rAddr)
+	return net.Dial(string(proto), rAddr)
 
 }

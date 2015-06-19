@@ -71,7 +71,7 @@ func initialize() *daemonState {
 	d.nextDisplay = 100
 
 	for _, pp := range d.profiles {
-		if pp.Networking.Nettype == "bridge" {
+		if pp.Networking.Nettype == network.TYPE_BRIDGE {
 			d.log.Info("Initializing bridge networking")
 			htn, err := network.BridgeInit(d.config.BridgeMACAddr, d.config.NMIgnoreFile, d.log)
 			if err != nil {
@@ -127,10 +127,11 @@ func (d *daemonState) handleListProfiles(msg *ListProfilesMsg, m *ipc.Message) e
 
 func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 	d.Debug("Launch message received: %+v", msg)
-	p, err := d.getProfileByIdxOrName(msg.Index, msg.Name)
+	p, err := d.getProfileFromLaunchMsg(msg)
 	if err != nil {
 		return m.Respond(&ErrorMsg{err.Error()})
 	}
+
 	if sbox := d.getRunningSandboxByName(p.Name); sbox != nil {
 		if msg.Noexec {
 			errmsg := "Asked to launch program but sandbox is running and noexec is set!"
@@ -138,12 +139,12 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 			return m.Respond(&ErrorMsg{errmsg})
 		} else {
 			d.Info("Found running sandbox for `%s`, running program there", p.Name)
-			sbox.launchProgram(msg.Pwd, msg.Args, d.log)
+			sbox.launchProgram(msg.Path, msg.Pwd, msg.Args, d.log)
 		}
 	} else {
 		d.Debug("Would launch %s", p.Name)
-		env := d.sanitizeEnvironment(p, msg.Env)
-		_, err = d.launch(p, msg.Pwd, msg.Args, env, msg.Noexec, m.Ucred.Uid, m.Ucred.Gid, d.log)
+		msg.Env = d.sanitizeEnvironment(p, msg.Env)
+		_, err = d.launch(p, msg, m.Ucred.Uid, m.Ucred.Gid, d.log)
 		if err != nil {
 			d.Warning("Launch of %s failed: %v", p.Name, err)
 			return m.Respond(&ErrorMsg{err.Error()})
@@ -154,7 +155,7 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 
 func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) ([]string) {
 	newEnv := []string{}
-	
+
 	for _, EnvItem := range d.config.EnvironmentVars {
 		for _, OldItem := range oldEnv {
 			if strings.HasPrefix(OldItem, EnvItem+"=") {
@@ -183,7 +184,7 @@ func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) ([]str
 			}
 		}
 	}
-	
+
 	return newEnv
 }
 
@@ -205,6 +206,28 @@ func (d *daemonState) sandboxById(id int) *Sandbox {
 		}
 	}
 	return nil
+}
+
+func (d *daemonState) getProfileFromLaunchMsg(msg *LaunchMsg) (*oz.Profile, error) {
+	if msg.Index == 0 && msg.Name == "" {
+		return d.getProfileByPath(msg.Path)
+	}
+	return d.getProfileByIdxOrName(msg.Index, msg.Name)
+}
+
+func (d *daemonState) getProfileByPath(cpath string) (*oz.Profile, error) {
+	for _, p := range d.profiles {
+		if p.Path == cpath {
+			return p, nil
+		}
+		for _, pp := range p.Paths {
+			if pp == cpath {
+				return p, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("could not find profile path '%s'", cpath)
 }
 
 func (d *daemonState) getProfileByIdxOrName(index int, name string) (*oz.Profile, error) {
@@ -229,7 +252,7 @@ func (d *daemonState) getRunningSandboxByName(name string) *Sandbox {
 			return sb
 		}
 	}
-	
+
 	return nil
 }
 

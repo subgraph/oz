@@ -18,6 +18,14 @@ const (
 	ozMaxRandTries               = 3
 )
 
+type NetType string
+
+const(
+	TYPE_HOST NetType   = "host"
+	TYPE_EMPTY NetType  = "empty"
+	TYPE_BRIDGE NetType = "bridge"
+)
+
 type HostNetwork struct {
 	// Gateway ip (bridge ip)
 	Gateway net.IP
@@ -35,6 +43,8 @@ type HostNetwork struct {
 	Max uint64
 	// Bridge interface MAC Address
 	BridgeMAC string
+	//
+	Nettype NetType
 }
 
 type SandboxNetwork struct {
@@ -48,6 +58,8 @@ type SandboxNetwork struct {
 	Gateway net.IP
 	// IP class (ie: /24)
 	Class string
+	//
+	Nettype NetType
 }
 
 var privateNetworkRanges []string

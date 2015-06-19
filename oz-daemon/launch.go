@@ -36,7 +36,7 @@ type Sandbox struct {
 	network *network.SandboxNetwork
 }
 
-func createInitCommand(initPath, name, chroot string, env []string, uid uint32, display int, stn *network.SandboxNetwork, nettype string) *exec.Cmd {
+func createInitCommand(initPath, name, chroot string, env []string, uid uint32, display int, stn *network.SandboxNetwork) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 
@@ -45,7 +45,7 @@ func createInitCommand(initPath, name, chroot string, env []string, uid uint32, 
 	cloneFlags |= syscall.CLONE_NEWPID
 	cloneFlags |= syscall.CLONE_NEWUTS
 
-	if nettype != "host" {
+	if stn.Nettype != network.TYPE_HOST {
 		cloneFlags |= syscall.CLONE_NEWNET
 	}
 
@@ -74,7 +74,7 @@ func createInitCommand(initPath, name, chroot string, env []string, uid uint32, 
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, noexec bool, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
+func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
 	u, err := user.LookupId(fmt.Sprintf("%d", uid))
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
@@ -84,20 +84,21 @@ func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, noex
 		return nil, err
 	}
 	display := 0
-	if p.XServer.Enabled && p.Networking.Nettype == "host" {
+	if p.XServer.Enabled && p.Networking.Nettype == network.TYPE_HOST {
 		display = d.nextDisplay
 		d.nextDisplay += 1
 	}
 
 	stn := new(network.SandboxNetwork)
-	if p.Networking.Nettype == "bridge" {
+	stn.Nettype = p.Networking.Nettype
+	if p.Networking.Nettype == network.TYPE_BRIDGE {
 		stn, err = network.PrepareSandboxNetwork(d.network, log)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to prepare veth network: %+v", err)
 		}
 	}
 
-	cmd := createInitCommand(d.config.InitPath, p.Name, fs.Root(), env, uid, display, stn, p.Networking.Nettype)
+	cmd := createInitCommand(d.config.InitPath, p.Name, fs.Root(), msg.Env, uid, display, stn)
 	log.Debug("Command environment: %+v", cmd.Env)
 	pp, err := cmd.StderrPipe()
 	if err != nil {
@@ -124,18 +125,18 @@ func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, noex
 		network: stn,
 	}
 
-	if p.Networking.Nettype == "bridge" {
+	if p.Networking.Nettype == network.TYPE_BRIDGE {
 		if err := network.NetInit(stn, d.network, cmd.Process.Pid, log); err != nil {
 			cmd.Process.Kill()
 			fs.Cleanup()
 			return nil, fmt.Errorf("Unable to create veth networking: %+v", err)
 		}
 	}
-	
+
 	sbox.ready.Add(1)
 	go sbox.logMessages()
-	
-	if p.Networking.Nettype != "host" && len(p.Networking.Sockets) > 0 {
+
+	if p.Networking.Nettype != network.TYPE_HOST && len(p.Networking.Sockets) > 0 {
 		go func() {
 			sbox.ready.Wait()
 			err := network.ProxySetup(sbox.init.Process.Pid, p.Networking.Sockets, d.log, sbox.ready)
@@ -145,10 +146,10 @@ func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, noex
 		}()
 	}
 
-	if !noexec {
+	if !msg.Noexec {
 		go func () {
 			sbox.ready.Wait()
-			go sbox.launchProgram(pwd, args, log)
+			go sbox.launchProgram(msg.Path, msg.Pwd, msg.Args, log)
 		}()
 	}
 
@@ -158,13 +159,13 @@ func (d *daemonState) launch(p *oz.Profile, pwd string, args, env []string, noex
 			go sbox.startXpraClient()
 		}()
 	}
-	
+
 	d.nextSboxId += 1
 	d.sandboxes = append(d.sandboxes, sbox)
 	return sbox, nil
 }
 
-func (sbox *Sandbox) launchProgram(pwd string, args []string, log *logging.Logger) {
+func (sbox *Sandbox) launchProgram(cpath, pwd string, args []string, log *logging.Logger) {
 	if sbox.profile.AllowFiles {
 		for _, fpath := range args {
 			if _, err := os.Stat(fpath); err == nil {
@@ -178,8 +179,8 @@ func (sbox *Sandbox) launchProgram(pwd string, args []string, log *logging.Logge
 			}
 		}
 	}
-	
-	err := ozinit.RunProgram(sbox.addr, pwd, args)
+
+	err := ozinit.RunProgram(sbox.addr, cpath, pwd, args)
 	if err != nil {
 		log.Error("start shell command failed: %v", err)
 	}
@@ -190,7 +191,7 @@ func (sbox *Sandbox) remove(log *logging.Logger) {
 	for _, sb := range sbox.daemon.sandboxes {
 		if sb == sbox {
 			sb.fs.Cleanup()
-			if sb.profile.Networking.Nettype == "bridge" {
+			if sb.profile.Networking.Nettype == network.TYPE_BRIDGE {
 				sb.network.Cleanup(log)
 			}
 		} else {

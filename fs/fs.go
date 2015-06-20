@@ -99,7 +99,7 @@ func NewFromProfile(profile *oz.Profile, user *user.User, basePath string, UseFu
 	fs.noDefaults = profile.NoDefaults
 	fs.noSysAndProc = profile.NoSysProc
 	fs.fullDevices = UseFullDev
-	if profile.XServer.Enabled {
+	if profile.XServer.Enabled && user != nil {
 		fs.xpra = path.Join(user.HomeDir, ".Xoz", profile.Name)
 	}
 	return fs

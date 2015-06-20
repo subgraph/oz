@@ -189,12 +189,20 @@ func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) ([]str
 }
 
 func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) error {
-	sbox := d.sandboxById(msg.Id)
-	if sbox == nil {
-		return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
-	}
-	if err := sbox.init.Process.Signal(os.Interrupt); err != nil {
-		return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
+	if msg.Id == -1 {
+		for _, sb := range d.sandboxes {
+			if err := sb.init.Process.Signal(os.Interrupt); err != nil {
+				return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
+			}
+		}
+	} else {
+		sbox := d.sandboxById(msg.Id)
+		if sbox == nil {
+			return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+		}
+		if err := sbox.init.Process.Signal(os.Interrupt); err != nil {
+			return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
+		}
 	}
 	return m.Respond(&OkMsg{})
 }

@@ -214,16 +214,22 @@ func handleClean(c *cli.Context) {
 
 func handleKill(c *cli.Context) {
 	if len(c.Args()) == 0 {
-		fmt.Println("Need a sandbox id to kill\n")
+		fmt.Errorf("Need a sandbox id to kill\n")
 		os.Exit(1)
+	}
+	if c.Args()[0] == "all" {
+		if err := daemon.KillAllSanodboxes(); err != nil {
+			fmt.Errorf("Kill command failed:", err)
+		}
+		return
 	}
 	id, err := strconv.Atoi(c.Args()[0])
 	if err != nil {
-		fmt.Printf("Could not parse id value %s\n", c.Args()[0])
+		fmt.Errorf("Could not parse id value %s\n", c.Args()[0])
 		os.Exit(1)
 	}
 	if err := daemon.KillSandbox(id); err != nil {
-		fmt.Println("Kill command failed:", err)
+		fmt.Errorf("Kill command failed:", err)
 	}
 
 }

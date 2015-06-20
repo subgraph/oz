@@ -125,10 +125,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		network: stn,
 	}
 
-	wgNet := new(sync.WaitGroup)
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
-		defer wgNet.Done()
-		wgNet.Add(1)
 		if err := network.NetInit(stn, d.network, cmd.Process.Pid, log); err != nil {
 			cmd.Process.Kill()
 			fs.Cleanup()
@@ -139,10 +136,11 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 	sbox.ready.Add(1)
 	go sbox.logMessages()
 
+	wgNet := new(sync.WaitGroup)
 	if p.Networking.Nettype != network.TYPE_HOST && len(p.Networking.Sockets) > 0 {
+		wgNet.Add(1)
 		go func() {
 			defer wgNet.Done()
-			wgNet.Add(1)
 			sbox.ready.Wait()
 			err := network.ProxySetup(sbox.init.Process.Pid, p.Networking.Sockets, d.log, sbox.ready)
 			if err != nil {

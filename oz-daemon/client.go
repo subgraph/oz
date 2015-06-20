@@ -106,7 +106,7 @@ func Clean(arg string) error {
 	}
 }
 
-func KillAllSanodboxes() error {
+func KillAllSandboxes() error {
 	return KillSandbox(-1)
 }
 

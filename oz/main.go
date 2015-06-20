@@ -218,7 +218,7 @@ func handleKill(c *cli.Context) {
 		os.Exit(1)
 	}
 	if c.Args()[0] == "all" {
-		if err := daemon.KillAllSanodboxes(); err != nil {
+		if err := daemon.KillAllSandboxes(); err != nil {
 			fmt.Errorf("Kill command failed:", err)
 		}
 		return

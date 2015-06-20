@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,7 +22,6 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/op/go-logging"
-	"os/signal"
 )
 
 const SocketAddress = "/tmp/oz-init-control"

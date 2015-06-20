@@ -120,12 +120,15 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		init:    cmd,
 		cred:    &syscall.Credential{Uid: uid, Gid: gid},
 		fs:      fs,
-		addr:    path.Join(fs.Root(), "tmp", "oz-init-control"),
+		addr:    path.Join(fs.Root(), ozinit.SocketAddress),
 		stderr:  pp,
 		network: stn,
 	}
 
+	wgNet := new(sync.WaitGroup)
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
+		defer wgNet.Done()
+		wgNet.Add(1)
 		if err := network.NetInit(stn, d.network, cmd.Process.Pid, log); err != nil {
 			cmd.Process.Kill()
 			fs.Cleanup()
@@ -138,6 +141,8 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 
 	if p.Networking.Nettype != network.TYPE_HOST && len(p.Networking.Sockets) > 0 {
 		go func() {
+			defer wgNet.Done()
+			wgNet.Add(1)
 			sbox.ready.Wait()
 			err := network.ProxySetup(sbox.init.Process.Pid, p.Networking.Sockets, d.log, sbox.ready)
 			if err != nil {
@@ -149,6 +154,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 	if !msg.Noexec {
 		go func () {
 			sbox.ready.Wait()
+			wgNet.Wait()
 			go sbox.launchProgram(msg.Path, msg.Pwd, msg.Args, log)
 		}()
 	}

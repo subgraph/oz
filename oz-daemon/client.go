@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	
+
 	"github.com/subgraph/oz/ipc"
 )
 
@@ -59,7 +59,7 @@ func Launch(arg, cpath string, args, env []string, noexec bool) error {
 		return err
 	}
 	pwd, _ := os.Getwd()
-	
+
 	resp, err := clientSend(&LaunchMsg{
 		Index:  idx,
 		Name:   name,
@@ -104,6 +104,10 @@ func Clean(arg string) error {
 	default:
 		return fmt.Errorf("Unexpected message received %+v", body)
 	}
+}
+
+func KillAllSanodboxes() error {
+	return KillSandbox(-1)
 }
 
 func KillSandbox(id int) error {

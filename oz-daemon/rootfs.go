@@ -5,7 +5,6 @@ import (
 	"github.com/subgraph/oz/fs"
 	"os"
 	"path"
-	"runtime"
 	"syscall"
 )
 
@@ -80,14 +79,7 @@ func setupRootfs(fsys *fs.Filesystem) error {
 	if err := os.MkdirAll(fsys.Root(), 0755); err != nil {
 		return fmt.Errorf("could not create rootfs path '%s': %v", fsys.Root(), err)
 	}
-	// XXX It's possible this doesn't work.
-	// see: https://github.com/golang/go/issues/1954
 
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-	if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil {
-		return fmt.Errorf("could not unshare mount ns: %v", err)
-	}
 	if err := syscall.Mount("", "/", "", syscall.MS_PRIVATE|syscall.MS_REC, ""); err != nil {
 		return fmt.Errorf("failed to set MS_PRIVATE on '%s': %v", "/", err)
 	}

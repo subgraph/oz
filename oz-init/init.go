@@ -69,14 +69,11 @@ func parseArgs() *initState {
 		log.Error("oz-init must run as root\n")
 		os.Exit(1)
 	}
-	// We should check that the file contains config.InitPath, but
-	// since proc is not mounted in this state is still doesn't exist.
-	/*
-		if _, err := os.Stat("/proc/1/cmdline"); !os.IsNotExist(err) {
-			log.Error("What are you doing? Oz-init cannot be launched manually")
-			os.Exit(1)
-		}
-	*/
+
+	if os.Getpid() != 1 {
+		log.Error("oz-init must be launched in new pid namespace.")
+		os.Exit(1)
+	}
 
 	getvar := func(name string) string {
 		val := os.Getenv(name)
@@ -554,7 +551,7 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 			return err
 		}
 		for _, p := range paths {
-			if err := fsys.BindOrCreate(p, p, wl.ReadOnly,st.user); err != nil {
+			if err := fsys.BindOrCreate(p, p, wl.ReadOnly, st.user); err != nil {
 				return err
 			}
 		}

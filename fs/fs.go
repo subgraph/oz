@@ -33,22 +33,26 @@ func (fs *Filesystem) Root() string {
 	return path.Join(fs.base, "rootfs")
 }
 
+func (fs *Filesystem) absPath(p string) string {
+	if fs.chroot {
+		return p
+	}
+	return path.Join(fs.Root(), p)
+}
+
 func (fs *Filesystem) CreateEmptyDir(target string) error {
 	fi, err := os.Stat(target)
 	if err != nil {
 		return err
 	}
-	if !fs.chroot {
-		target = path.Join(fs.Root(), target)
-	}
-	if err := os.MkdirAll(target, fi.Mode().Perm()); err != nil {
+	if err := os.MkdirAll(fs.absPath(target), fi.Mode().Perm()); err != nil {
 		return err
 	}
 	return copyFileInfo(fi, target)
 }
 
 func (fs *Filesystem) CreateDevice(devpath string, dev int, mode, perm uint32) error {
-	p := path.Join(fs.Root(), devpath)
+	p := fs.absPath(devpath)
 	if err := syscall.Mknod(p, mode, dev); err != nil {
 		return fmt.Errorf("failed to mknod device '%s': %v", p, err)
 	}
@@ -59,11 +63,8 @@ func (fs *Filesystem) CreateDevice(devpath string, dev int, mode, perm uint32) e
 }
 
 func (fs *Filesystem) CreateSymlink(oldpath, newpath string) error {
-	if !fs.chroot {
-		newpath = path.Join(fs.Root(), newpath)
-	}
-	if err := syscall.Symlink(oldpath, newpath); err != nil {
-		return fmt.Errorf("failed to symlink %s to %s: %v", newpath, oldpath, err)
+	if err := syscall.Symlink(oldpath, fs.absPath(newpath)); err != nil {
+		return fmt.Errorf("failed to symlink %s to %s: %v", fs.absPath(newpath), oldpath, err)
 	}
 	return nil
 }
@@ -222,11 +223,8 @@ func (fs *Filesystem) blacklist(target string) error {
 	if fi.IsDir() {
 		src = emptyDirPath
 	}
-	if !fs.chroot {
-		src = path.Join(fs.Root(), src)
-		t = path.Join(fs.Root(), t)
-	}
-	if err := syscall.Mount(src, t, "", syscall.MS_BIND, "mode=400,gid=0"); err != nil {
+
+	if err := syscall.Mount(fs.absPath(src), fs.absPath(t), "", syscall.MS_BIND, "mode=400,gid=0"); err != nil {
 		return fmt.Errorf("failed to bind %s -> %s for blacklist: %v", src, t, err)
 	}
 	return nil
@@ -322,18 +320,10 @@ const emptyFilePath = "/oz.ro.file"
 const emptyDirPath = "/oz.ro.dir"
 
 func (fs *Filesystem) CreateBlacklistPaths() error {
-	p := emptyDirPath
-	if !fs.chroot {
-		p = path.Join(fs.Root(), emptyDirPath)
-	}
-	if err := createBlacklistDir(p); err != nil {
+	if err := createBlacklistDir(fs.absPath(emptyDirPath)); err != nil {
 		return err
 	}
-	p = emptyFilePath
-	if !fs.chroot {
-		p = path.Join(fs.Root(), emptyFilePath)
-	}
-	if err := createBlacklistFile(p); err != nil {
+	if err := createBlacklistFile(fs.absPath(emptyFilePath)); err != nil {
 		return err
 	}
 	return nil

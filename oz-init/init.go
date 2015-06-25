@@ -271,6 +271,7 @@ func (st *initState) startXpraServer() {
 	st.log.Info("Starting xpra server")
 	if err := xpra.Process.Start(); err != nil {
 		st.log.Warning("Failed to start xpra server: %v", err)
+		st.xpraReady.Done()
 	}
 	st.xpra = xpra
 }

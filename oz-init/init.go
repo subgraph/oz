@@ -7,8 +7,8 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"os/user"
 	"os/signal"
+	"os/user"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,15 +22,16 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/op/go-logging"
+	"path"
 )
 
-const SocketAddress = "/tmp/oz-init-control"
 const EnvPrefix = "INIT_ENV_"
 
 type initState struct {
 	log       *logging.Logger
 	profile   *oz.Profile
 	config    *oz.Config
+	sockaddr  string
 	launchEnv []string
 	lock      sync.Mutex
 	children  map[int]*exec.Cmd
@@ -70,10 +71,12 @@ func parseArgs() *initState {
 	}
 	// We should check that the file contains config.InitPath, but
 	// since proc is not mounted in this state is still doesn't exist.
-	if _, err := os.Stat("/proc/1/cmdline"); !os.IsNotExist(err) {
-		log.Error("What are you doing? Oz-init cannot be launched manually")
-		os.Exit(1)
-	}
+	/*
+		if _, err := os.Stat("/proc/1/cmdline"); !os.IsNotExist(err) {
+			log.Error("What are you doing? Oz-init cannot be launched manually")
+			os.Exit(1)
+		}
+	*/
 
 	getvar := func(name string) string {
 		val := os.Getenv(name)
@@ -84,6 +87,7 @@ func parseArgs() *initState {
 		return val
 	}
 	pname := getvar("INIT_PROFILE")
+	sockaddr := getvar("INIT_SOCKET")
 	uidval := getvar("INIT_UID")
 	dispval := os.Getenv("INIT_DISPLAY")
 
@@ -166,6 +170,7 @@ func parseArgs() *initState {
 	return &initState{
 		log:       log,
 		config:    config,
+		sockaddr:  sockaddr,
 		launchEnv: env,
 		profile:   p,
 		children:  make(map[int]*exec.Cmd),
@@ -173,7 +178,7 @@ func parseArgs() *initState {
 		gid:       gid,
 		user:      u,
 		display:   display,
-		fs:        fs.NewFromProfile(p, u, config.SandboxPath, config.UseFullDev, log),
+		fs:        fs.NewFilesystem(config, log),
 		network:   stn,
 	}
 }
@@ -183,8 +188,27 @@ func (st *initState) runInit() {
 	sigs := make(chan os.Signal)
 	signal.Notify(sigs, syscall.SIGTERM, os.Interrupt)
 
-	if homedir, _ := st.fs.GetHomeDir(); homedir != "" {
-		st.launchEnv = append(st.launchEnv, "HOME="+homedir)
+	s, err := ipc.NewServer(st.sockaddr, messageFactory, st.log,
+		handlePing,
+		st.handleRunProgram,
+		st.handleRunShell,
+	)
+	if err != nil {
+		st.log.Error("NewServer failed: %v", err)
+		os.Exit(1)
+	}
+
+	if err := os.Chown(st.sockaddr, st.uid, st.gid); err != nil {
+		st.log.Warning("Failed to chown oz-init control socket: %v", err)
+	}
+
+	if err := st.setupFilesystem(nil); err != nil {
+		st.log.Error("Failed to setup filesytem: %v", err)
+		os.Exit(1)
+	}
+
+	if st.user != nil && st.user.HomeDir != "" {
+		st.launchEnv = append(st.launchEnv, "HOME="+st.user.HomeDir)
 	}
 
 	if st.profile.Networking.Nettype != network.TYPE_HOST {
@@ -204,10 +228,6 @@ func (st *initState) runInit() {
 	}
 	st.log.Info("Hostname set to (%s.local)", st.profile.Name)
 
-	if err := st.fs.OzInit(); err != nil {
-		st.log.Error("Error: setting up filesystem failed: %v\n", err)
-		os.Exit(1)
-	}
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
 	if st.profile.XServer.Enabled {
@@ -215,19 +235,8 @@ func (st *initState) runInit() {
 		st.startXpraServer()
 	}
 	st.xpraReady.Wait()
+	st.log.Info("XPRA started")
 
-	s, err := ipc.NewServer(SocketAddress, messageFactory, st.log,
-		handlePing,
-		st.handleRunProgram,
-		st.handleRunShell,
-	)
-	if err != nil {
-		st.log.Error("NewServer failed: %v", err)
-		os.Exit(1)
-	}
-	if err := os.Chown(SocketAddress, st.uid, st.gid); err != nil {
-		st.log.Warning("Failed to chown oz-init control socket: %v", err)
-	}
 	os.Stderr.WriteString("OK\n")
 
 	go st.processSignals(sigs, s)
@@ -241,11 +250,12 @@ func (st *initState) runInit() {
 }
 
 func (st *initState) startXpraServer() {
-	workdir := st.fs.Xpra()
-	if workdir == "" {
-		st.log.Warning("Xpra work directory not set")
+	if st.user == nil {
+		st.log.Warning("Cannot start xpra server because no user is set")
 		return
 	}
+	workdir := path.Join(st.user.HomeDir, ".Xoz", st.profile.Name)
+	st.log.Info("xpra work dir is %s", workdir)
 	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), workdir)
 	p, err := xpra.Process.StderrPipe()
 	if err != nil {
@@ -292,12 +302,12 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*exec.Cmd, error) {
 	suffix := ""
 	if st.config.DivertSuffix != "" {
-		suffix = "."+st.config.DivertSuffix
+		suffix = "." + st.config.DivertSuffix
 	}
 	if cpath == "" {
 		cpath = st.profile.Path
 	}
-	cmd := exec.Command(cpath+suffix)
+	cmd := exec.Command(cpath + suffix)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stdout pipe: %v", err)
@@ -389,8 +399,8 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 		cmd.Env = append(cmd.Env, "TERM="+rs.Term)
 	}
 	if msg.Ucred.Uid != 0 && msg.Ucred.Gid != 0 {
-		if homedir, _ := st.fs.GetHomeDir(); homedir != "" {
-			cmd.Dir = homedir
+		if st.user != nil && st.user.HomeDir != "" {
+			cmd.Dir = st.user.HomeDir
 		}
 	}
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
@@ -492,4 +502,97 @@ func (st *initState) childrenVector() []*exec.Cmd {
 		cs = append(cs, v)
 	}
 	return cs
+}
+
+func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
+	fs := fs.NewFilesystem(st.config, st.log)
+
+	if err := st.bindWhitelist(fs, st.profile.Whitelist); err != nil {
+		return err
+	}
+
+	if err := st.bindWhitelist(fs, extra); err != nil {
+		return err
+	}
+
+	if err := st.applyBlacklist(fs, st.profile.Blacklist); err != nil {
+		return err
+	}
+
+	if st.profile.XServer.Enabled {
+		xprapath, err := xpra.CreateDir(st.user, st.profile.Name)
+		if err != nil {
+			return err
+		}
+		if err := fs.BindPath(xprapath, xprapath, false); err != nil {
+			return err
+		}
+	}
+
+	if err := fs.Chroot(); err != nil {
+		return err
+	}
+
+	mo := &mountOps{}
+	if st.config.UseFullDev {
+		mo.add(fs.MountFullDev)
+	}
+	mo.add(fs.MountShm, fs.MountTmp, fs.MountPts)
+	if !st.profile.NoSysProc {
+		mo.add(fs.MountProc, fs.MountSys)
+	}
+	return mo.run()
+}
+
+func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem) error {
+	if wlist == nil {
+		return nil
+	}
+	for _, wl := range wlist {
+		paths, err := fs.ResolvePath(wl.Path, st.user)
+		if err != nil {
+			return err
+		}
+		for _, p := range paths {
+			if err := fsys.BindPath(p, p, wl.ReadOnly); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (st *initState) applyBlacklist(fsys *fs.Filesystem, blist []oz.BlacklistItem) error {
+	if blist == nil {
+		return nil
+	}
+	for _, bl := range blist {
+		paths, err := fs.ResolvePath(bl.Path, st.user)
+		if err != nil {
+			return err
+		}
+		for _, p := range paths {
+			if err := fsys.BlacklistPath(p); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+type mountOps struct {
+	ops []func() error
+}
+
+func (mo *mountOps) add(f ...func() error) {
+	mo.ops = append(mo.ops, f...)
+}
+
+func (mo *mountOps) run() error {
+	for _, f := range mo.ops {
+		if err := f(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

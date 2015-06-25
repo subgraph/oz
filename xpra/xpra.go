@@ -1,9 +1,14 @@
 package xpra
 
 import (
+	"errors"
 	"fmt"
 	"github.com/subgraph/oz"
+	"os"
 	"os/exec"
+	"os/user"
+	"path"
+	"strconv"
 )
 
 type Xpra struct {
@@ -62,4 +67,46 @@ func (x *Xpra) Stop() ([]byte, error) {
 	)
 	cmd.Env = []string{"TMPDIR=" + x.WorkDir}
 	return cmd.Output()
+}
+
+func GetPath(u *user.User, name string) string {
+	return path.Join(u.HomeDir, ".Xoz", name)
+}
+
+func CreateDir(u *user.User, name string) (string, error) {
+	uid, gid, err := userIds(u)
+	if err != nil {
+		return "", err
+	}
+	dir := GetPath(u, name)
+	if err := createSubdirs(u.HomeDir, uid, gid, 0755, ".Xoz", name); err != nil {
+		return "", fmt.Errorf("failed to create xpra directory (%s): %v", dir, err)
+	}
+	return dir, nil
+}
+
+func createSubdirs(base string, uid, gid int, mode os.FileMode, subdirs ...string) error {
+	dir := base
+	for _, sd := range subdirs {
+		dir = path.Join(dir, sd)
+		if err := os.Mkdir(dir, mode); err != nil && !os.IsExist(err) {
+			return err
+		}
+		if err := os.Chown(dir, uid, gid); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func userIds(user *user.User) (int, int, error) {
+	uid, err := strconv.Atoi(user.Uid)
+	if err != nil {
+		return -1, -1, errors.New("failed to parse uid from user struct: " + err.Error())
+	}
+	gid, err := strconv.Atoi(user.Gid)
+	if err != nil {
+		return -1, -1, errors.New("failed to parse gid from user struct: " + err.Error())
+	}
+	return uid, gid, nil
 }

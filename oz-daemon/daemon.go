@@ -6,12 +6,13 @@ import (
 	"syscall"
 
 	"github.com/subgraph/oz"
-	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/ipc"
 	"github.com/subgraph/oz/network"
 
 	"github.com/op/go-logging"
+	"github.com/subgraph/oz/fs"
 	"os"
+	"path"
 )
 
 type daemonState struct {
@@ -87,6 +88,17 @@ func initialize() *daemonState {
 		}
 	}
 
+	rootfs := path.Join(config.SandboxPath, "rootfs")
+	fs := fs.NewFilesystem(config, d.log)
+	d.log.Info("Creating root filesystem at %s", rootfs)
+	if err := setupRootfs(fs); err != nil {
+		d.log.Fatalf("Failed setting up root filesystem: %v", err)
+	}
+	sockets := path.Join(config.SandboxPath, "sockets")
+	if err := os.MkdirAll(sockets, 0755); err != nil {
+		d.log.Fatalf("Failed to create sockets directory: %v", err)
+	}
+
 	return d
 }
 
@@ -153,7 +165,7 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 	return m.Respond(&OkMsg{})
 }
 
-func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) ([]string) {
+func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) []string {
 	newEnv := []string{}
 
 	for _, EnvItem := range d.config.EnvironmentVars {
@@ -283,10 +295,14 @@ func (d *daemonState) handleClean(clean *CleanMsg, msg *ipc.Message) error {
 			return msg.Respond(&ErrorMsg{errmsg})
 		}
 	}
-	fs := fs.NewFromProfile(p, nil, d.config.SandboxPath, d.config.UseFullDev, d.log)
-	if err := fs.Cleanup(); err != nil {
-		return msg.Respond(&ErrorMsg{err.Error()})
-	}
+	// XXX
+	d.Warning("Clean no longer implemented")
+	/*
+		fs := fs.NewFromProfile(p, nil, d.config.SandboxPath, d.config.UseFullDev, d.log)
+		if err := fs.Cleanup(); err != nil {
+			return msg.Respond(&ErrorMsg{err.Error()})
+		}
+	*/
 	return msg.Respond(&OkMsg{})
 }
 

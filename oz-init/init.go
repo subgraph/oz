@@ -554,7 +554,7 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 			return err
 		}
 		for _, p := range paths {
-			if err := fsys.BindPath(p, p, wl.ReadOnly); err != nil {
+			if err := fsys.BindOrCreate(p, p, wl.ReadOnly,st.user); err != nil {
 				return err
 			}
 		}

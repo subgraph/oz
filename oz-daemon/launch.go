@@ -4,21 +4,21 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"os/user"
 	"path"
-	"path/filepath"
 	"sync"
 	"syscall"
 
 	"github.com/subgraph/oz"
-	"github.com/subgraph/oz/fs"
 	"github.com/subgraph/oz/network"
-	"github.com/subgraph/oz/xpra"
 	"github.com/subgraph/oz/oz-init"
+	"github.com/subgraph/oz/xpra"
 
+	"crypto/rand"
+	"encoding/hex"
 	"github.com/op/go-logging"
+	"github.com/subgraph/oz/fs"
+	"os/user"
 )
 
 type Sandbox struct {
@@ -36,7 +36,17 @@ type Sandbox struct {
 	network *network.SandboxNetwork
 }
 
-func createInitCommand(initPath, name, chroot string, env []string, uid uint32, display int, stn *network.SandboxNetwork) *exec.Cmd {
+func createSocketPath(base string) (string, error) {
+	bs := make([]byte, 8)
+	_, err := rand.Read(bs)
+	if err != nil {
+		return "", err
+	}
+
+	return path.Join(base, fmt.Sprintf("oz-init-control-%s", hex.EncodeToString(bs))), nil
+}
+
+func createInitCommand(initPath, name string, socketPath string, env []string, uid uint32, display int, stn *network.SandboxNetwork) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 
@@ -50,11 +60,12 @@ func createInitCommand(initPath, name, chroot string, env []string, uid uint32, 
 	}
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Chroot:     chroot,
+		//Chroot:     chroot,
 		Cloneflags: cloneFlags,
 	}
 	cmd.Env = []string{
 		"INIT_PROFILE=" + name,
+		"INIT_SOCKET=" + socketPath,
 		fmt.Sprintf("INIT_UID=%d", uid),
 	}
 
@@ -75,20 +86,27 @@ func createInitCommand(initPath, name, chroot string, env []string, uid uint32, 
 }
 
 func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
-	u, err := user.LookupId(fmt.Sprintf("%d", uid))
-	if err != nil {
-		return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
-	}
-	fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.config.UseFullDev, d.log)
-	if err := fs.Setup(d.config.ProfileDir); err != nil {
-		return nil, err
-	}
+
+	/*
+		u, err := user.LookupId(fmt.Sprintf("%d", uid))
+		if err != nil {
+			return nil, fmt.Errorf("failed to lookup user for uid=%d: %v", uid, err)
+		}
+
+
+		fs := fs.NewFromProfile(p, u, d.config.SandboxPath, d.config.UseFullDev, d.log)
+		if err := fs.Setup(d.config.ProfileDir); err != nil {
+			return nil, err
+		}
+	*/
+
 	display := 0
 	if p.XServer.Enabled && p.Networking.Nettype == network.TYPE_HOST {
 		display = d.nextDisplay
 		d.nextDisplay += 1
 	}
 
+	var err error
 	stn := new(network.SandboxNetwork)
 	stn.Nettype = p.Networking.Nettype
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
@@ -98,20 +116,25 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		}
 	}
 
-	cmd := createInitCommand(d.config.InitPath, p.Name, fs.Root(), msg.Env, uid, display, stn)
+	socketPath, err := createSocketPath(path.Join(d.config.SandboxPath, "sockets"))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create random socket path: %v", err)
+	}
+	cmd := createInitCommand(d.config.InitPath, p.Name, socketPath, msg.Env, uid, display, stn)
 	log.Debug("Command environment: %+v", cmd.Env)
 	pp, err := cmd.StderrPipe()
 	if err != nil {
-		fs.Cleanup()
+		//fs.Cleanup()
 		return nil, fmt.Errorf("error creating stderr pipe for init process: %v", err)
 
 	}
 
 	if err := cmd.Start(); err != nil {
-		fs.Cleanup()
+		//fs.Cleanup()
 		return nil, fmt.Errorf("Unable to start process: %+v", err)
 	}
 
+	//rootfs := path.Join(d.config.SandboxPath, "rootfs")
 	sbox := &Sandbox{
 		daemon:  d,
 		id:      d.nextSboxId,
@@ -119,8 +142,9 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		profile: p,
 		init:    cmd,
 		cred:    &syscall.Credential{Uid: uid, Gid: gid},
-		fs:      fs,
-		addr:    path.Join(fs.Root(), ozinit.SocketAddress),
+		fs:      fs.NewFilesystem(d.config, log),
+		//addr:    path.Join(rootfs, ozinit.SocketAddress),
+		addr:    socketPath,
 		stderr:  pp,
 		network: stn,
 	}
@@ -128,7 +152,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
 		if err := network.NetInit(stn, d.network, cmd.Process.Pid, log); err != nil {
 			cmd.Process.Kill()
-			fs.Cleanup()
+			//fs.Cleanup()
 			return nil, fmt.Errorf("Unable to create veth networking: %+v", err)
 		}
 	}
@@ -150,7 +174,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 	}
 
 	if !msg.Noexec {
-		go func () {
+		go func() {
 			sbox.ready.Wait()
 			wgNet.Wait()
 			go sbox.launchProgram(msg.Path, msg.Pwd, msg.Args, log)
@@ -170,19 +194,21 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 }
 
 func (sbox *Sandbox) launchProgram(cpath, pwd string, args []string, log *logging.Logger) {
-	if sbox.profile.AllowFiles {
-		for _, fpath := range args {
-			if _, err := os.Stat(fpath); err == nil {
-				if filepath.IsAbs(fpath) == false {
-					fpath = path.Join(pwd, fpath)
-				}
-				log.Info("Adding file `%s` to sandbox `%s`.", fpath, sbox.profile.Name)
-				if err := sbox.fs.AddBindWhitelist(fpath, fpath, false); err != nil {
-					log.Warning("Error adding file `%s`!", fpath)
+	/*
+		if sbox.profile.AllowFiles {
+			for _, fpath := range args {
+				if _, err := os.Stat(fpath); err == nil {
+					if filepath.IsAbs(fpath) == false {
+						fpath = path.Join(pwd, fpath)
+					}
+					log.Info("Adding file `%s` to sandbox `%s`.", fpath, sbox.profile.Name)
+					if err := sbox.fs.AddBindWhitelist(fpath, fpath, false); err != nil {
+						log.Warning("Error adding file `%s`!", fpath)
+					}
 				}
 			}
 		}
-	}
+	*/
 
 	err := ozinit.RunProgram(sbox.addr, cpath, pwd, args)
 	if err != nil {
@@ -194,7 +220,7 @@ func (sbox *Sandbox) remove(log *logging.Logger) {
 	sboxes := []*Sandbox{}
 	for _, sb := range sbox.daemon.sandboxes {
 		if sb == sbox {
-			sb.fs.Cleanup()
+			//		sb.fs.Cleanup()
 			if sb.profile.Networking.Nettype == network.TYPE_BRIDGE {
 				sb.network.Cleanup(log)
 			}
@@ -254,11 +280,17 @@ func (sbox *Sandbox) getLogFunc(c byte) func(string, ...interface{}) {
 }
 
 func (sbox *Sandbox) startXpraClient() {
+	u, err := user.LookupId(fmt.Sprintf("%d", sbox.cred.Uid))
+	if err != nil {
+		sbox.daemon.Error("Failed to lookup user for uid=%d, cannot start xpra", sbox.cred.Uid)
+		return
+	}
+	xpraPath := path.Join(u.HomeDir, ".Xoz", sbox.profile.Name)
 	sbox.xpra = xpra.NewClient(
 		&sbox.profile.XServer,
 		uint64(sbox.display),
 		sbox.cred,
-		sbox.fs.Xpra(),
+		xpraPath,
 		sbox.profile.Name,
 		sbox.daemon.log)
 

@@ -3,20 +3,21 @@ package fs
 import (
 	"fmt"
 	"os/exec"
+	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
 )
 
-func (fs *Filesystem) resolvePath(p string) ([]string, error) {
-	p, err := fs.resolveVars(p)
+func ResolvePath(p string, u *user.User) ([]string, error) {
+	p, err := resolveVars(p, u)
 	if err != nil {
 		return nil, err
 	}
-	return fs.resolveGlob(p)
+	return resolveGlob(p)
 }
 
-func (fs *Filesystem) resolveVars(p string) (string, error) {
+func resolveVars(p string, u *user.User) (string, error) {
 	const pathVar = "${PATH}/"
 	const homeVar = "${HOME}"
 	const uidVar = "${UID}"
@@ -31,27 +32,27 @@ func (fs *Filesystem) resolveVars(p string) (string, error) {
 		return resolved, nil
 
 	case strings.HasPrefix(p, homeVar):
-		if fs.user == nil {
+		if u == nil {
 			return p, nil
 		}
-		return path.Join(fs.user.HomeDir, p[len(homeVar):]), nil
+		return path.Join(u.HomeDir, p[len(homeVar):]), nil
 
 	case strings.Contains(p, uidVar):
-		if fs.user == nil {
+		if u == nil {
 			return p, nil
 		}
-		return strings.Replace(p, uidVar, fs.user.Uid, -1), nil
+		return strings.Replace(p, uidVar, u.Uid, -1), nil
 
 	case strings.Contains(p, userVar):
-		if fs.user == nil {
+		if u == nil {
 			return p, nil
 		}
-		return strings.Replace(p, userVar, fs.user.Username, -1), nil
+		return strings.Replace(p, userVar, u.Username, -1), nil
 	}
 	return p, nil
 }
 
-func (fs *Filesystem) resolveGlob(p string) ([]string, error) {
+func resolveGlob(p string) ([]string, error) {
 	if !strings.Contains(p, "*") {
 		return []string{p}, nil
 	}

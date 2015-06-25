@@ -58,11 +58,6 @@ type KillSandboxMsg struct {
 	Id int "KillSandbox"
 }
 
-type CleanMsg struct {
-	Index int "Clean"
-	Name  string
-}
-
 type LogsMsg struct {
 	Count  int "Logs"
 	Follow bool
@@ -82,7 +77,6 @@ var messageFactory = ipc.NewMsgFactory(
 	new(ListSandboxesMsg),
 	new(ListSandboxesResp),
 	new(KillSandboxMsg),
-	new(CleanMsg),
 	new(LogsMsg),
 	new(LogData),
 )

@@ -51,14 +51,13 @@ func (fs *Filesystem) CreateEmptyDir(target string) error {
 	return copyFileInfo(fi, target)
 }
 
-func (fs *Filesystem) CreateDevice(devpath string, dev int, mode, perm uint32) error {
+func (fs *Filesystem) CreateDevice(devpath string, dev int, mode uint32) error {
 	p := fs.absPath(devpath)
+	um := syscall.Umask(0)
 	if err := syscall.Mknod(p, mode, dev); err != nil {
 		return fmt.Errorf("failed to mknod device '%s': %v", p, err)
 	}
-	if err := os.Chmod(p, os.FileMode(perm)); err != nil {
-		return fmt.Errorf("unable to set file permissions on device '%s': %v", p, err)
-	}
+	syscall.Umask(um)
 	return nil
 }
 
@@ -196,7 +195,7 @@ func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, erro
 func (fs *Filesystem) BlacklistPath(target string, u *user.User) error {
 	ps, err := resolvePath(target, u)
 	if err != nil {
-		return err
+		return nil
 	}
 	for _, p := range ps {
 		if err := fs.blacklist(p); err != nil {

@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func ResolvePath(p string, u *user.User) ([]string, error) {
+func resolvePath(p string, u *user.User) ([]string, error) {
 	p, err := resolveVars(p, u)
 	if err != nil {
 		return nil, err
@@ -52,8 +52,12 @@ func resolveVars(p string, u *user.User) (string, error) {
 	return p, nil
 }
 
+func isGlobbed(p string) bool {
+	return strings.Contains(p, "*")
+}
+
 func resolveGlob(p string) ([]string, error) {
-	if !strings.Contains(p, "*") {
+	if !isGlobbed(p) {
 		return []string{p}, nil
 	}
 	list, err := filepath.Glob(p)

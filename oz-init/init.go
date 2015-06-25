@@ -521,7 +521,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 		if err != nil {
 			return err
 		}
-		if err := fs.BindPath(xprapath, xprapath, false); err != nil {
+		if err := fs.BindPath(xprapath, 0, nil); err != nil {
 			return err
 		}
 	}
@@ -546,14 +546,12 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		return nil
 	}
 	for _, wl := range wlist {
-		paths, err := fs.ResolvePath(wl.Path, st.user)
-		if err != nil {
-			return err
+		flags := fs.BindCanCreate
+		if wl.ReadOnly {
+			flags |= fs.BindReadOnly
 		}
-		for _, p := range paths {
-			if err := fsys.BindOrCreate(p, p, wl.ReadOnly, st.user); err != nil {
-				return err
-			}
+		if err := fsys.BindPath(wl.Path, flags, st.user); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -564,14 +562,8 @@ func (st *initState) applyBlacklist(fsys *fs.Filesystem, blist []oz.BlacklistIte
 		return nil
 	}
 	for _, bl := range blist {
-		paths, err := fs.ResolvePath(bl.Path, st.user)
-		if err != nil {
+		if err := fsys.BlacklistPath(bl.Path, st.user); err != nil {
 			return err
-		}
-		for _, p := range paths {
-			if err := fsys.BlacklistPath(p); err != nil {
-				return err
-			}
 		}
 	}
 	return nil

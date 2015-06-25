@@ -68,34 +68,81 @@ func (fs *Filesystem) CreateSymlink(oldpath, newpath string) error {
 	return nil
 }
 
-func (fs *Filesystem) BindPath(path, target string, readonly bool) error {
-	return fs.BindOrCreate(path, target, readonly, nil)
+func (fs *Filesystem) BindPath(target string, flags int, u *user.User) error {
+	return fs.bindResolve(target, "", flags, u)
 }
 
-func (fs *Filesystem) BindOrCreate(p, target string, readonly bool, u *user.User) error {
-	src, err := filepath.EvalSymlinks(p)
-	if err != nil {
-		return fmt.Errorf("error resolving symlinks for path (%s): %v", p, err)
+func (fs *Filesystem) BindTo(from string, to string, flags int, u *user.User) error {
+	return fs.bindResolve(from, to, flags, u)
+}
+
+const (
+	BindReadOnly = 1 << iota
+	BindCanCreate
+)
+
+func (fs *Filesystem) bindResolve(from string, to string, flags int, u *user.User) error {
+	if (to == "") || (from == to) {
+		return fs.bindSame(from, flags, u)
 	}
-	sinfo, err := readSourceInfo(src, u)
+	if isGlobbed(to) {
+		return fmt.Errorf("bind target (%s) cannot have globbed path", to)
+	}
+	t, err := resolveVars(to, u)
+	if err != nil {
+		return err
+	}
+	if isGlobbed(from) {
+		return fmt.Errorf("bind src (%s) cannot have globbed path with separate target path (%s)", from, to)
+	}
+	f, err := resolveVars(from, u)
+	if err != nil {
+		return err
+	}
+	return fs.bind(f, t, flags, u)
+}
+
+func (fs *Filesystem) bindSame(p string, flags int, u *user.User) error {
+	ps, err := resolvePath(p, u)
+	if err != nil {
+		return err
+	}
+	for _, p := range ps {
+		if err := fs.bind(p, p, flags, u); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) error {
+	src, err := filepath.EvalSymlinks(from)
+	if err != nil {
+		return fmt.Errorf("error resolving symlinks for path (%s): %v", from, err)
+	}
+	cc := flags&BindCanCreate != 0
+	sinfo, err := readSourceInfo(src, cc, u)
 	if err != nil {
 		return fmt.Errorf("failed to bind path (%s): %v", src, err)
 	}
 
-	target = path.Join(fs.Root(), target)
+	if to == "" {
+		to = from
+	}
+	to = path.Join(fs.Root(), to)
 
-	_, err = os.Stat(target)
+	_, err = os.Stat(to)
 	if err == nil || !os.IsNotExist(err) {
-		fs.log.Warning("Target (%s > %s) already exists, ignoring", src, target)
+		fs.log.Warning("Target (%s > %s) already exists, ignoring", src, to)
 		return nil
 	}
 
 	if sinfo.IsDir() {
-		if err := os.MkdirAll(target, sinfo.Mode().Perm()); err != nil {
+		if err := os.MkdirAll(to, sinfo.Mode().Perm()); err != nil {
 			return err
 		}
 	} else {
-		if err := createEmptyFile(target, 0750); err != nil {
+		if err := createEmptyFile(to, 0750); err != nil {
 			return err
 		}
 	}
@@ -103,24 +150,24 @@ func (fs *Filesystem) BindOrCreate(p, target string, readonly bool, u *user.User
 	if err := copyPathPermissions(fs.Root(), src); err != nil {
 		return fmt.Errorf("failed to copy path permissions for (%s): %v", src, err)
 	}
-	fs.log.Info("bind mounting %s -> %s", src, target)
-	flags := syscall.MS_NOSUID | syscall.MS_NODEV
-	if readonly {
-		flags |= syscall.MS_RDONLY
+	fs.log.Info("bind mounting %s -> %s", src, to)
+	mntflags := syscall.MS_NOSUID | syscall.MS_NODEV
+	if flags&BindReadOnly != 0 {
+		mntflags |= syscall.MS_RDONLY
 	} else {
 		flags |= syscall.MS_NOEXEC
 	}
-	return bindMount(src, target, flags)
+	return bindMount(src, to, mntflags)
 }
 
-func readSourceInfo(src string, u *user.User) (os.FileInfo, error) {
+func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, error) {
 	if fi, err := os.Stat(src); err == nil {
 		return fi, nil
 	} else if !os.IsNotExist(err) {
 		return nil, err
 	}
 
-	if u == nil {
+	if u == nil || !cancreate {
 		return nil, fmt.Errorf("source path (%s) does not exist", src)
 	}
 
@@ -145,7 +192,20 @@ func readSourceInfo(src string, u *user.User) (os.FileInfo, error) {
 	return os.Stat(src)
 }
 
-func (fs *Filesystem) BlacklistPath(target string) error {
+func (fs *Filesystem) BlacklistPath(target string, u *user.User) error {
+	ps, err := resolvePath(target, u)
+	if err != nil {
+		return err
+	}
+	for _, p := range ps {
+		if err := fs.blacklist(p); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (fs *Filesystem) blacklist(target string) error {
 	t, err := filepath.EvalSymlinks(target)
 	if err != nil {
 		return fmt.Errorf("symlink evaluation failed while blacklisting path %s: %v", target, err)

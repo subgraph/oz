@@ -102,7 +102,7 @@ func setupRootfs(fsys *fs.Filesystem) error {
 	}
 
 	for _, p := range basicBindDirs {
-		if err := fsys.BindPath(p, p, true); err != nil {
+		if err := fsys.BindPath(p, fs.BindReadOnly, nil); err != nil {
 			return fmt.Errorf("failed to bind directory '%s': %v", p, err)
 		}
 	}
@@ -135,14 +135,8 @@ func setupRootfs(fsys *fs.Filesystem) error {
 	}
 
 	for _, bl := range basicBlacklist {
-		ps, err := fs.ResolvePath(bl, nil)
-		if err != nil {
+		if err := fsys.BlacklistPath(bl, nil); err != nil {
 			return err
-		}
-		for _, p := range ps {
-			if err := fsys.BlacklistPath(p); err != nil {
-				return err
-			}
 		}
 	}
 	return nil

@@ -92,7 +92,7 @@ func NewDefaultProfile() *Profile {
 	return &Profile{
 		Multi:      false,
 		AllowFiles: false,
-		XServer:    XServerConf{
+		XServer: XServerConf{
 			Enabled:       true,
 			EnableTray:    false,
 			UseDBUS:       false,

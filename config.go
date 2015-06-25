@@ -24,22 +24,22 @@ type Config struct {
 	EnvironmentVars []string `json:"environment_vars" desc:"Default environment variables passed to sandboxes"`
 }
 
-const OzVersion         = "0.0.1"
+const OzVersion = "0.0.1"
 const DefaultConfigPath = "/etc/oz/oz.conf"
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		ProfileDir:      "/var/lib/oz/cells.d",
-		ShellPath:       "/bin/bash",
-		InitPath:        "/usr/local/bin/oz-init",
-		ClientPath:      "/usr/local/bin/oz",
-		SandboxPath:     "/srv/oz",
-		NMIgnoreFile:    "/etc/NetworkManager/conf.d/oz.conf",
-		BridgeMACAddr:   "6A:A8:2E:56:E8:9C",
-		DivertSuffix:    "unsafe",
-		UseFullDev:      false,
-		AllowRootShell:  false,
-		LogXpra:         false,
+		ProfileDir:     "/var/lib/oz/cells.d",
+		ShellPath:      "/bin/bash",
+		InitPath:       "/usr/local/bin/oz-init",
+		ClientPath:     "/usr/local/bin/oz",
+		SandboxPath:    "/srv/oz",
+		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",
+		BridgeMACAddr:  "6A:A8:2E:56:E8:9C",
+		DivertSuffix:   "unsafe",
+		UseFullDev:     false,
+		AllowRootShell: false,
+		LogXpra:        false,
 		EnvironmentVars: []string{
 			"USER", "USERNAME", "LOGNAME",
 			"LANG", "LANGUAGE", "_",
@@ -49,12 +49,12 @@ func NewDefaultConfig() *Config {
 
 func LoadConfig(cpath string) (*Config, error) {
 	if _, err := os.Stat(cpath); os.IsNotExist(err) {
-		return nil,err
+		return nil, err
 	}
 	if err := checkConfigPermissions(cpath); err != nil {
 		return nil, err
 	}
-	
+
 	bs, err := ioutil.ReadFile(cpath)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func checkPathRootPermissions(fpath string) error {
 	if (fstat.Mode().Perm() & syscall.S_IWOTH) != 0 {
 		return fmt.Errorf("writable by everyone!", fpath)
 	}
-	if (fstat.Mode().Perm() & syscall.S_IWGRP) != 0 && fstat.Sys().(*syscall.Stat_t).Gid != 0 {
+	if (fstat.Mode().Perm()&syscall.S_IWGRP) != 0 && fstat.Sys().(*syscall.Stat_t).Gid != 0 {
 		return fmt.Errorf("writable by someone else than root!", err)
 	}
 	return nil

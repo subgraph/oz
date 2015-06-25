@@ -20,9 +20,9 @@ const (
 
 type NetType string
 
-const(
-	TYPE_HOST NetType   = "host"
-	TYPE_EMPTY NetType  = "empty"
+const (
+	TYPE_HOST   NetType = "host"
+	TYPE_EMPTY  NetType = "empty"
 	TYPE_BRIDGE NetType = "bridge"
 )
 

@@ -1,11 +1,11 @@
 package ns
 
-import(
-	"syscall"
+import (
 	"errors"
 	"os"
 	"path"
 	"strconv"
+	"syscall"
 )
 
 type Namespace struct {
@@ -37,7 +37,7 @@ func init() {
 	}
 }
 
-func Set(fd, nsType uintptr) (error) {
+func Set(fd, nsType uintptr) error {
 	_, _, err := syscall.Syscall(SYS_SETNS, uintptr(fd), uintptr(nsType), 0)
 	if err != 0 {
 		return errors.New("Unable to set namespace")
@@ -81,6 +81,6 @@ func Open(nsPath string) (uintptr, error) {
 	return fd.Fd(), nil
 }
 
-func Close(fd uintptr) (error) {
+func Close(fd uintptr) error {
 	return syscall.Close(int(fd))
 }

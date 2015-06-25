@@ -1,9 +1,7 @@
 package ns
 
-import (
-
-)
+import ()
 
 const (
-	SYS_SETNS	= 308
+	SYS_SETNS = 308
 )

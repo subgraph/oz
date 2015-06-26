@@ -36,7 +36,6 @@ func Main() {
 		d.handleListProfiles,
 		d.handleLaunch,
 		d.handleListSandboxes,
-		d.handleClean,
 		d.handleKillSandbox,
 		d.handleLogs,
 	)
@@ -282,28 +281,6 @@ func (d *daemonState) handleListSandboxes(list *ListSandboxesMsg, msg *ipc.Messa
 		r.Sandboxes = append(r.Sandboxes, SandboxInfo{Id: sb.id, Address: sb.addr, Profile: sb.profile.Name})
 	}
 	return msg.Respond(r)
-}
-
-func (d *daemonState) handleClean(clean *CleanMsg, msg *ipc.Message) error {
-	p, err := d.getProfileByIdxOrName(clean.Index, clean.Name)
-	if err != nil {
-		return msg.Respond(&ErrorMsg{err.Error()})
-	}
-	for _, sb := range d.sandboxes {
-		if sb.profile.Name == p.Name {
-			errmsg := fmt.Sprintf("Cannot clean profile '%s' because there are sandboxes running for this profile", p.Name)
-			return msg.Respond(&ErrorMsg{errmsg})
-		}
-	}
-	// XXX
-	d.Warning("Clean no longer implemented")
-	/*
-		fs := fs.NewFromProfile(p, nil, d.config.SandboxPath, d.config.UseFullDev, d.log)
-		if err := fs.Cleanup(); err != nil {
-			return msg.Respond(&ErrorMsg{err.Error()})
-		}
-	*/
-	return msg.Respond(&OkMsg{})
 }
 
 func (d *daemonState) handleLogs(logs *LogsMsg, msg *ipc.Message) error {

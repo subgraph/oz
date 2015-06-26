@@ -92,10 +92,6 @@ func runApplication() {
 			Action: handleShell,
 		},
 		{
-			Name:   "clean",
-			Action: handleClean,
-		},
-		{
 			Name:   "kill",
 			Action: handleKill,
 		},
@@ -199,17 +195,6 @@ func getSandboxById(id int) (*daemon.SandboxInfo, error) {
 		}
 	}
 	return nil, nil
-}
-
-func handleClean(c *cli.Context) {
-	if len(c.Args()) == 0 {
-		fmt.Println("Need a profile to clean")
-		os.Exit(1)
-	}
-	err := daemon.Clean(c.Args()[0])
-	if err != nil {
-		fmt.Println("Clean failed:", err)
-	}
 }
 
 func handleKill(c *cli.Context) {

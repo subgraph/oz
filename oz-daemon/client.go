@@ -83,29 +83,6 @@ func Launch(arg, cpath string, args, env []string, noexec bool) error {
 	return nil
 }
 
-func Clean(arg string) error {
-	idx, name, err := parseProfileArg(arg)
-	if err != nil {
-		return err
-	}
-	resp, err := clientSend(&CleanMsg{
-		Index: idx,
-		Name:  name,
-	})
-	if err != nil {
-		return err
-	}
-	// TODO collapse this logic into a function like clientSend
-	switch body := resp.Body.(type) {
-	case *ErrorMsg:
-		return errors.New(body.Msg)
-	case *OkMsg:
-		return nil
-	default:
-		return fmt.Errorf("Unexpected message received %+v", body)
-	}
-}
-
 func KillAllSandboxes() error {
 	return KillSandbox(-1)
 }

@@ -503,7 +503,12 @@ func (st *initState) childrenVector() []*exec.Cmd {
 }
 
 func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
+
 	fs := fs.NewFilesystem(st.config, st.log)
+
+	if err := setupRootfs(fs); err != nil {
+		return err
+	}
 
 	if err := st.bindWhitelist(fs, st.profile.Whitelist); err != nil {
 		return err

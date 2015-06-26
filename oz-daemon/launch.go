@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path"
 	"sync"
@@ -232,6 +233,7 @@ func (sbox *Sandbox) remove(log *logging.Logger) {
 			if sb.profile.Networking.Nettype == network.TYPE_BRIDGE {
 				sb.network.Cleanup(log)
 			}
+			os.Remove(sb.addr)
 		} else {
 			sboxes = append(sboxes, sb)
 		}

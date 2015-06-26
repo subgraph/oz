@@ -33,7 +33,7 @@ func resolveVars(p string, u *user.User) (string, error) {
 		}
 		resolved, err := exec.LookPath(p[len(pathVar):])
 		if emptyPath {
-			os.Unsetenv("PATH")
+			os.Setenv("PATH", "") // Do not use Unsetenv, incompatible with golang 1.3
 		}
 		if err != nil {
 			return "", fmt.Errorf("failed to resolve %s", p)

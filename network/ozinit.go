@@ -4,15 +4,12 @@ import (
 	//Builtin
 	"errors"
 	"fmt"
-	"math/rand"
 	"os"
-	"time"
 
 	// Internal
-	"github.com/op/go-logging"
+	//"github.com/op/go-logging"
 
 	//External
-	"github.com/j-keck/arping"
 	"github.com/milosgajdos83/tenus"
 )
 
@@ -21,7 +18,7 @@ import (
 // and the veth interface if requested
 func NetSetup(stn *SandboxNetwork) error {
 	if os.Getpid() != 1 {
-		panic(errors.New("Cannot use NetSetip from parent."))
+		panic(errors.New("Cannot use NetSetup from parent."))
 	}
 
 	if err := setupLoopback(stn); err != nil {
@@ -33,6 +30,19 @@ func NetSetup(stn *SandboxNetwork) error {
 		if err := setupVEth(stn); err != nil {
 			return fmt.Errorf("Unable to setup veth interface: %+v", err)
 		}
+	}
+
+	return nil
+}
+
+func (stn *SandboxNetwork) NetReconfigure() error {
+	if os.Getpid() != 1 {
+		panic(errors.New("Cannot use NetReconfigure from parent."))
+	}
+
+	// Set the link's default gateway
+	if err := stn.Interface.SetLinkDefaultGw(&stn.Gateway); err != nil {
+		return fmt.Errorf("Unable to set default route %s.", err)
 	}
 
 	return nil
@@ -87,75 +97,7 @@ func setupVEth(stn *SandboxNetwork) error {
 		return fmt.Errorf("Unable to set default route %s.", err)
 	}
 
+	stn.Interface = ifc
+
 	return nil
-}
-
-// Try to find an unassigned IP address
-// Do this by first trying two random IPs or, if that fails, sequentially
-func getFreshIP(min, max uint64, log *logging.Logger) string {
-	var newIP string
-
-	for i := 0; i < ozMaxRandTries; i++ {
-		newIP = getRandIP(min, max)
-		if newIP != "" {
-			break
-		}
-	}
-
-	if newIP == "" {
-		log.Notice("Random IP lookup failed %d times, reverting to sequential select", ozMaxRandTries)
-
-		newIP = getScanIP(min, max)
-	}
-
-	return newIP
-
-}
-
-// Generate a random ip and arping it to see if it is available
-// Returns the ip on success or an ip string is the ip is already taken
-func getRandIP(min, max uint64) string {
-	if min > max {
-		return ""
-	}
-
-	dstIP := inet_ntoa(uint64(rand.Int63n(int64(max-min))) + min)
-
-	arping.SetTimeout(time.Millisecond * 150)
-
-	_, _, err := arping.PingOverIfaceByName(dstIP, ozDefaultInterfaceBridge)
-
-	if err == arping.ErrTimeout {
-		return dstIP.String()
-	} else if err != nil {
-		return dstIP.String()
-	}
-
-	return ""
-
-}
-
-// Go through all possible ips between min and max
-// and arping each one until a free one is found
-func getScanIP(min, max uint64) string {
-	if min > max {
-		return ""
-	}
-
-	for i := min; i < max; i++ {
-		dstIP := inet_ntoa(i)
-
-		arping.SetTimeout(time.Millisecond * 150)
-
-		_, _, err := arping.PingOverIfaceByName(dstIP, ozDefaultInterfaceBridge)
-
-		if err == arping.ErrTimeout {
-			return dstIP.String()
-		} else if err != nil {
-			return dstIP.String()
-		}
-	}
-
-	return ""
-
 }

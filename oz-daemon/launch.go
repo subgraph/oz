@@ -188,6 +188,14 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		}()
 	}
 
+    cmd2 := exec.Command("/bin/mount")
+    stdout, err := cmd2.Output()
+
+    if err != nil {
+        println(err.Error())
+    }
+    log.Debug(string(stdout))
+
 	d.nextSboxId += 1
 	d.sandboxes = append(d.sandboxes, sbox)
 	return sbox, nil

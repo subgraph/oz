@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/op/go-logging"
+	"github.com/milosgajdos83/tenus"
 )
 
 const (
@@ -20,13 +21,15 @@ const (
 
 type NetType string
 
-const (
-	TYPE_HOST   NetType = "host"
-	TYPE_EMPTY  NetType = "empty"
+const(
+	TYPE_HOST NetType   = "host"
+	TYPE_EMPTY NetType  = "empty"
 	TYPE_BRIDGE NetType = "bridge"
 )
 
 type HostNetwork struct {
+	// Bridge interface
+	Interface tenus.Bridger
 	// Gateway ip (bridge ip)
 	Gateway net.IP
 	// Gateway ip (bridge ip)
@@ -43,11 +46,13 @@ type HostNetwork struct {
 	Max uint64
 	// Bridge interface MAC Address
 	BridgeMAC string
-	//
+	// The type of network configuration
 	Nettype NetType
 }
 
 type SandboxNetwork struct {
+	// veth interface is present
+	Interface tenus.Linker
 	// Name of the veth in the host
 	VethHost string
 	// Temporary name of the guest' veth in the host
@@ -58,8 +63,10 @@ type SandboxNetwork struct {
 	Gateway net.IP
 	// IP class (ie: /24)
 	Class string
-	//
+	// The type of network configuration
 	Nettype NetType
+	// Host side virtual interface
+	Veth tenus.Vether
 }
 
 var privateNetworkRanges []string
@@ -100,6 +107,9 @@ func NetPrint(log *logging.Logger) {
 	log.Info(strHeader)
 
 	for _, netif := range ifs {
+		if strings.HasPrefix(netif.Name, ozDefaultInterfacePrefix) {
+			continue
+		}
 		addrs, _ := netif.Addrs()
 
 		strLine = fmt.Sprintf("%-15.14s", netif.Name)

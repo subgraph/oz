@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -18,39 +20,36 @@ import (
 type fnRunType func()
 
 var runFunc fnRunType
-var runBasename string
 
 func init() {
-	runBasename = path.Base(os.Args[0])
-
-	switch runBasename {
+	switch path.Base(os.Args[0]) {
 	case "oz":
 		runFunc = runApplication
 	default:
-		runFunc = runSandbox
+		runFunc = runSandboxed
 	}
 }
 
 func main() {
-	runFunc()
-}
-
-func runSandbox() {
-	hostname, _ := os.Hostname()
-	if runBasename == hostname {
-		fmt.Fprintf(os.Stderr, "Cannot launch from inside a sandbox.\n")
+	if err := checkRecursingSandbox(); err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 
-	name := "0"
-	cpath := os.Args[0]
-	if !filepath.IsAbs(os.Args[0]) {
-		// TODO: Check for executable in path...
-		name = cpath
-		cpath = ""
+	runFunc()
+}
+
+func runSandboxed() {
+	apath := os.Args[0]
+	if !filepath.IsAbs(apath) {
+		epath, err := exec.LookPath(apath)
+		apath = epath
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Cannot find executable for `%s`: %v\n", apath, err)
+			os.Exit(1)
+		}
 	}
-	err := daemon.Launch(name, cpath, os.Args[1:], os.Environ(), false)
-	if err != nil {
+	if err := daemon.Launch("0", apath, os.Args[1:], os.Environ(), false); err != nil {
 		fmt.Fprintf(os.Stderr, "launch command failed: %v.\n", err)
 		os.Exit(1)
 	}
@@ -204,7 +203,7 @@ func handleKill(c *cli.Context) {
 	}
 	if c.Args()[0] == "all" {
 		if err := daemon.KillAllSandboxes(); err != nil {
-			fmt.Fprintf(os.Stderr, "Kill command failed:", err)
+			fmt.Fprintf(os.Stderr, "Kill command failed: %s.\n", err)
 			os.Exit(1)
 		}
 		return
@@ -215,7 +214,7 @@ func handleKill(c *cli.Context) {
 		os.Exit(1)
 	}
 	if err := daemon.KillSandbox(id); err != nil {
-		fmt.Fprintf(os.Stderr, "Kill command failed:", err)
+		fmt.Fprintf(os.Stderr, "Kill command failed: %s.\n", err)
 		os.Exit(1)
 	}
 
@@ -230,4 +229,28 @@ func handleLogs(c *cli.Context) {
 	for ll := range ch {
 		fmt.Println(ll)
 	}
+}
+
+func checkRecursingSandbox() error {
+	hostname, _ := os.Hostname()
+	fsbox := path.Join("/tmp", "oz-sandbox")
+	bsbox, err := ioutil.ReadFile(fsbox)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("Unknown error checking for sandbox file: %v")
+	}
+	ssbox := string(bsbox)
+	if ssbox != "" {
+		if path.Base(os.Args[0]) == "oz" {
+			return fmt.Errorf("Cannot run oz client inside of existing sandbox!")
+		}
+		if path.Base(os.Args[0]) == hostname {
+			// TODO: We should just exec cmd+suffix here
+			return fmt.Errorf("Cannot recursively launch sandbox `%s`!", hostname)
+		}
+		// TODO: Attempting to launch sandboxed application in another sandbox.
+		//       Send back to daemon for launching from host.
+		return fmt.Errorf("Cannot run a sandbox from inside a running sandbox!")
+	}
+
+	return nil
 }

@@ -4,11 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
 	"os/signal"
 	"os/user"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,7 +24,6 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/op/go-logging"
-	"path"
 )
 
 const EnvPrefix = "INIT_ENV_"
@@ -233,6 +234,9 @@ func (st *initState) runInit() {
 	}
 	st.xpraReady.Wait()
 	st.log.Info("XPRA started")
+
+	fsbx := path.Join("/tmp", "oz-sandbox")
+	err = ioutil.WriteFile(fsbx, []byte(st.profile.Name), 0644)
 
 	os.Stderr.WriteString("OK\n")
 

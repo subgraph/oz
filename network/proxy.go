@@ -1,6 +1,6 @@
 package network
 
-import (
+import(
 	//Builtin
 	"fmt"
 	"io"
@@ -16,16 +16,16 @@ import (
 
 type ProxyType string
 
-const (
+const(
 	PROXY_CLIENT ProxyType = "client"
 	PROXY_SERVER ProxyType = "server"
 )
 
 type ProtoType string
 
-const (
-	PROTO_TCP    ProtoType = "tcp"
-	PROTO_UDP    ProtoType = "udp"
+const(
+	PROTO_TCP ProtoType = "tcp"
+	PROTO_UDP ProtoType = "udp"
 	PROTO_SOCKET ProtoType = "socket"
 )
 
@@ -146,7 +146,7 @@ func nsSocketListener(fd uintptr, proto ProtoType, lAddr string) (net.Listener, 
 /**
  * Connect/Server
 **/
-func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log *logging.Logger, ready sync.WaitGroup) error {
+func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log *logging.Logger, ready sync.WaitGroup) (error) {
 	rConn, err := socketConnect(pid, proto, rAddr)
 	if err != nil {
 		log.Error("Socket: %+v.", err)
@@ -159,7 +159,7 @@ func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log
 	return nil
 }
 
-func newProxyServer(pid int, proto ProtoType, dest string, port int, log *logging.Logger, ready sync.WaitGroup) error {
+func newProxyServer(pid int, proto ProtoType, dest string, port int, log *logging.Logger, ready sync.WaitGroup) (error) {
 	if dest == "" {
 		dest = "127.0.0.1"
 	}

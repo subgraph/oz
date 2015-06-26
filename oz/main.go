@@ -207,6 +207,7 @@ func handleKill(c *cli.Context) {
 			fmt.Fprintf(os.Stderr, "Kill command failed:", err)
 			os.Exit(1)
 		}
+		return
 	}
 	id, err := strconv.Atoi(c.Args()[0])
 	if err != nil {

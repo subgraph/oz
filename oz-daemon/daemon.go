@@ -2,6 +2,9 @@ package daemon
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"path"
 	"strings"
 	"syscall"
 
@@ -10,8 +13,6 @@ import (
 	"github.com/subgraph/oz/network"
 
 	"github.com/op/go-logging"
-	"os"
-	"path"
 )
 
 type daemonState struct {
@@ -39,31 +40,27 @@ func Main() {
 		d.handleLogs,
 	)
 	if err != nil {
-		d.log.Warning("Error running server: %v", err)
+		d.log.Error("Error running server: %v", err)
 	}
 }
 
 func initialize() *daemonState {
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGUSR1)
+
 	d := &daemonState{}
 	d.initializeLogging()
-	var config *oz.Config
-	config, err := oz.LoadConfig(oz.DefaultConfigPath)
+	config, err := d.loadConfig()
 	if err != nil {
-		if os.IsNotExist(err) {
-			d.log.Info("Configuration file (%s) is missing, using defaults.", oz.DefaultConfigPath)
-			config = oz.NewDefaultConfig()
-		} else {
-			d.log.Error("Could not load configuration: %s", oz.DefaultConfigPath, err)
-			os.Exit(1)
-		}
+		d.log.Error("Could not load configuration: %s", oz.DefaultConfigPath, err)
+		os.Exit(1)
 	}
-	d.log.Info("Oz Global Config: %+v", config)
 	d.config = config
-	ps, err := oz.LoadProfiles(config.ProfileDir)
+	ps, err := d.loadProfiles(d.config.ProfileDir)
 	if err != nil {
 		d.log.Fatalf("Failed to load profiles: %v", err)
+		os.Exit(1)
 	}
-	d.Debug("%d profiles loaded", len(ps))
 	d.profiles = ps
 	oz.ReapChildProcs(d.log, d.handleChildExit)
 	d.nextSboxId = 1
@@ -91,7 +88,53 @@ func initialize() *daemonState {
 		d.log.Fatalf("Failed to create sockets directory: %v", err)
 	}
 
+	go d.processSignals(sigs)
+
 	return d
+}
+
+
+func (d *daemonState) loadConfig() (*oz.Config, error) {
+	config, err := oz.LoadConfig(oz.DefaultConfigPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			d.log.Info("Configuration file (%s) is missing, using defaults.", oz.DefaultConfigPath)
+			config = oz.NewDefaultConfig()
+		} else {
+			return nil, err
+		}
+	}
+	d.log.Info("Oz Global Config: %+v", config)
+
+	return config, nil
+}
+
+func (d *daemonState) loadProfiles(profileDir string) (oz.Profiles, error) {
+	ps, err := oz.LoadProfiles(profileDir)
+	if err != nil {
+		return nil, err
+	}
+	d.Debug("%d profiles loaded", len(ps))
+	return ps, nil
+}
+
+func (d *daemonState) processSignals(c <-chan os.Signal) {
+	for {
+		sig := <-c
+		switch sig {
+		case syscall.SIGHUP:
+			d.log.Notice("Received HUP signal, reloading profiles.")
+
+			ps, err := d.loadProfiles(d.config.ProfileDir)
+			if err != nil {
+				d.log.Error("Failed to reload profiles: %v", err)
+				return
+			}
+			d.profiles = ps
+		case syscall.SIGUSR1:
+			d.handleNetworkReconfigure()
+		}
+	}
 }
 
 func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
@@ -111,6 +154,7 @@ func runServer(log *logging.Logger, args ...interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	return s.Run()
 }
 
@@ -287,4 +331,38 @@ func (d *daemonState) handleLogs(logs *LogsMsg, msg *ipc.Message) error {
 	}
 	msg.Respond(&OkMsg{})
 	return nil
+}
+
+func (d *daemonState) handleNetworkReconfigure() {
+	brIP, brNet, err := network.FindEmptyRange()
+	if err != nil {
+		return
+	}
+	if brIP.Equal(d.network.Gateway) {
+		d.log.Notice("Range is still available, not reconfiguring.")
+		return
+	}
+	d.log.Notice("Network has changed, reconfiguring with %s %s", brIP.String(), brNet.String())
+
+	if err := d.network.BridgeReconfigure(d.log); err != nil {
+		d.log.Error("Unable to reconfigure bridge network: %v", err)
+		return
+	}
+/*
+	for _, sbox := range d.sandboxes {
+		if sbox.profile.Networking.Nettype == network.TYPE_BRIDGE {
+			sbox.network, err := network.PrepareSandboxNetwork(d.network, d.log)
+			if err != nil {
+				d.log.Error("Unable to prepare reconfigure of sandbox `%s` networking: %v", sbox.profile.Name, err)
+				continue
+			}
+			if err := d.network.NetReconfigure(d.network, sbox.network, sbox.Pid, d.log); err != nil {
+				d.log.Error("Unable to reconfigure sandbox `%s` networking: %v", sbox.profile.Name, err)
+				continue
+			}
+			// TODO: Reconfigure default gateway inside sandbox
+		}
+	}
+*/
+	return
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/subgraph/oz/network"
 
 	"github.com/op/go-logging"
-	"github.com/subgraph/oz/fs"
 	"os"
 	"path"
 )
@@ -87,12 +86,6 @@ func initialize() *daemonState {
 		}
 	}
 
-	rootfs := path.Join(config.SandboxPath, "rootfs")
-	fs := fs.NewFilesystem(config, d.log)
-	d.log.Info("Creating root filesystem at %s", rootfs)
-	if err := setupRootfs(fs); err != nil {
-		d.log.Fatalf("Failed setting up root filesystem: %v", err)
-	}
 	sockets := path.Join(config.SandboxPath, "sockets")
 	if err := os.MkdirAll(sockets, 0755); err != nil {
 		d.log.Fatalf("Failed to create sockets directory: %v", err)

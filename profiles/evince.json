@@ -1,5 +1,10 @@
 {
-"path": "/usr/bin/evince"
+"name": "evince"
+, "path": "/usr/bin/evince"
+, "paths": [
+	"/usr/bin/evince-thumbnailer"
+	, "/usr/bin/evince-previewer"
+]
 , "allow_files": true
 , "xserver": {
 	"enabled": true

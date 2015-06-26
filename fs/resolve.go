@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"os"
 )
 
 func resolvePath(p string, u *user.User) ([]string, error) {
@@ -25,7 +26,15 @@ func resolveVars(p string, u *user.User) (string, error) {
 
 	switch {
 	case strings.HasPrefix(p, pathVar):
+		emptyPath := false
+		if os.Getenv("PATH") == "" {
+			emptyPath = true
+			os.Setenv("PATH", "/bin:/usr/bin:/sbin:/usr/sbin")
+		}
 		resolved, err := exec.LookPath(p[len(pathVar):])
+		if emptyPath {
+			os.Unsetenv("PATH")
+		}
 		if err != nil {
 			return "", fmt.Errorf("failed to resolve %s", p)
 		}

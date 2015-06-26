@@ -38,17 +38,17 @@ var deviceSymlinks = [][2]string{
 }
 
 var basicBlacklist = []string{
-	"/usr/sbin", "/sbin", "${PATH}/su",
-	"${PATH}/sudo", "${PATH}/fusermount",
+	"/usr/sbin", "/sbin", "/etc/X11",
+	"${PATH}/sudo", "${PATH}/su",
 	"${PATH}/xinput", "${PATH}/strace",
 	"${PATH}/mount", "${PATH}/umount",
+	"${PATH}/fusermount",
 }
 
 type fsDeviceDefinition struct {
 	path string
 	mode uint32
 	dev  int
-	perm uint32
 }
 
 const ugorw = syscall.S_IRUSR | syscall.S_IWUSR | syscall.S_IRGRP | syscall.S_IWGRP | syscall.S_IROTH | syscall.S_IWOTH
@@ -56,19 +56,19 @@ const urwgr = syscall.S_IRUSR | syscall.S_IWUSR | syscall.S_IRGRP
 const urw = syscall.S_IRUSR | syscall.S_IWUSR
 
 var basicDevices = []fsDeviceDefinition{
-	{path: "/dev/full", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 7), perm: 0666},
-	{path: "/dev/null", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 3), perm: 0666},
-	{path: "/dev/random", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 8), perm: 0666},
+	{path: "/dev/full", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 7)},
+	{path: "/dev/null", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 3)},
+	{path: "/dev/random", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 8)},
 
-	{path: "/dev/console", mode: syscall.S_IFCHR | urw, dev: _makedev(5, 1), perm: 0600},
-	{path: "/dev/tty", mode: syscall.S_IFCHR | ugorw, dev: _makedev(5, 0), perm: 0666},
-	{path: "/dev/tty1", mode: syscall.S_IFREG | urwgr, dev: 0, perm: 0640},
-	{path: "/dev/tty2", mode: syscall.S_IFREG | urwgr, dev: 0, perm: 0640},
-	{path: "/dev/tty3", mode: syscall.S_IFREG | urwgr, dev: 0, perm: 0640},
-	{path: "/dev/tty4", mode: syscall.S_IFREG | urwgr, dev: 0, perm: 0640},
+	{path: "/dev/console", mode: syscall.S_IFCHR | urw, dev: _makedev(5, 1)},
+	{path: "/dev/tty", mode: syscall.S_IFCHR | ugorw, dev: _makedev(5, 0)},
+	{path: "/dev/tty1", mode: syscall.S_IFREG | urwgr, dev: 0},
+	{path: "/dev/tty2", mode: syscall.S_IFREG | urwgr, dev: 0},
+	{path: "/dev/tty3", mode: syscall.S_IFREG | urwgr, dev: 0},
+	{path: "/dev/tty4", mode: syscall.S_IFREG | urwgr, dev: 0},
 
-	{path: "/dev/urandom", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 9), perm: 0666},
-	{path: "/dev/zero", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 5), perm: 0666},
+	{path: "/dev/urandom", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 9)},
+	{path: "/dev/zero", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 5)},
 }
 
 func _makedev(x, y int) int {
@@ -111,7 +111,7 @@ func setupRootfs(fsys *fs.Filesystem) error {
 
 	}
 	for _, d := range basicDevices {
-		if err := fsys.CreateDevice(d.path, d.dev, d.mode, d.perm); err != nil {
+		if err := fsys.CreateDevice(d.path, d.dev, d.mode); err != nil {
 			return err
 		}
 	}

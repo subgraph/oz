@@ -226,9 +226,6 @@ func (fs *Filesystem) blacklist(target string) error {
 	if err := syscall.Mount(fs.absPath(src), fs.absPath(t), "", syscall.MS_BIND, "mode=400,gid=0"); err != nil {
 		return fmt.Errorf("failed to bind %s -> %s for blacklist: %v", src, t, err)
 	}
-	if err := remount(fs.absPath(t), syscall.MS_RDONLY); err != nil {
-		return fmt.Errorf("failed to bind %s -> %s for blacklist: %v", src, t, err)
-	}
 	return nil
 }
 
@@ -325,7 +322,24 @@ func (fs *Filesystem) CreateBlacklistPaths() error {
 	if err := createBlacklistDir(fs.absPath(emptyDirPath)); err != nil {
 		return err
 	}
+	if err := rdonlyBindBlacklistItem(fs.absPath(emptyDirPath)); err != nil {
+		return err
+	}
+
 	if err := createBlacklistFile(fs.absPath(emptyFilePath)); err != nil {
+		return err
+	}
+	if err := rdonlyBindBlacklistItem(fs.absPath(emptyFilePath)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func rdonlyBindBlacklistItem(target string) error {
+	if err := syscall.Mount(target, target, "", syscall.MS_BIND, "mode=400,gid=0"); err != nil {
+		return err
+	}
+	if err := remount(target, syscall.MS_RDONLY); err != nil {
 		return err
 	}
 	return nil

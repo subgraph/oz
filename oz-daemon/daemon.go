@@ -93,7 +93,6 @@ func initialize() *daemonState {
 	return d
 }
 
-
 func (d *daemonState) loadConfig() (*oz.Config, error) {
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
@@ -348,21 +347,21 @@ func (d *daemonState) handleNetworkReconfigure() {
 		d.log.Error("Unable to reconfigure bridge network: %v", err)
 		return
 	}
-/*
-	for _, sbox := range d.sandboxes {
-		if sbox.profile.Networking.Nettype == network.TYPE_BRIDGE {
-			sbox.network, err := network.PrepareSandboxNetwork(d.network, d.log)
-			if err != nil {
-				d.log.Error("Unable to prepare reconfigure of sandbox `%s` networking: %v", sbox.profile.Name, err)
-				continue
+	/*
+		for _, sbox := range d.sandboxes {
+			if sbox.profile.Networking.Nettype == network.TYPE_BRIDGE {
+				sbox.network, err := network.PrepareSandboxNetwork(d.network, d.log)
+				if err != nil {
+					d.log.Error("Unable to prepare reconfigure of sandbox `%s` networking: %v", sbox.profile.Name, err)
+					continue
+				}
+				if err := d.network.NetReconfigure(d.network, sbox.network, sbox.Pid, d.log); err != nil {
+					d.log.Error("Unable to reconfigure sandbox `%s` networking: %v", sbox.profile.Name, err)
+					continue
+				}
+				// TODO: Reconfigure default gateway inside sandbox
 			}
-			if err := d.network.NetReconfigure(d.network, sbox.network, sbox.Pid, d.log); err != nil {
-				d.log.Error("Unable to reconfigure sandbox `%s` networking: %v", sbox.profile.Name, err)
-				continue
-			}
-			// TODO: Reconfigure default gateway inside sandbox
 		}
-	}
-*/
+	*/
 	return
 }

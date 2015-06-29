@@ -226,7 +226,7 @@ func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, 
 		pmnt := path.Join(binpath, "bin", "oz-mount")
 		cmnt := exec.Command(pmnt, files...)
 		cmnt.Env = []string{"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid)}
-		pout, err := cmnt.CombinedOutput();
+		pout, err := cmnt.CombinedOutput()
 		if err != nil {
 			log.Warning("Unable to bind files to sandbox: %v", err)
 			log.Warning("%s", string(pout))

@@ -63,6 +63,7 @@ func getDefaultArgs(config *oz.XServerConf) []string {
 		args = append(args, "--notifications")
 	} else {
 		args = append(args, "--no-notifications")
+	}
 
 	return args
 }

@@ -174,7 +174,7 @@ func (d *daemonState) handleListProfiles(msg *ListProfilesMsg, m *ipc.Message) e
 }
 
 func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
-	d.Debug("Launch message received: %+v", msg)
+	d.Debug("Launch message received. Path: %s Name: %s Pwd: %s Args: %+v", msg.Path, msg.Name, msg.Pwd, msg.Args)
 	p, err := d.getProfileFromLaunchMsg(msg)
 	if err != nil {
 		return m.Respond(&ErrorMsg{err.Error()})
@@ -187,7 +187,7 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 			return m.Respond(&ErrorMsg{errmsg})
 		} else {
 			d.Info("Found running sandbox for `%s`, running program there", p.Name)
-			sbox.launchProgram(msg.Path, msg.Pwd, msg.Args, d.log)
+			sbox.launchProgram(d.config.PrefixPath, msg.Path, msg.Pwd, msg.Args, d.log)
 		}
 	} else {
 		d.Debug("Would launch %s", p.Name)

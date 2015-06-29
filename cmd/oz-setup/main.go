@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -217,7 +218,8 @@ func handleInstall(c *cli.Context) {
 			os.Exit(1)
 		}
 
-		err = syscall.Symlink(OzConfig.ClientPath, cpath)
+		clientbin := path.Join(OzConfig.PrefixPath, "bin", "oz")
+		err = syscall.Symlink(clientbin, cpath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create symlink %s", err)
 			os.Exit(1)

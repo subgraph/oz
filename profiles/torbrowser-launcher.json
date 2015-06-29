@@ -4,7 +4,6 @@
 , "xserver": {
 	"enabled": true
 	, "enable_tray": true
-	, "disable_clipboard": false
 	, "tray_icon":"/usr/share/pixmaps/torbrowser80.xpm"
 }
 , "networking":{

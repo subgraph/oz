@@ -121,7 +121,8 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create random socket path: %v", err)
 	}
-	cmd := createInitCommand(d.config.InitPath, p.Name, socketPath, msg.Env, uid, display, stn)
+	initPath := path.Join(d.config.PrefixPath, "bin", "oz-init")
+	cmd := createInitCommand(initPath, p.Name, socketPath, msg.Env, uid, display, stn)
 	log.Debug("Command environment: %+v", cmd.Env)
 	pp, err := cmd.StderrPipe()
 	if err != nil {

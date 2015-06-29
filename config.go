@@ -12,12 +12,11 @@ import (
 type Config struct {
 	ProfileDir      string   `json:"profile_dir" desc:"Directory containing the sandbox profiles"`
 	ShellPath       string   `json:"shell_path" desc:"Path of the shell using when entering a sandbox"`
-	InitPath        string   `json:"init_path" desc:"Path to the 'oz-init' binary"`
-	ClientPath      string   `json:"client_path" desc:"Path to the 'oz' client binary "`
+	PrefixPath      string   `json:"prefix_path" desc:"Prefix path containing the oz executables"`
 	SandboxPath     string   `json:"sandbox_path" desc:"Path of the sandboxes base"`
 	BridgeMACAddr   string   `json:"bridge_mac" desc:"MAC Address of the bridge interface"`
 	DivertSuffix    string   `json:"divert_suffix" desc:"Suffix using for dpkg-divert of application executables"`
-	NMIgnoreFile    string   `json:"nm_ignore_file" desc:"Path to the NetworkManager ignore config file"`
+	NMIgnoreFile    string   `json:"nm_ignore_file" desc:"Path to the NetworkManager ignore config file, disables the warning if empty"`
 	UseFullDev      bool     `json:"use_full_dev" desc:"Give sandboxes full access to devices instead of a restricted set"`
 	AllowRootShell  bool     `json:"allow_root_shell" desc:"Allow entering a sandbox shell as root"`
 	LogXpra         bool     `json:"log_xpra" desc:"Log output of Xpra"`
@@ -31,8 +30,7 @@ func NewDefaultConfig() *Config {
 	return &Config{
 		ProfileDir:     "/var/lib/oz/cells.d",
 		ShellPath:      "/bin/bash",
-		InitPath:       "/usr/local/bin/oz-init",
-		ClientPath:     "/usr/local/bin/oz",
+		PrefixPath:     "/usr/local",
 		SandboxPath:    "/srv/oz",
 		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",
 		BridgeMACAddr:  "6A:A8:2E:56:E8:9C",

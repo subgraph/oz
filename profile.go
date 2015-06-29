@@ -52,14 +52,14 @@ const (
 )
 
 type XServerConf struct {
-	Enabled          bool
-	TrayIcon         string   `json:"tray_icon"`
-	WindowIcon       string   `json:"window_icon"`
-	EnableTray       bool     `json:"enable_tray"`
-	UseDBUS          bool     `json:"use_dbus"`
-	UsePulseAudio    bool     `json:"use_pulse_audio"`
-	DisableClipboard bool     `json:"disable_clipboard"`
-	AudioMode        AudioMode `json:"audio_mode"`
+	Enabled             bool
+	TrayIcon            string   `json:"tray_icon"`
+	WindowIcon          string   `json:"window_icon"`
+	EnableTray          bool     `json:"enable_tray"`
+	EnableNotifications bool     `json:"enable_notifications"`
+	UsePulseAudio       bool     `json:"use_pulse_audio"`
+	DisableClipboard    bool     `json:"disable_clipboard"`
+	AudioMode           AudioMode `json:"audio_mode"`
 }
 
 type WhitelistItem struct {
@@ -100,11 +100,11 @@ func NewDefaultProfile() *Profile {
 		Multi:      false,
 		AllowFiles: false,
 		XServer: XServerConf{
-			Enabled:       true,
-			EnableTray:    false,
-			UseDBUS:       false,
-			UsePulseAudio: false,
-			AudioMode:     PROFILE_AUDIO_NONE,
+			Enabled:             true,
+			EnableTray:          false,
+			EnableNotifications: false,
+			UsePulseAudio:       false,
+			AudioMode:           PROFILE_AUDIO_NONE,
 		},
 	}
 }

@@ -36,7 +36,6 @@ var xpraDefaultArgs = []string{
 	"--system-tray",
 	"--xsettings",
 	//"--no-xsettings",
-	"--notifications",
 	"--cursors",
 	"--encoding=rgb",
 	"--no-pulseaudio",
@@ -59,6 +58,11 @@ func getDefaultArgs(config *oz.XServerConf) []string {
 	case oz.PROFILE_AUDIO_FULL:
 		args = append(args, "--microphone", "--speaker")
 	}
+
+	if config.EnableNotifications {
+		args = append(args, "--notifications")
+	} else {
+		args = append(args, "--no-notifications")
 
 	return args
 }

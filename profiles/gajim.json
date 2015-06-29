@@ -9,7 +9,6 @@
 	"enabled": true
 	, "enable_tray": true
 	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/gajim.svg"
-	, "disable_audio":true
 }
 , "networking":{
 	"type":"empty"

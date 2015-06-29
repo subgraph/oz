@@ -44,15 +44,22 @@ type Profile struct {
 	Networking NetworkProfile
 }
 
+type AudioMode string
+const (
+	PROFILE_AUDIO_NONE    AudioMode = "none"
+	PROFILE_AUDIO_SPEAKER AudioMode = "speaker"
+	PROFILE_AUDIO_FULL    AudioMode = "full"
+)
+
 type XServerConf struct {
 	Enabled          bool
-	TrayIcon         string `json:"tray_icon"`
-	WindowIcon       string `json:"window_icon"`
-	EnableTray       bool   `json:"enable_tray"`
-	UseDBUS          bool   `json:"use_dbus"`
-	UsePulseAudio    bool   `json:"use_pulse_audio"`
-	DisableClipboard bool   `json:"disable_clipboard"`
-	DisableAudio     bool   `json:"disable_audio"`
+	TrayIcon         string   `json:"tray_icon"`
+	WindowIcon       string   `json:"window_icon"`
+	EnableTray       bool     `json:"enable_tray"`
+	UseDBUS          bool     `json:"use_dbus"`
+	UsePulseAudio    bool     `json:"use_pulse_audio"`
+	DisableClipboard bool     `json:"disable_clipboard"`
+	AudioMode        AudioMode `json:"audio_mode"`
 }
 
 type WhitelistItem struct {
@@ -97,7 +104,7 @@ func NewDefaultProfile() *Profile {
 			EnableTray:    false,
 			UseDBUS:       false,
 			UsePulseAudio: false,
-			DisableAudio:  true,
+			AudioMode:     PROFILE_AUDIO_NONE,
 		},
 	}
 }

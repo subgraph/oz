@@ -5,7 +5,6 @@
 	"enabled": true
 	, "enable_tray": true
 	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/liferea.svg"
-	, "_tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/liferea.svg"
 }
 , "networking":{
 	"type":"bridge"

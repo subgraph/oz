@@ -5,7 +5,6 @@
 	, "enable_tray": true
 	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/office-mail.svg"
 	, "window_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/office-mail.svg"
-	, "use_pulse_audio": false
 }
 , "networking":{
 	"type":"empty"

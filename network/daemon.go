@@ -27,8 +27,10 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 		BridgeMAC: bridgeMAC,
 	}
 
-	if _, err := os.Stat(nmIgnoreFile); os.IsNotExist(err) {
-		log.Warning("Warning! Network Manager may not properly configured to ignore the bridge interface! This may result in management conflicts!")
+	if nmIgnoreFile != "" {
+		if _, err := os.Stat(nmIgnoreFile); os.IsNotExist(err) {
+			log.Warning("Warning! Network Manager may not properly configured to ignore the bridge interface! This may result in management conflicts!")
+		}
 	}
 
 	br, err := tenus.BridgeFromName(ozDefaultInterfaceBridge)

@@ -483,7 +483,11 @@ func (st *initState) shutdownXpra() {
 	if st.xpra == nil {
 		return
 	}
-	out, err := st.xpra.Stop()
+	creds := &syscall.Credential{
+		Uid: uint32(st.uid),
+		Gid: uint32(st.gid),
+	}
+	out, err := st.xpra.Stop(creds)
 	if err != nil {
 		st.log.Warning("Error running xpra stop: %v", err)
 		return

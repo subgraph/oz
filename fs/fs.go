@@ -160,6 +160,23 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	return bindMount(src, to, mntflags)
 }
 
+func (fs *Filesystem) UnbindPath(to string) (error) {
+	to = path.Join(fs.Root(), to)
+
+	_, err := os.Stat(to)
+	if err != nil {
+		fs.log.Warning("Target (%s) does not exist, ignoring", to)
+		return nil
+	}
+
+	// XXX
+	if err := syscall.Unmount(to, syscall.MNT_DETACH/* | syscall.MNT_FORCE*/); err != nil {
+		return err
+	}
+
+	return os.Remove(to)
+}
+
 func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, error) {
 	if fi, err := os.Stat(src); err == nil {
 		return fi, nil

@@ -7,6 +7,9 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -179,7 +182,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		go func() {
 			sbox.ready.Wait()
 			wgNet.Wait()
-			go sbox.launchProgram(msg.Path, msg.Pwd, msg.Args, log)
+			go sbox.launchProgram(d.config.PrefixPath, msg.Path, msg.Pwd, msg.Args, log)
 		}()
 	}
 
@@ -195,26 +198,39 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 	return sbox, nil
 }
 
-func (sbox *Sandbox) launchProgram(cpath, pwd string, args []string, log *logging.Logger) {
-	/*
-		if sbox.profile.AllowFiles {
-			for _, fpath := range args {
-				if _, err := os.Stat(fpath); err == nil {
-					if filepath.IsAbs(fpath) == false {
-						fpath = path.Join(pwd, fpath)
-					}
-					log.Info("Adding file `%s` to sandbox `%s`.", fpath, sbox.profile.Name)
-					if err := sbox.fs.AddBindWhitelist(fpath, fpath, false); err != nil {
-						log.Warning("Error adding file `%s`!", fpath)
-					}
-				}
-			}
-		}
-	*/
-
+func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, log *logging.Logger) {
+	if sbox.profile.AllowFiles {
+		sbox.whitelistArgumentFiles(binpath, pwd, args, log)
+	}
 	err := ozinit.RunProgram(sbox.addr, cpath, pwd, args)
 	if err != nil {
 		log.Error("start shell command failed: %v", err)
+	}
+}
+
+func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, log *logging.Logger) {
+	var files []string
+	for _, fpath := range args {
+		if _, err := os.Stat(fpath); err == nil {
+			if filepath.IsAbs(fpath) == false {
+				fpath = path.Join(pwd, fpath)
+			}
+			if !strings.HasPrefix(fpath, "/home/") {
+				continue
+			}
+			log.Notice("Adding file `%s` to sandbox `%s`.", fpath, sbox.profile.Name)
+			files = append(files, fpath)
+		}
+	}
+	if len(files) > 0 {
+		pmnt := path.Join(binpath, "bin", "oz-mount")
+		cmnt := exec.Command(pmnt, files...)
+		cmnt.Env = []string{"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid)}
+		pout, err := cmnt.CombinedOutput();
+		if err != nil {
+			log.Warning("Unable to bind files to sandbox: %v", err)
+			log.Warning("%s", string(pout))
+		}
 	}
 }
 

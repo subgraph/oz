@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"path"
 	"strconv"
+	"syscall"
 )
 
 type Xpra struct {
@@ -59,12 +60,15 @@ func getDefaultArgs(config *oz.XServerConf) []string {
 	return args
 }
 
-func (x *Xpra) Stop() ([]byte, error) {
+func (x *Xpra) Stop(cred *syscall.Credential) ([]byte, error) {
 	cmd := exec.Command("/usr/bin/xpra",
 		"--socket-dir="+x.WorkDir,
 		"stop",
 		fmt.Sprintf(":%d", x.Display),
 	)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Credential: cred,
+	}
 	cmd.Env = []string{"TMPDIR=" + x.WorkDir}
 	return cmd.Output()
 }

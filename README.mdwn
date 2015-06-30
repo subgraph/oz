@@ -299,3 +299,7 @@ You can find a list of existing profiles in the repository. Here is the porfile 
 ]
 }
 ```
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/subgraph/oz/docs/images/oz_logo_02.png" alt="Obsidian Zebra" />
+</p>

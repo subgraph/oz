@@ -3,6 +3,8 @@
 Oz is a sandboxing system targeting everyday workstation applications.
 It acts as a wrapper around application executables for completely transparent user operations. It achieves process containment through the use of [Linux Namespaces](http://man7.org/linux/man-pages/man7/namespaces.7.html), [Seccomp filters](http://man7.org/linux/man-pages/man2/seccomp.2.html), [Capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html), and X11 restriction using [Xpra](https://xpra.org/). It has built-in support with automatic configuration of bridge mode networking and also support working with contained network environment using the built in connection forwarding proxy.
 
+[See the wiki for the complete technical documentation.](https://github.com/subgraph/oz/wiki/Oz-Technical-Details)
+
 # Warnings!
 
 Please note that Oz is currently under major development and still at a very alpha stage. **As of this writting some features, like seccomp filters, are not yet available in the public master branch**. It is not intended for use in multi-users systems. Use it at your own risk!

@@ -214,6 +214,9 @@ func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) []stri
 	}
 
 	for _, EnvItem := range p.Environment {
+		if EnvItem.Name == "" {
+			continue
+		}
 		if EnvItem.Value != "" {
 			d.log.Info("Setting environment variable: %s=%s\n", EnvItem.Name, EnvItem.Value)
 

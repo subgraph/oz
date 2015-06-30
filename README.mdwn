@@ -8,7 +8,7 @@ It acts as a wrapper around application executables for completely transparent u
 # Demo
 
 <p align="center">
-<a href="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.webm"><img src="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.gif" alt="OZ Sandbox Evince Demo"/></a>
+<a href="https://support.subgraph.com/videos/oz_evince_01.webm"><img src="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.gif" alt="OZ Sandbox Evince Demo"/></a>
 </p>
 
 # Warnings!

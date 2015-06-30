@@ -64,7 +64,7 @@ type XServerConf struct {
 
 type WhitelistItem struct {
 	Path     string
-	ReadOnly bool
+	ReadOnly bool `json:"read_only"`
 }
 
 type BlacklistItem struct {

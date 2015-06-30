@@ -1,0 +1,299 @@
+# Intro
+
+Oz is a sandboxing system targeting everyday workstation applications.
+It acts as a wrapper around application executables for completely transparent user operations. It achieves process containment through the use of [Linux Namespaces](http://man7.org/linux/man-pages/man7/namespaces.7.html), [Seccomp filters](http://man7.org/linux/man-pages/man2/seccomp.2.html), [Capabilities](http://man7.org/linux/man-pages/man7/capabilities.7.html), and X11 restriction using [Xpra](https://xpra.org/). It has built-in support with automatic configuration of bridge mode networking and also support working with contained network environment using the built in connection forwarding proxy.
+
+# Warnings!
+
+Please note that Oz is currently under major development and still at a very alpha stage. **As of this writting some features, like seccomp filters, are not yet available in the public master branch**. It is not intended for use in multi-users systems. Use it at your own risk!
+
+# Installing
+
+Due to the alpha nature of this project there currently is no package for easy installation.
+
+## Prerequisites
+
+Currently Oz only works and is only tested for Debian (>= jessie).
+As of this writing it does **not** work in Ubuntu. While it has been minimally tested under Fedora,
+there doesn't exist an RPM equivalent to `dpkg-divert` which allows to conveniantly wrap executables of existing program.
+For seccomp filters you need at least kernel version 3.5.
+
+It is highly recommend that you run it in conjunction with [grsecurity](https://grsecurity.net/).
+
+### Dependencies
+
+```
+$ sudo apt-get install golang xpra bridge-utils libseccomp2 libcap2
+```
+
+You must also have the `veth` and `bridge` kernel module loaded to use *bridge network mode*.
+
+### Grsec
+
+If you are using grsecurity you will need to disable the following kernel options
+permanently via the sysctl interface or by echoing values to files in
+to files in `/proc/sys/kernel/grsecurity/`:
+
+```
+kernel.grsecurity.chroot_caps = 0
+kernel.grsecurity.chroot_deny_chmod = 0
+kernel.grsecurity.chroot_deny_mknod = 0
+kernel.grsecurity.chroot_deny_mount = 0
+```
+
+See [Grsecurity/Appendix/Sysctl Options](https://en.wikibooks.org/wiki/Grsecurity/Appendix/Sysctl_Options)
+for information on setting grsecurity sysctl options.
+
+### Network Manager
+
+If you are using Network-Manager you need to make sure to exclude the bridge interface.
+To do so a file must be created in `/etc/NetworkManager/conf.d/oz.conf` containing:
+
+```
+[main]
+plugins=keyfile
+
+[keyfile]
+unmanaged-devices=mac:6a:a8:2e:56:e8:9c;interface-name:oz0
+```
+
+If this file is missing `oz-daemon` will output a warning but it may fail to setup bridge networking.
+
+### Bridge networking
+
+Bridge networking is automatically configured by Oz, but you will need to setup
+at minimum a few iptables masquerading rules and ebtables isolation rules as follows:
+
+```
+sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
+sudo ebtables -P FORWARD DROP
+sudo ebtables -F FORWARD
+sudo ebtables -A FORWARD -i oz0 -j ACCEPT
+sudo ebtables -A FORWARD -o oz0 -j ACCEPT
+```
+
+## Building
+
+1. To setup a GOPATH for Oz, run the following commands (or you can use your
+existing GOPATH):
+
+```
+$ export GOPATH=/opt/local/golang-oz
+$ sudo mkdir -p $GOPATH
+$ sudo chown user. $GOPATH
+```
+
+2. To build Oz with the required external Golang dependencies, run the following
+commands:
+
+```
+$ go get github.com/tools/godep
+$ go get -d github.com/subgraph/oz
+$ cd $GOPATH/src/github.com/subgraph/oz/
+$ $GOPATH/bin/godep go install ./...
+$ sudo cp $GOPATH/bin/oz* /usr/local/bin
+$ sudo mkdir -p /var/lib/oz/cells.d
+$ sudo cp $GOPATH/src/github.com/subgraph/oz/profiles/*.json /var/lib/oz/cells.d/
+```
+
+## Enabling a profile
+
+Once installed you can enable profiles using the `oz-setup` command as such (using the profile for the 'evince' application):
+
+```
+$ sudo oz-setup install evince
+```
+
+This will install a symlink to the oz client executable in place of the original, and rename the original with the `.unsafe` suffix.
+
+## Disabling a profile
+
+If you want to disable a profile that you're not using or prior to uninstalling Oz, you can run the following command (once again
+with 'evince' as the target application):
+
+
+```
+$ sudo oz-setup remove evince
+```
+
+If you have already uninstalled Oz you can remove the divertions manually using the `dpkg-divert` command.
+
+## Viewing the status of a profile
+
+You can view the status of a profile using the `status` sub-command:
+
+```
+$ sudo oz-setup status /usr/bin/lowriter
+Package divert is installed for:     /usr/bin/libreoffice
+Package divert is installed for:     /usr/bin/lowriter
+Package divert is installed for:     /usr/bin/lobase
+Package divert is installed for:     /usr/bin/localc
+Package divert is installed for:     /usr/bin/loffice
+<...output truncated for clarity>
+```
+
+# Demo
+
+<p align="center">
+<a href="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.webm"><img src="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.gif" alt="OZ Sandbox Evince Demo"/></a>
+</p>
+
+# Usage
+
+Firstly you must launch the daemon utility either with the init script or manually:
+
+```
+$ sudo oz-daemon
+```
+
+Once the daemon is started you can transparently launch any applications for which you have enabled the profile.
+This means Oz sandboxing will be used whether you launch your browser from gnome-shell or from the command line.
+
+If you wish to run an executable outside of the sandbox simply call it with the `unsafe` suffix:
+
+```
+$ /usr/bin/evince.unsafe
+```
+
+# Advanced Usage Information
+
+## Oz client commands
+
+The `oz` executable acts as a client for the daemon when called directly. It provides a number of commands to interact with sandboxes.
+
+* `profiles`: lists available profiles
+* `launch <name>`: launches a sandbox for the given profile name, pass the `--noexec` flag to prevent execution of the default program
+* `list`: lists the running sandboxes
+* `kill <id>`: kills the sandbox with the given numerical id
+* `kill all`: kills all running sandboxes
+* `shell <id>`: enters a shell in a given sandbox, mostly useful for debugging
+* `logs [-f]`: prints out the logs, pass `-f` to follow the output
+
+## Oz-daemon configurations
+
+In nearly every case the default configurations should be used, but for debugging and development purposes some flags are configurable inside of the `/etc/oz/oz.conf` file. You can view the current configuration by running the following command:
+
+```
+$ oz-setup config show
+
+Config file     : /etc/oz/oz.conf
+###########################################################
+profile_dir     : /var/lib/oz/cells.d                     # Directory containing the sandbox profiles
+shell_path      : /bin/bash                               # Path of the shell using when entering a sandbox
+prefix_path     : /usr                                    # Prefix path containing the oz executables
+sandbox_path    : /srv/oz                                 # Path of the sandboxes base
+bridge_mac      : 6A:A8:2E:56:E8:9C                       # MAC Address of the bridge interface
+divert_suffix   : unsafe                                  # Suffix using for dpkg-divert of application executables
+nm_ignore_file  : /etc/NetworkManager/conf.d/oz.conf      # Path to the NetworkManager ignore config file, disables the warning if empty
+use_full_dev    : false                                   # Give sandboxes full access to devices instead of a restricted set
+allow_root_shell: false                                   # Allow entering a sandbox shell as root
+log_xpra        : false                                   # Log output of Xpra
+environment_vars: [USER USERNAME LOGNAME LANG LANGUAGE _] # Default environment variables passed to sandboxes
+```
+
+## Profiles
+
+Profiles files are simple JSON files located, by default, in `/var/lib/oz/cells.d`. They must include at minimum the path to the executable to be sandboxed using the `path` key. It may also define more executables to run under the same sandbox under the `paths` array; in which case a `name` key must also be specified. Some other base options are also available:
+
+* `allow_files`: whether to allow binding of files passed as arguments inside the sandbox
+
+### Xserver
+
+This section defines the configuration of the Xserver (namely [xpra](https://www.xpra.org/)).
+Possible options are:
+
+* `enabled`: whether or not to use the Xserver
+* `enable_tray`: whether or not to enable the Xpra tray diagnostic menu/tray (This requires the `[Top Icons](https://extensions.gnome.org/extension/495/topicons/)` gnome-shell extension!)
+* `tray_icon`: the path to an icon file to use for the to tray menu
+* `window_icon`: the path to an icon file to use for windows
+* `audio_mode`: one of [none|speaker|full] selects the audio passthrough mode (defaults: none)
+* `disable_clipboard`: optionally disable clipboard sharing
+* `EnableNotifications`: enable passing of dbus notifications
+
+### Network configs
+
+The network can be configured in one of three different ways: host, bridge, and empty namespace, as defined in the `type` key.
+
+* `empty`: the sandbox will live with an empty network namespace (ie: only `lo` interface)
+* `bridge`: the sandbox will have its own network namespace and use *veth* to join a bridge named `oz0`
+* `host`: the sandbox will share the network namespace with the host (usually not desirable)
+
+
+#### Port Forwarding config
+
+Oz allows you to forward ports on the loopback interface between the host and the sandbox.
+This is useful so that you can expose some services (such as a socks proxy) to the sandbox without giving the sandbox any real network access.
+You may define as many forwards, called `sockets` in the configuration, as you like.
+Each socket configuration contains the following keys:
+
+* `type`: One of `client`, or `server`, this defines whether to connect (*client*) or listen (*server*) on the host side
+* `proto`: One of `tcp`, or `udp`, or `socket`
+* `port`: The network port number to connect to
+* `destination`: *Optional*, in client mode this is the address to connect to, in server mode this is the address to bind to. Defaults to *localhost*.
+
+
+### Bind list
+
+There exists two types of *bindlists*: a whitelist and a blacklist.
+The whitelist allows you to bring files from the host into the sandbox; while the blacklist allows you to remove access to specific files or directories.
+
+Both of these types support a few ways of resolving files:
+
+* In the path by using the `${PATH}` prefix.
+* In the home by using the `${HOME}` prefix.
+* By replacing `${UID}` with the user numeric id.
+* By replacing `${USER}` with the user login.
+* By path globbing using the `*` wildcard.
+
+
+The whitelist carries some extra caveats:
+
+* If the original file does not exist and is inside the home, an empty directory will be created in its place if "can_create" is set.
+* If the original file is a symlink it is resolved, but the target remains the same.
+* An item can be marked as read only with the `readonly` boolean key.
+* Files that are passed as arguments to the command are automatically added to the whitelist.
+
+
+### Environment
+
+One can specify which environment variables to pass by defining them in this list.
+It is also possible to define static variables by also defining a `value` attribute in the list item.
+
+### Example
+
+You can find a list of existing profiles in the repository. Here is the porfile for running the `torbrowser-launcher`:
+
+```
+{
+"path": "/usr/bin/torbrowser-launcher"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": true
+	, "tray_icon":"/usr/share/pixmaps/torbrowser80.xpm"
+}
+, "networking":{
+	"type":"empty"
+	, "sockets": [
+		{"type":"client", "proto":"tcp", "port":9050}
+		, {"type":"client", "proto":"tcp", "port":9051}
+	]
+}
+, "whitelist": [
+	{"path":"${HOME}/.local/share/torbrowser"}
+	, {"path":"${HOME}/.cache/torbrowser"}
+	, {"path":"${HOME}/.config/torbrowser"}
+	, {"path":"${HOME}/Downloads/TorBrowser"}
+	, {"path":"/run/tor/control.authcookie"}
+]
+, "blacklist": [
+]
+, "environment": [
+	{"name":"TOR_SKIP_LAUNCH"}
+	, {"name":"TOR_SOCKS_HOST"}
+	, {"name":"TOR_SOCKS_PORT"}
+	, {"name":"TOR_CONTROL_PORT"}
+	, {"name":"TOR_CONTROL_AUTHENTICATE"}
+]
+}
+```

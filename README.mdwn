@@ -5,6 +5,12 @@ It acts as a wrapper around application executables for completely transparent u
 
 [See the wiki for the complete technical documentation.](https://github.com/subgraph/oz/wiki/Oz-Technical-Details)
 
+# Demo
+
+<p align="center">
+<a href="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.webm"><img src="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.gif" alt="OZ Sandbox Evince Demo"/></a>
+</p>
+
 # Warnings!
 
 Please note that Oz is currently under major development and still at a very alpha stage. **As of this writting some features, like seccomp filters, are not yet available in the public master branch**. It is not intended for use in multi-users systems. Use it at your own risk!
@@ -134,12 +140,6 @@ Package divert is installed for:     /usr/bin/localc
 Package divert is installed for:     /usr/bin/loffice
 <...output truncated for clarity>
 ```
-
-# Demo
-
-<p align="center">
-<a href="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.webm"><img src="https://raw.githubusercontent.com/subgraph/oz/docs/videos/oz_evince_01.gif" alt="OZ Sandbox Evince Demo"/></a>
-</p>
 
 # Usage
 

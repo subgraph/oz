@@ -13,7 +13,7 @@ It acts as a wrapper around application executables for completely transparent u
 
 # Warnings!
 
-Please note that Oz is currently under major development and still at a very alpha stage. **As of this writting some features, like seccomp filters, are not yet available in the public master branch**. It is not intended for use in multi-users systems. Use it at your own risk!
+Please note that Oz is currently under major development and still at a very alpha stage. **As of this writing some features, like seccomp filters, are not yet available in the public master branch**. It is not intended for use in multi-users systems. Use it at your own risk!
 
 # Installing
 

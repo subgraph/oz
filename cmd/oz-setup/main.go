@@ -409,7 +409,6 @@ func loadConfig() *oz.Config {
 func loadProfile(name, profileDir string) (*oz.Profile, error) {
 	ps, err := oz.LoadProfiles(profileDir)
 	if err != nil {
-		fmt.Println("DERP1")
 		return nil, err
 	}
 

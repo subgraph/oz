@@ -102,6 +102,36 @@ func KillSandbox(id int) error {
 	}
 }
 
+func MountFiles(files []string) (error) {
+	resp, err := clientSend(&MountFilesMsg{Files: files})
+	if err != nil {
+		return err
+	}
+	switch body := resp.Body.(type) {
+	case *ErrorMsg:
+		return errors.New(body.Msg)
+	case *OkMsg:
+		return nil
+	default:
+		return fmt.Errorf("Unexpected message received %+v", body)
+	}
+}
+
+func UnmountFile(file string) (error) {
+	resp, err := clientSend(&UnmountFileMsg{File: file})
+	if err != nil {
+		return err
+	}
+	switch body := resp.Body.(type) {
+	case *ErrorMsg:
+		return errors.New(body.Msg)
+	case *OkMsg:
+		return nil
+	default:
+		return fmt.Errorf("Unexpected message received %+v", body)
+	}
+}
+
 func parseProfileArg(arg string) (int, string, error) {
 	if len(arg) == 0 {
 		return 0, "", errors.New("profile argument needed")

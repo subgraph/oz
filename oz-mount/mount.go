@@ -37,17 +37,20 @@ func Main(mode int) {
 	}
 
 	fsys := fs.NewFilesystem(config, log)
-	for fii, fpath := range os.Args {
-		if fii == 0 {
-			continue
-		}
+	start := 1;
+	readonly := false;
+	if os.Args[1] == "--readonly" {
+		start = 2;
+		readonly = true;
+	}
+	for _, fpath := range os.Args[start:] {
 		if !strings.HasPrefix(fpath, "/home/") {
 			log.Warning("Ignored `%s`, only files inside of home are permitted!", fpath)
 			continue
 		}
 		switch mode {
 		case MOUNT:
-			mount(fpath, fsys, log)
+			mount(fpath, readonly, fsys, log)
 		case UMOUNT:
 			unmount(fpath, fsys, log)
 		}
@@ -56,10 +59,14 @@ func Main(mode int) {
 	os.Exit(0)
 }
 
-func mount(fpath string, fsys *fs.Filesystem, log *logging.Logger) {
+func mount(fpath string, readonly bool, fsys *fs.Filesystem, log *logging.Logger) {
 	if _, err := os.Stat(fpath); err == nil {
 		//log.Notice("Adding file `%s`.", fpath)
-		if err := fsys.BindPath(fpath, fs.BindCanCreate, nil); err != nil {
+		flags := fs.BindCanCreate
+		if readonly {
+			flags |= fs.BindReadOnly
+		}
+		if err := fsys.BindPath(fpath, flags, nil); err != nil {
 			log.Error("%v while adding `%s`!", err, fpath)
 			os.Exit(1)
 		}

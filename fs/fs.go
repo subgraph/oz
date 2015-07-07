@@ -150,13 +150,15 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	if err := copyPathPermissions(fs.Root(), src); err != nil {
 		return fmt.Errorf("failed to copy path permissions for (%s): %v", src, err)
 	}
-	fs.log.Info("bind mounting %s -> %s", src, to)
+	rolog := " "
 	mntflags := syscall.MS_NOSUID | syscall.MS_NODEV
 	if flags&BindReadOnly != 0 {
 		mntflags |= syscall.MS_RDONLY
+		rolog = "(as readonly) "
 	} else {
 		flags |= syscall.MS_NOEXEC
 	}
+	fs.log.Info("bind mounting %s%s -> %s", rolog, src, to)
 	return bindMount(src, to, mntflags)
 }
 
@@ -170,6 +172,7 @@ func (fs *Filesystem) UnbindPath(to string) (error) {
 	}
 
 	// XXX
+	fs.log.Info("unbinding %s", to)
 	if err := syscall.Unmount(to, syscall.MNT_DETACH/* | syscall.MNT_FORCE*/); err != nil {
 		return err
 	}

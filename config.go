@@ -11,7 +11,7 @@ import (
 
 type Config struct {
 	ProfileDir      string   `json:"profile_dir" desc:"Directory containing the sandbox profiles"`
-	ShellPath       string   `json:"shell_path" desc:"Path of the shell using when entering a sandbox"`
+	ShellPath       string   `json:"shell_path" desc:"Path of the shell used when entering a sandbox"`
 	PrefixPath      string   `json:"prefix_path" desc:"Prefix path containing the oz executables"`
 	SandboxPath     string   `json:"sandbox_path" desc:"Path of the sandboxes base"`
 	BridgeMACAddr   string   `json:"bridge_mac" desc:"MAC Address of the bridge interface"`

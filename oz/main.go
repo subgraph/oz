@@ -95,6 +95,10 @@ func runApplication() {
 			Action: handleKill,
 		},
 		{
+			Name:   "killall",
+			Action: handleKillall,
+		},
+		{
 			Name:   "logs",
 			Action: handleLogs,
 			Flags: []cli.Flag{
@@ -196,6 +200,13 @@ func getSandboxById(id int) (*daemon.SandboxInfo, error) {
 	return nil, nil
 }
 
+func handleKillall(c *cli.Context) {
+	if err := daemon.KillAllSandboxes(); err != nil {
+		fmt.Fprintf(os.Stderr, "Killall command failed: %s.\n", err)
+		os.Exit(1)
+	}
+}
+
 func handleKill(c *cli.Context) {
 	if len(c.Args()) == 0 {
 		fmt.Fprintf(os.Stderr, "Need a sandbox id to kill\n")
@@ -203,7 +214,7 @@ func handleKill(c *cli.Context) {
 	}
 	if c.Args()[0] == "all" {
 		if err := daemon.KillAllSandboxes(); err != nil {
-			fmt.Fprintf(os.Stderr, "Kill command failed: %s.\n", err)
+			fmt.Fprintf(os.Stderr, "Killall command failed: %s.\n", err)
 			os.Exit(1)
 		}
 		return

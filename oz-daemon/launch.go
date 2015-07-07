@@ -2,10 +2,13 @@ package daemon
 
 import (
 	"bufio"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -18,11 +21,8 @@ import (
 	"github.com/subgraph/oz/oz-init"
 	"github.com/subgraph/oz/xpra"
 
-	"crypto/rand"
-	"encoding/hex"
 	"github.com/op/go-logging"
 	"github.com/subgraph/oz/fs"
-	"os/user"
 )
 
 type Sandbox struct {
@@ -31,6 +31,7 @@ type Sandbox struct {
 	display      int
 	profile      *oz.Profile
 	init         *exec.Cmd
+	user         *user.User
 	cred         *syscall.Credential
 	fs           *fs.Filesystem
 	stderr       io.ReadCloser
@@ -104,6 +105,11 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 			return nil, err
 		}
 	*/
+	u, err := user.LookupId(strconv.FormatUint(uint64(uid), 10))
+	if err != nil {
+		log.Error("Failed to look up user with uid=%ld: %v", uid, err)
+		os.Exit(1)
+	}
 
 	display := 0
 	if p.XServer.Enabled && p.Networking.Nettype == network.TYPE_HOST {
@@ -111,7 +117,6 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		d.nextDisplay += 1
 	}
 
-	var err error
 	stn := new(network.SandboxNetwork)
 	stn.Nettype = p.Networking.Nettype
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
@@ -148,6 +153,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		profile: p,
 		init:    cmd,
 		cred:    &syscall.Credential{Uid: uid, Gid: gid},
+		user:    u,
 		fs:      fs.NewFilesystem(d.config, log),
 		//addr:    path.Join(rootfs, ozinit.SocketAddress),
 		addr:    socketPath,
@@ -216,7 +222,10 @@ func (sbox *Sandbox) MountFiles(files []string, readonly bool,  binpath string, 
 		args = append([]string{"--readonly"}, files...)
 	}
 	cmnt := exec.Command(pmnt, args...)
-	cmnt.Env = []string{"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid)}
+	cmnt.Env = []string{
+		"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid),
+		"_OZ_HOMEDIR=" + sbox.user.HomeDir,
+	}
 	pout, err := cmnt.CombinedOutput()
 	if err != nil {
 		log.Warning("Unable to bind files to sandbox: %v", err)
@@ -239,11 +248,13 @@ func (sbox *Sandbox) MountFiles(files []string, readonly bool,  binpath string, 
 	return nil
 }
 
-
 func (sbox *Sandbox) UnmountFile(file, binpath string, log *logging.Logger) error {
 	pmnt := path.Join(binpath, "bin", "oz-umount")
 	cmnt := exec.Command(pmnt, file)
-	cmnt.Env = []string{"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid)}
+	cmnt.Env = []string{
+		"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid),
+		"_OZ_HOMEDIR=" + sbox.user.HomeDir,
+	}
 	pout, err := cmnt.CombinedOutput()
 	if err != nil {
 		log.Warning("Unable to unbind files from sandbox: %v", err)

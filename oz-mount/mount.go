@@ -32,19 +32,25 @@ func Main(mode int) {
 	log := createLogger()
 	config, err := loadConfig()
 	if err != nil {
-		log.Error("Could not load configuration: %s\n", oz.DefaultConfigPath, err)
+		log.Error("Could not load configuration: %s (%+v)\n", oz.DefaultConfigPath, err)
 		os.Exit(1)
 	}
-
+	
 	fsys := fs.NewFilesystem(config, log)
-	start := 1;
-	readonly := false;
+	homedir :=  os.Getenv("_OZ_HOMEDIR")
+	if homedir == "" {
+		log.Error("Homedir must be set!")
+		os.Exit(1)
+	}
+	
+	start := 1
+	readonly := false
 	if os.Args[1] == "--readonly" {
-		start = 2;
-		readonly = true;
+		start = 2
+		readonly = true
 	}
 	for _, fpath := range os.Args[start:] {
-		if !strings.HasPrefix(fpath, "/home/") {
+		if !strings.HasPrefix(fpath, homedir) {
 			log.Warning("Ignored `%s`, only files inside of home are permitted!", fpath)
 			continue
 		}
@@ -53,6 +59,9 @@ func Main(mode int) {
 			mount(fpath, readonly, fsys, log)
 		case UMOUNT:
 			unmount(fpath, fsys, log)
+		default:
+			log.Error("Unknown mode!")
+			os.Exit(1)
 		}
 	}
 

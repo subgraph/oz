@@ -48,6 +48,7 @@ type SandboxInfo struct {
 	Id      int
 	Address string
 	Profile string
+	Mounts  []string
 }
 
 type ListSandboxesResp struct {
@@ -56,6 +57,17 @@ type ListSandboxesResp struct {
 
 type KillSandboxMsg struct {
 	Id int "KillSandbox"
+}
+
+type MountFilesMsg struct {
+	Id int "MountFiles"
+	Files []string
+	ReadOnly bool
+}
+
+type UnmountFileMsg struct {
+	Id int "UnmountFile"
+	File string
 }
 
 type LogsMsg struct {
@@ -77,6 +89,8 @@ var messageFactory = ipc.NewMsgFactory(
 	new(ListSandboxesMsg),
 	new(ListSandboxesResp),
 	new(KillSandboxMsg),
+	new(MountFilesMsg),
+	new(UnmountFileMsg),
 	new(LogsMsg),
 	new(LogData),
 )

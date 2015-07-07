@@ -26,18 +26,19 @@ import (
 )
 
 type Sandbox struct {
-	daemon  *daemonState
-	id      int
-	display int
-	profile *oz.Profile
-	init    *exec.Cmd
-	cred    *syscall.Credential
-	fs      *fs.Filesystem
-	stderr  io.ReadCloser
-	addr    string
-	xpra    *xpra.Xpra
-	ready   sync.WaitGroup
-	network *network.SandboxNetwork
+	daemon       *daemonState
+	id           int
+	display      int
+	profile      *oz.Profile
+	init         *exec.Cmd
+	cred         *syscall.Credential
+	fs           *fs.Filesystem
+	stderr       io.ReadCloser
+	addr         string
+	xpra         *xpra.Xpra
+	ready        sync.WaitGroup
+	network      *network.SandboxNetwork
+	mountedFiles []string
 }
 
 func createSocketPath(base string) (string, error) {
@@ -208,6 +209,56 @@ func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, lo
 	}
 }
 
+func (sbox *Sandbox) MountFiles(files []string, readonly bool,  binpath string, log *logging.Logger) error {
+	pmnt := path.Join(binpath, "bin", "oz-mount")
+	args := files
+	if readonly {
+		args = append([]string{"--readonly"}, files...)
+	}
+	cmnt := exec.Command(pmnt, args...)
+	cmnt.Env = []string{"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid)}
+	pout, err := cmnt.CombinedOutput()
+	if err != nil {
+		log.Warning("Unable to bind files to sandbox: %v", err)
+		log.Warning("%s", string(pout))
+		return err
+	}
+	for _, mfile := range files {
+		found := false
+		for _, mmfile := range sbox.mountedFiles {
+			if (mfile == mmfile) {
+				found = true
+				break;
+			}
+		}
+		if (!found) {
+			sbox.mountedFiles = append(sbox.mountedFiles, mfile)
+		}
+	}
+	log.Info("%s", string(pout))
+	return nil
+}
+
+
+func (sbox *Sandbox) UnmountFile(file, binpath string, log *logging.Logger) error {
+	pmnt := path.Join(binpath, "bin", "oz-umount")
+	cmnt := exec.Command(pmnt, file)
+	cmnt.Env = []string{"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid)}
+	pout, err := cmnt.CombinedOutput()
+	if err != nil {
+		log.Warning("Unable to unbind files from sandbox: %v", err)
+		log.Warning("%s", string(pout))
+		return err
+	}
+	for i, item := range sbox.mountedFiles {
+		if item == file {
+			sbox.mountedFiles = append(sbox.mountedFiles[:i], sbox.mountedFiles[i+1:]...)
+		}
+	}
+	log.Info("%s", string(pout))
+	return nil
+}
+
 func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, log *logging.Logger) {
 	var files []string
 	for _, fpath := range args {
@@ -223,14 +274,7 @@ func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, 
 		}
 	}
 	if len(files) > 0 {
-		pmnt := path.Join(binpath, "bin", "oz-mount")
-		cmnt := exec.Command(pmnt, files...)
-		cmnt.Env = []string{"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid)}
-		pout, err := cmnt.CombinedOutput()
-		if err != nil {
-			log.Warning("Unable to bind files to sandbox: %v", err)
-			log.Warning("%s", string(pout))
-		}
+		sbox.MountFiles(files, false, binpath, log);
 	}
 }
 

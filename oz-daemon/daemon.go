@@ -37,6 +37,8 @@ func Main() {
 		d.handleLaunch,
 		d.handleListSandboxes,
 		d.handleKillSandbox,
+		d.handleMountFiles,
+		d.handleUnmountFile,
 		d.handleLogs,
 	)
 	if err != nil {
@@ -257,6 +259,31 @@ func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) err
 	return m.Respond(&OkMsg{})
 }
 
+func (d *daemonState) handleMountFiles(msg *MountFilesMsg, m *ipc.Message) error {
+	sbox := d.sandboxById(msg.Id)
+	if sbox == nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+	}
+	if err := sbox.MountFiles(msg.Files, msg.ReadOnly, d.config.PrefixPath, d.log); err != nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to unmount file `%+s` from sandbox `%s`: %v", msg.Files, sbox.profile.Name, err)})
+	}
+	return m.Respond(&OkMsg{})
+}
+
+
+func (d *daemonState) handleUnmountFile(msg *UnmountFileMsg, m *ipc.Message) error {
+	sbox := d.sandboxById(msg.Id)
+	if sbox == nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+	}
+	if err := sbox.UnmountFile(msg.File, d.config.PrefixPath, d.log); err != nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to unmount file `%s` from sandbox `%s`: %v", msg.File, sbox.profile.Name, err)})
+	}
+	return m.Respond(&OkMsg{})
+}
+
+
+
 func (d *daemonState) sandboxById(id int) *Sandbox {
 	for _, sb := range d.sandboxes {
 		if sb.id == id {
@@ -317,7 +344,7 @@ func (d *daemonState) getRunningSandboxByName(name string) *Sandbox {
 func (d *daemonState) handleListSandboxes(list *ListSandboxesMsg, msg *ipc.Message) error {
 	r := new(ListSandboxesResp)
 	for _, sb := range d.sandboxes {
-		r.Sandboxes = append(r.Sandboxes, SandboxInfo{Id: sb.id, Address: sb.addr, Profile: sb.profile.Name})
+		r.Sandboxes = append(r.Sandboxes, SandboxInfo{Id: sb.id, Address: sb.addr, Mounts: sb.mountedFiles, Profile: sb.profile.Name})
 	}
 	return msg.Respond(r)
 }

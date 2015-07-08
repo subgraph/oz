@@ -16,6 +16,10 @@ type PingMsg struct {
 	Data string "Ping"
 }
 
+type GetConfigMsg struct {
+	Data string "GetConfig"
+}
+
 type ListProfilesMsg struct {
 	_ string "ListProfiles"
 }
@@ -83,6 +87,7 @@ var messageFactory = ipc.NewMsgFactory(
 	new(PingMsg),
 	new(OkMsg),
 	new(ErrorMsg),
+	new(GetConfigMsg),
 	new(ListProfilesMsg),
 	new(ListProfilesResp),
 	new(LaunchMsg),

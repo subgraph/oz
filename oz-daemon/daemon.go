@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -33,6 +34,7 @@ func Main() {
 	err := runServer(
 		d.log,
 		d.handlePing,
+		d.handleGetConfig,
 		d.handleListProfiles,
 		d.handleLaunch,
 		d.handleListSandboxes,
@@ -162,6 +164,15 @@ func runServer(log *logging.Logger, args ...interface{}) error {
 func (d *daemonState) handlePing(msg *PingMsg, m *ipc.Message) error {
 	d.Debug("received ping with data [%s]", msg.Data)
 	return m.Respond(&PingMsg{msg.Data})
+}
+
+func (d *daemonState) handleGetConfig(msg *GetConfigMsg, m *ipc.Message) error {
+	d.Debug("received get config with data [%s]", msg.Data)
+	jdata, err := json.Marshal(d.config)
+	if err != nil {
+		return m.Respond(&ErrorMsg{err.Error()})
+	}
+	return m.Respond(&GetConfigMsg{string(jdata)})
 }
 
 func (d *daemonState) handleListProfiles(msg *ListProfilesMsg, m *ipc.Message) error {

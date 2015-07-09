@@ -15,9 +15,9 @@ int enter_mount_namespace(void) {
 		fprintf(stderr, "E Must run as root\n");
 		return -1;
 	}
+
 	// Do some minimal verification to check that oz-daemon is the parent
 	pid_t ppid = getppid();
-	//ppid = 10252;
 	if (checkProcessName(ppid, "oz-daemon") != 0) {
 		fprintf(stderr, "E unable to verify that oz-daemon is parent\n");
 		return -1;

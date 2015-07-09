@@ -16,7 +16,7 @@ var basicEmptyDirs = []string{
 	"/boot", "/dev", "/home", "/media", "/mnt",
 	"/opt", "/proc", "/root", "/run", "/run/lock", "/run/user",
 	"/sbin", "/srv", "/sys", "/tmp", "/var", "/var/lib",
-	"/var/cache", "/var/crashes",
+	"/var/cache", "/var/crash",
 }
 
 var basicSymlinks = [][2]string{

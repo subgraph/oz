@@ -13,13 +13,10 @@ var basicBindDirs = []string{
 }
 
 var basicEmptyDirs = []string{
-	"/sbin", "/var", "/var/lib",
-	"/var/cache", "/home", "/boot",
-	"/tmp", "/run", "/run/user",
-	"/run/lock", "/root",
-	"/opt", "/srv", "/dev", "/proc",
-	"/sys", "/mnt", "/media",
-	//"/run/shm",
+	"/boot", "/dev", "/home", "/media", "/mnt",
+	"/opt", "/proc", "/root", "/run", "/run/lock", "/run/user",
+	"/sbin", "/srv", "/sys", "/tmp", "/var", "/var/lib",
+	"/var/cache", "/var/crashes",
 }
 
 var basicSymlinks = [][2]string{

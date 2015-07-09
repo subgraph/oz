@@ -81,7 +81,7 @@ func initialize() *daemonState {
 
 			d.network = htn
 
-			network.NetPrint(d.log)
+			//network.NetPrint(d.log)
 
 			break
 		}
@@ -276,7 +276,7 @@ func (d *daemonState) handleMountFiles(msg *MountFilesMsg, m *ipc.Message) error
 		return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
 	}
 	if err := sbox.MountFiles(msg.Files, msg.ReadOnly, d.config.PrefixPath, d.log); err != nil {
-		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to unmount file `%+s` from sandbox `%s`: %v", msg.Files, sbox.profile.Name, err)})
+		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to mount: %v", err)})
 	}
 	return m.Respond(&OkMsg{})
 }
@@ -288,7 +288,7 @@ func (d *daemonState) handleUnmountFile(msg *UnmountFileMsg, m *ipc.Message) err
 		return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
 	}
 	if err := sbox.UnmountFile(msg.File, d.config.PrefixPath, d.log); err != nil {
-		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to unmount file `%s` from sandbox `%s`: %v", msg.File, sbox.profile.Name, err)})
+		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to unmount: %v", err)})
 	}
 	return m.Respond(&OkMsg{})
 }

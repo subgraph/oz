@@ -226,11 +226,11 @@ func (sbox *Sandbox) MountFiles(files []string, readonly bool,  binpath string, 
 		"_OZ_NSPID=" + strconv.Itoa(sbox.init.Process.Pid),
 		"_OZ_HOMEDIR=" + sbox.user.HomeDir,
 	}
+	log.Debug("Attempting to add file with %s to sandbox %s: %+s", pmnt, sbox.profile.Name, files)
 	pout, err := cmnt.CombinedOutput()
-	if err != nil {
-		log.Warning("Unable to bind files to sandbox: %v", err)
-		log.Warning("%s", string(pout))
-		return err
+	if err != nil || cmnt.ProcessState.Success() == false {
+		log.Warning("Unable to bind files to sandbox: %s", string(pout))
+		return fmt.Errorf("%s", string(pout[2:]))
 	}
 	for _, mfile := range files {
 		found := false
@@ -256,10 +256,9 @@ func (sbox *Sandbox) UnmountFile(file, binpath string, log *logging.Logger) erro
 		"_OZ_HOMEDIR=" + sbox.user.HomeDir,
 	}
 	pout, err := cmnt.CombinedOutput()
-	if err != nil {
-		log.Warning("Unable to unbind files from sandbox: %v", err)
-		log.Warning("%s", string(pout))
-		return err
+	if err != nil || cmnt.ProcessState.Success() == false {
+		log.Warning("Unable to unbind file from sandbox: %s", string(pout))
+		return fmt.Errorf("%s", string(pout[2:]))
 	}
 	for i, item := range sbox.mountedFiles {
 		if item == file {

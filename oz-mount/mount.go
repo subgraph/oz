@@ -13,6 +13,7 @@ __attribute__((constructor)) void init(void) {
 import "C"
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -32,7 +33,7 @@ func Main(mode int) {
 	log := createLogger()
 	config, err := loadConfig()
 	if err != nil {
-		log.Error("Could not load configuration: %s (%+v)\n", oz.DefaultConfigPath, err)
+		log.Error("Could not load configuration: %s (%+v)", oz.DefaultConfigPath, err)
 		os.Exit(1)
 	}
 	
@@ -50,16 +51,16 @@ func Main(mode int) {
 		readonly = true
 	}
 	for _, fpath := range os.Args[start:] {
-		fpath = path.Clean(fpath);
-		if !strings.HasPrefix(fpath, homedir) {
-			log.Warning("Ignored `%s`, only files inside of home are permitted!", fpath)
-			continue
+		cpath, err := cleanPath(fpath, homedir)
+		if (err != nil || cpath == "") {
+			log.Error("%v", err)
+			os.Exit(1)
 		}
 		switch mode {
 		case MOUNT:
-			mount(fpath, readonly, fsys, log)
+			mount(cpath, readonly, fsys, log)
 		case UMOUNT:
-			unmount(fpath, fsys, log)
+			unmount(cpath, fsys, log)
 		default:
 			log.Error("Unknown mode!")
 			os.Exit(1)
@@ -69,17 +70,30 @@ func Main(mode int) {
 	os.Exit(0)
 }
 
+func cleanPath(spath, homedir string) (string, error) {
+	spath = path.Clean(spath)
+	if !path.IsAbs(spath) {
+		spath = path.Join(homedir, spath)
+	}
+	if !strings.HasPrefix(spath, homedir) {
+		return "", fmt.Errorf("only files inside of the user home are permitted")
+	}
+	return spath, nil
+}
+
 func mount(fpath string, readonly bool, fsys *fs.Filesystem, log *logging.Logger) {
-	if _, err := os.Stat(fpath); err == nil {
-		//log.Notice("Adding file `%s`.", fpath)
-		flags := fs.BindCanCreate
-		if readonly {
-			flags |= fs.BindReadOnly
-		}
-		if err := fsys.BindPath(fpath, flags, nil); err != nil {
-			log.Error("%v while adding `%s`!", err, fpath)
-			os.Exit(1)
-		}
+	//log.Notice("Adding file `%s`.", fpath)
+	if _, err := os.Stat(fpath); err != nil {
+		log.Error("%v", err)
+		os.Exit(1)
+	}
+	flags := fs.BindCanCreate
+	if readonly {
+		flags |= fs.BindReadOnly
+	}
+	if err := fsys.BindPath(fpath, flags, nil); err != nil {
+		log.Error("%v", err)
+		os.Exit(1)
 	}
 }
 
@@ -88,17 +102,17 @@ func unmount(fpath string, fsys *fs.Filesystem, log *logging.Logger) {
 	if _, err := os.Stat(sbpath); err == nil {
 		//log.Notice("Removing file `%s`.", fpath)
 		if err := fsys.UnbindPath(fpath); err != nil {
-			log.Error("%v while removing `%s`!", err, fpath)
+			log.Error("%v", err)
 			os.Exit(1)
 		}
 	} else {
-		log.Error("%v error while removing `%s`!", err, fpath)
+		log.Warning("%v", err)
 	}
 }
 
 func createLogger() *logging.Logger {
 	l := logging.MustGetLogger("oz-init")
-	be := logging.NewLogBackend(os.Stderr, "", 0)
+	be := logging.NewLogBackend(os.Stdout, "", 0)
 	f := logging.MustStringFormatter("%{level:.1s} %{message}")
 	fbe := logging.NewBackendFormatter(be, f)
 	logging.SetBackend(fbe)

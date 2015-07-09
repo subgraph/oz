@@ -50,6 +50,7 @@ func Main(mode int) {
 		readonly = true
 	}
 	for _, fpath := range os.Args[start:] {
+		fpath = path.Clean(fpath);
 		if !strings.HasPrefix(fpath, homedir) {
 			log.Warning("Ignored `%s`, only files inside of home are permitted!", fpath)
 			continue

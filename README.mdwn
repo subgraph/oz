@@ -211,7 +211,7 @@ This section defines the configuration of the Xserver (namely [xpra](https://www
 Possible options are:
 
 * `enabled`: whether or not to use the Xserver
-* `enable_tray`: whether or not to enable the Xpra tray diagnostic menu/tray (This requires the `[Top Icons](https://extensions.gnome.org/extension/495/topicons/)` gnome-shell extension!)
+* `enable_tray`: whether or not to enable the Xpra tray diagnostic menu/tray (This requires the [`Top Icons`](https://extensions.gnome.org/extension/495/topicons/) gnome-shell extension!)
 * `tray_icon`: the path to an icon file to use for the to tray menu
 * `window_icon`: the path to an icon file to use for windows
 * `audio_mode`: one of [none|speaker|full] selects the audio passthrough mode (defaults: none)

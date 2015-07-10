@@ -216,7 +216,7 @@ Possible options are:
 * `window_icon`: the path to an icon file to use for windows
 * `audio_mode`: one of [none|speaker|full] selects the audio passthrough mode (defaults: none)
 * `disable_clipboard`: optionally disable clipboard sharing
-* `EnableNotifications`: enable passing of dbus notifications
+* `enable_notifications`: enable passing of dbus notifications
 
 ### Network configs
 

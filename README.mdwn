@@ -152,6 +152,11 @@ $ sudo oz-daemon
 Once the daemon is started you can transparently launch any applications for which you have enabled the profile.
 This means Oz sandboxing will be used whether you launch your browser from gnome-shell or from the command line.
 
+Any files inside of your home passed as arguments to the command (either via double clicking or program arguments) are automatically added to the whitelist (if the profile supports `allow_files`).
+
+The [OZ gnome-shell extension](https://github.com/subgraph/ozshell-gnome-extension) allows you to easily interface running sandboxes:
+to add/remove files inside a sandbox, open a shell inside a sandbox, and terminate a sandbox.
+
 If you wish to run an executable outside of the sandbox simply call it with the `unsafe` suffix:
 
 ```
@@ -198,7 +203,7 @@ environment_vars: [USER USERNAME LOGNAME LANG LANGUAGE _] # Default environment 
 
 Profiles files are simple JSON files located, by default, in `/var/lib/oz/cells.d`. They must include at minimum the path to the executable to be sandboxed using the `path` key. It may also define more executables to run under the same sandbox under the `paths` array; in which case a `name` key must also be specified. Some other base options are also available:
 
-* `allow_files`: whether to allow binding of files passed as arguments inside the sandbox
+* `allow_files`: whether to allow binding of files passed as arguments inside the sandbox (does not affect files added manually)
 
 ### Xserver
 

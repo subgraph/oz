@@ -45,7 +45,6 @@ to files in `/proc/sys/kernel/grsecurity/`:
 ```
 kernel.grsecurity.chroot_caps = 0
 kernel.grsecurity.chroot_deny_chmod = 0
-kernel.grsecurity.chroot_deny_mknod = 0
 kernel.grsecurity.chroot_deny_mount = 0
 ```
 

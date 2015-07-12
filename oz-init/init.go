@@ -323,7 +323,6 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		args := []string{"-w",cpath}
 		cmdArgs = append(args, cmdArgs...)
 		cpath = "/usr/bin/seccomp-wrapper"
-		st.log.Warning(cpath)
 
 	}
 	cmd := exec.Command(cpath)

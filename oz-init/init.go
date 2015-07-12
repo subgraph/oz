@@ -209,6 +209,11 @@ func (st *initState) runInit() {
 		st.launchEnv = append(st.launchEnv, "HOME="+st.user.HomeDir)
 	}
 
+	pname := os.Getenv("INIT_PROFILE")
+	if (pname != "") {
+		st.launchEnv = append(st.launchEnv, "INIT_PROFILE="+pname)
+	}
+
 	if st.profile.Networking.Nettype != network.TYPE_HOST {
 		err := network.NetSetup(st.network)
 		if err != nil {
@@ -306,10 +311,22 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	if st.config.DivertSuffix != "" {
 		suffix = "." + st.config.DivertSuffix
 	}
+
 	if cpath == "" {
 		cpath = st.profile.Path
 	}
-	cmd := exec.Command(cpath + suffix)
+
+	cpath = cpath + suffix
+
+	if st.profile.Seccomp.Mode == "whitelist" {
+		st.log.Warning("cmdArgs %v", cmdArgs)
+		args := []string{"-w",cpath}
+		cmdArgs = append(args, cmdArgs...)
+		cpath = "/usr/bin/seccomp-wrapper"
+		st.log.Warning(cpath)
+
+	}
+	cmd := exec.Command(cpath)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		st.log.Warning("Failed to create stdout pipe: %v", err)

@@ -209,11 +209,6 @@ func (st *initState) runInit() {
 		st.launchEnv = append(st.launchEnv, "HOME="+st.user.HomeDir)
 	}
 
-	pname := os.Getenv("INIT_PROFILE")
-	if (pname != "") {
-		st.launchEnv = append(st.launchEnv, "INIT_PROFILE="+pname)
-	}
-
 	if st.profile.Networking.Nettype != network.TYPE_HOST {
 		err := network.NetSetup(st.network)
 		if err != nil {
@@ -307,23 +302,17 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 }
 
 func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*exec.Cmd, error) {
-	suffix := ""
-	if st.config.DivertSuffix != "" {
-		suffix = "." + st.config.DivertSuffix
-	}
-
 	if cpath == "" {
 		cpath = st.profile.Path
 	}
+	if st.config.DivertSuffix != "" {
+		cpath += "." + st.config.DivertSuffix
+	}
 
-	cpath = cpath + suffix
-
-	if st.profile.Seccomp.Mode == "whitelist" {
-		st.log.Warning("cmdArgs %v", cmdArgs)
-		args := []string{"-w",cpath}
-		cmdArgs = append(args, cmdArgs...)
-		cpath = "/usr/bin/seccomp-wrapper"
-
+	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
+		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
+		cmdArgs = append([]string{"-w",cpath}, cmdArgs...)
+		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 	}
 	cmd := exec.Command(cpath)
 	stdout, err := cmd.StdoutPipe()
@@ -342,6 +331,10 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		Gid: uint32(st.gid),
 	}
 	cmd.Env = append(cmd.Env, st.launchEnv...)
+
+	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
+		cmd.Env = append(cmd.Env, "_OZ_PROFILE="+st.profile.Name)
+	}
 
 	cmd.Args = append(cmd.Args, cmdArgs...)
 

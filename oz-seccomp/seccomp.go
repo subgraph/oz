@@ -1,4 +1,4 @@
-package main
+package seccomp
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ func createLogger() *logging.Logger {
 	return l
 }
 
-func main() {
+func Main() {
 	log := createLogger()
 
 	if len(os.Args) < 3 {
@@ -33,13 +33,14 @@ func main() {
 			log.Error("Error: missing required '%s' argument", name)
 			os.Exit(1)
 		}
+		os.Setenv(name, "")
 		return val
 	}
 
 	cmd := os.Args[2]
 	cmdArgs := os.Args[2:]
 	env := os.Environ()
-	pname := getvar("INIT_PROFILE")
+	pname := getvar("_OZ_PROFILE")
 
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {

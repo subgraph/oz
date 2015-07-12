@@ -72,7 +72,7 @@ func _makedev(x, y int) int {
 	return (((x) << 8) | (y))
 }
 
-func setupRootfs(fsys *fs.Filesystem) error {
+func setupRootfs(fsys *fs.Filesystem, useFullDev bool) error {
 	if err := os.MkdirAll(fsys.Root(), 0755); err != nil {
 		return fmt.Errorf("could not create rootfs path '%s': %v", fsys.Root(), err)
 	}
@@ -107,9 +107,11 @@ func setupRootfs(fsys *fs.Filesystem) error {
 		return err
 
 	}
-	for _, d := range basicDevices {
-		if err := fsys.CreateDevice(d.path, d.dev, d.mode); err != nil {
-			return err
+	if (!useFullDev) {
+		for _, d := range basicDevices {
+			if err := fsys.CreateDevice(d.path, d.dev, d.mode); err != nil {
+				return err
+			}
 		}
 	}
 

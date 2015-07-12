@@ -15,9 +15,17 @@
 	"type":"empty"
 }
 , "whitelist": [
+	{"path":"/var/lib/oz/cells.d/evince.json"}
+	, {"path":"/var/lib/oz/cells.d/evince-whitelist.seccomp"}
 ]
 , "blacklist": [
 ]
 , "environment": [
 ]
+, "seccomp": {
+	"mode":"whitelist"
+	, "enforce": true
+	, "seccomp_whitelist":"/var/lib/oz/cells.d/evince-whitelist.seccomp"
+	, "seccomp_blacklist":""
+	}
 }

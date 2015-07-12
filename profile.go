@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"strings"
 
 	"github.com/subgraph/oz/network"
 )
@@ -42,9 +43,12 @@ type Profile struct {
 	Environment []EnvVar
 	// Networking
 	Networking NetworkProfile
+	// Seccomp
+	Seccomp SeccompConf
 }
 
 type AudioMode string
+
 const (
 	PROFILE_AUDIO_NONE    AudioMode = "none"
 	PROFILE_AUDIO_SPEAKER AudioMode = "speaker"
@@ -53,13 +57,20 @@ const (
 
 type XServerConf struct {
 	Enabled             bool
-	TrayIcon            string   `json:"tray_icon"`
-	WindowIcon          string   `json:"window_icon"`
-	EnableTray          bool     `json:"enable_tray"`
-	EnableNotifications bool     `json:"enable_notifications"`
-	UsePulseAudio       bool     `json:"use_pulse_audio"`
-	DisableClipboard    bool     `json:"disable_clipboard"`
+	TrayIcon            string    `json:"tray_icon"`
+	WindowIcon          string    `json:"window_icon"`
+	EnableTray          bool      `json:"enable_tray"`
+	EnableNotifications bool      `json:"enable_notifications"`
+	UsePulseAudio       bool      `json:"use_pulse_audio"`
+	DisableClipboard    bool      `json:"disable_clipboard"`
 	AudioMode           AudioMode `json:"audio_mode"`
+}
+
+type SeccompConf struct {
+	Mode              string
+	Enforce           bool
+	Seccomp_Whitelist string
+	Seccomp_Blacklist string
 }
 
 type WhitelistItem struct {
@@ -157,11 +168,14 @@ func LoadProfiles(dir string) (Profiles, error) {
 	for _, f := range fs {
 		if !f.IsDir() {
 			name := path.Join(dir, f.Name())
-			p, err := loadProfileFile(name)
-			if err != nil {
-				return nil, fmt.Errorf("error loading '%s': %v", f.Name(), err)
+			if strings.Contains(f.Name(), ".json") {
+
+				p, err := loadProfileFile(name)
+				if err != nil {
+					return nil, fmt.Errorf("error loading '%s': %v", f.Name(), err)
+				}
+				ps = append(ps, p)
 			}
-			ps = append(ps, p)
 		}
 	}
 

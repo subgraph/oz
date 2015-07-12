@@ -11,6 +11,15 @@ __attribute__((constructor)) void init(void) {
 */
 import "C"
 
+/*
+	As per the setns documentation, it is impossible to enter a
+	mount namespace from a multithreaded process.
+	One MUST insure that opening the namespace happens when the process
+	has only one thread. This is impossible from golang, as such we call
+	this C function as a constructor to ensure that it is executed
+	before the go scheduler launches other threads.
+*/
+
 import (
 	"fmt"
 	"os"
@@ -35,7 +44,6 @@ func Main(mode int) {
 		log.Error("Could not load configuration: %s (%+v)", oz.DefaultConfigPath, err)
 		os.Exit(1)
 	}
-	
 	fsys := fs.NewFilesystem(config, log)
 	homedir :=  os.Getenv("_OZ_HOMEDIR")
 	if homedir == "" {

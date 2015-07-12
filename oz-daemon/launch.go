@@ -272,13 +272,13 @@ func (sbox *Sandbox) UnmountFile(file, binpath string, log *logging.Logger) erro
 func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, log *logging.Logger) {
 	var files []string
 	for _, fpath := range args {
+		if filepath.IsAbs(fpath) == false {
+			fpath = path.Join(pwd, fpath)
+		}
+		if !strings.HasPrefix(fpath, "/home/") {
+			continue
+		}
 		if _, err := os.Stat(fpath); err == nil {
-			if filepath.IsAbs(fpath) == false {
-				fpath = path.Join(pwd, fpath)
-			}
-			if !strings.HasPrefix(fpath, "/home/") {
-				continue
-			}
 			log.Notice("Adding file `%s` to sandbox `%s`.", fpath, sbox.profile.Name)
 			files = append(files, fpath)
 		}

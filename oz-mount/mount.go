@@ -1,13 +1,6 @@
 // +build linux,!gccgo
 package mount
-/*
-	As per the setns documentation, it is impossible to enter a
-	mount namespace from a multithreaded process.
-	One MUST insure that opening the namespace happens when the process
-	has only one thread. This is impossible from golang, as such we call
-	this C function as a constructor to ensure that it is executed
-	before the go scheduler launches other threads.
-*/
+
 // extern int enter_mount_namespace(void);
 /*
 #include <stdlib.h>
@@ -18,6 +11,15 @@ __attribute__((constructor)) void init(void) {
 }
 */
 import "C"
+
+/*
+	As per the setns documentation, it is impossible to enter a
+	mount namespace from a multithreaded process.
+	One MUST insure that opening the namespace happens when the process
+	has only one thread. This is impossible from golang, as such we call
+	this C function as a constructor to ensure that it is executed
+	before the go scheduler launches other threads.
+*/
 
 import (
 	"fmt"

@@ -66,8 +66,16 @@ type XServerConf struct {
 	AudioMode           AudioMode `json:"audio_mode"`
 }
 
+type SeccompMode string
+
+const (
+	PROFILE_SECCOMP_WHITELIST SeccompMode = "whitelist"
+	PROFILE_SECCOMP_BLACKLIST SeccompMode = "blacklist"
+	PROFILE_SECCOMP_DISABLED  SeccompMode = "disabled"
+)
+
 type SeccompConf struct {
-	Mode              string
+	Mode              SeccompMode
 	Enforce           bool
 	Seccomp_Whitelist string
 	Seccomp_Blacklist string
@@ -168,8 +176,7 @@ func LoadProfiles(dir string) (Profiles, error) {
 	for _, f := range fs {
 		if !f.IsDir() {
 			name := path.Join(dir, f.Name())
-			if strings.Contains(f.Name(), ".json") {
-
+			if strings.HasSuffix(f.Name(), ".json") {
 				p, err := loadProfileFile(name)
 				if err != nil {
 					return nil, fmt.Errorf("error loading '%s': %v", f.Name(), err)

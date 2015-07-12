@@ -50,6 +50,7 @@ func Main(mode int) {
 		log.Error("Homedir must be set!")
 		os.Exit(1)
 	}
+	os.Setenv("_OZ_HOMEDIR", "")
 	
 	start := 1
 	readonly := false

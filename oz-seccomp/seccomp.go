@@ -28,7 +28,7 @@ func Main() {
 	}
 
 	if os.Getppid() != 1 {
-		log.Error("oz-seccomp wrapper much be called from oz-init!")
+		log.Error("oz-seccomp wrapper must be called from oz-init!")
 		os.Exit(1)
 	}
 	

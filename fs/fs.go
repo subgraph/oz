@@ -162,7 +162,7 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	return bindMount(src, to, mntflags)
 }
 
-func (fs *Filesystem) UnbindPath(to string) (error) {
+func (fs *Filesystem) UnbindPath(to string) error {
 	to = path.Join(fs.Root(), to)
 
 	_, err := os.Stat(to)
@@ -173,7 +173,7 @@ func (fs *Filesystem) UnbindPath(to string) (error) {
 
 	// XXX
 	fs.log.Info("unbinding %s", to)
-	if err := syscall.Unmount(to, syscall.MNT_DETACH/* | syscall.MNT_FORCE*/); err != nil {
+	if err := syscall.Unmount(to, syscall.MNT_DETACH /* | syscall.MNT_FORCE*/); err != nil {
 		return err
 	}
 

@@ -215,7 +215,7 @@ func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, lo
 	}
 }
 
-func (sbox *Sandbox) MountFiles(files []string, readonly bool,  binpath string, log *logging.Logger) error {
+func (sbox *Sandbox) MountFiles(files []string, readonly bool, binpath string, log *logging.Logger) error {
 	pmnt := path.Join(binpath, "bin", "oz-mount")
 	args := files
 	if readonly {
@@ -235,12 +235,12 @@ func (sbox *Sandbox) MountFiles(files []string, readonly bool,  binpath string, 
 	for _, mfile := range files {
 		found := false
 		for _, mmfile := range sbox.mountedFiles {
-			if (mfile == mmfile) {
+			if mfile == mmfile {
 				found = true
-				break;
+				break
 			}
 		}
-		if (!found) {
+		if !found {
 			sbox.mountedFiles = append(sbox.mountedFiles, mfile)
 		}
 	}
@@ -284,7 +284,7 @@ func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, 
 		}
 	}
 	if len(files) > 0 {
-		sbox.MountFiles(files, false, binpath, log);
+		sbox.MountFiles(files, false, binpath, log)
 	}
 }
 

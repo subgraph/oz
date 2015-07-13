@@ -64,13 +64,13 @@ type KillSandboxMsg struct {
 }
 
 type MountFilesMsg struct {
-	Id int "MountFiles"
-	Files []string
+	Id       int "MountFiles"
+	Files    []string
 	ReadOnly bool
 }
 
 type UnmountFileMsg struct {
-	Id int "UnmountFile"
+	Id   int "UnmountFile"
 	File string
 }
 

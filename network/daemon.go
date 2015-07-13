@@ -13,9 +13,9 @@ import (
 	//Internal
 
 	//External
-	"github.com/op/go-logging"
 	"github.com/j-keck/arping"
 	"github.com/milosgajdos83/tenus"
+	"github.com/op/go-logging"
 )
 
 func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*HostNetwork, error) {
@@ -100,13 +100,13 @@ func NetInit(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.L
 	rand.Seed(time.Now().Unix() ^ int64((os.Getpid() + childPid)))
 
 	log.Info("Configuring host veth pair '%s' with: %s", stn.VethHost, stn.Ip+"/"+htn.Class)
-/*
-	// Fetch the bridge from the ifname
-	br, err := tenus.BridgeFromName(ozDefaultInterfaceBridge)
-	if err != nil {
-		return fmt.Errorf("Unable to attach to bridge interface %, %s.", ozDefaultInterfaceBridge, err)
-	}
-*/
+	/*
+		// Fetch the bridge from the ifname
+		br, err := tenus.BridgeFromName(ozDefaultInterfaceBridge)
+		if err != nil {
+			return fmt.Errorf("Unable to attach to bridge interface %, %s.", ozDefaultInterfaceBridge, err)
+		}
+	*/
 	// Make sure the bridge is configured and the link is up
 	//  This really shouldn't be needed, but Network-Manager is a PITA
 	//  and even if you actualy ignore the interface there's a race

@@ -281,7 +281,6 @@ func (d *daemonState) handleMountFiles(msg *MountFilesMsg, m *ipc.Message) error
 	return m.Respond(&OkMsg{})
 }
 
-
 func (d *daemonState) handleUnmountFile(msg *UnmountFileMsg, m *ipc.Message) error {
 	sbox := d.sandboxById(msg.Id)
 	if sbox == nil {
@@ -292,8 +291,6 @@ func (d *daemonState) handleUnmountFile(msg *UnmountFileMsg, m *ipc.Message) err
 	}
 	return m.Respond(&OkMsg{})
 }
-
-
 
 func (d *daemonState) sandboxById(id int) *Sandbox {
 	for _, sb := range d.sandboxes {

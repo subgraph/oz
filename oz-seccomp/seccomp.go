@@ -31,7 +31,7 @@ func Main() {
 		log.Error("oz-seccomp wrapper must be called from oz-init!")
 		os.Exit(1)
 	}
-	
+
 	var getvar = func(name string) string {
 		val := os.Getenv(name)
 		if val == "" {

@@ -311,7 +311,7 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
-		cmdArgs = append([]string{"-w",cpath}, cmdArgs...)
+		cmdArgs = append([]string{"-w", cpath}, cmdArgs...)
 		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 	}
 	cmd := exec.Command(cpath)

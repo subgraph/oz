@@ -107,7 +107,7 @@ func setupRootfs(fsys *fs.Filesystem, useFullDev bool) error {
 		return err
 
 	}
-	if (!useFullDev) {
+	if !useFullDev {
 		for _, d := range basicDevices {
 			if err := fsys.CreateDevice(d.path, d.dev, d.mode); err != nil {
 				return err

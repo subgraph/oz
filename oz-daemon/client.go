@@ -102,7 +102,7 @@ func KillSandbox(id int) error {
 	}
 }
 
-func MountFiles(files []string) (error) {
+func MountFiles(files []string) error {
 	resp, err := clientSend(&MountFilesMsg{Files: files})
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func MountFiles(files []string) (error) {
 	}
 }
 
-func UnmountFile(file string) (error) {
+func UnmountFile(file string) error {
 	resp, err := clientSend(&UnmountFileMsg{File: file})
 	if err != nil {
 		return err

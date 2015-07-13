@@ -1,5 +1,6 @@
 // +build linux,!gccgo
 package mount
+
 // extern int enter_mount_namespace(void);
 /*
 #include <stdlib.h>
@@ -45,13 +46,13 @@ func Main(mode int) {
 		os.Exit(1)
 	}
 	fsys := fs.NewFilesystem(config, log)
-	homedir :=  os.Getenv("_OZ_HOMEDIR")
+	homedir := os.Getenv("_OZ_HOMEDIR")
 	if homedir == "" {
 		log.Error("Homedir must be set!")
 		os.Exit(1)
 	}
 	os.Setenv("_OZ_HOMEDIR", "")
-	
+
 	start := 1
 	readonly := false
 	if os.Args[1] == "--readonly" {
@@ -60,7 +61,7 @@ func Main(mode int) {
 	}
 	for _, fpath := range os.Args[start:] {
 		cpath, err := cleanPath(fpath, homedir)
-		if (err != nil || cpath == "") {
+		if err != nil || cpath == "" {
 			log.Error("%v", err)
 			os.Exit(1)
 		}

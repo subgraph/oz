@@ -2,10 +2,10 @@ package ozinit
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -26,8 +26,6 @@ import (
 	"github.com/op/go-logging"
 )
 
-const EnvPrefix = "INIT_ENV_"
-
 type initState struct {
 	log       *logging.Logger
 	profile   *oz.Profile
@@ -36,8 +34,9 @@ type initState struct {
 	launchEnv []string
 	lock      sync.Mutex
 	children  map[int]*exec.Cmd
-	uid       int
-	gid       int
+	uid       uint32
+	gid       uint32
+	gids      map[string]uint32
 	user      *user.User
 	display   int
 	fs        *fs.Filesystem
@@ -45,6 +44,19 @@ type initState struct {
 	xpra      *xpra.Xpra
 	xpraReady sync.WaitGroup
 	network   *network.SandboxNetwork
+}
+
+type InitData struct {
+	Profile   oz.Profile
+	Config    oz.Config
+	Sockaddr  string
+	LaunchEnv []string
+	Uid       uint32
+	Gid       uint32
+	Gids      map[string]uint32
+	User      user.User
+	Network   network.SandboxNetwork
+	Display   int
 }
 
 // By convention oz-init writes log messages to stderr with a single character
@@ -76,108 +88,40 @@ func parseArgs() *initState {
 		os.Exit(1)
 	}
 
-	getvar := func(name string) string {
-		val := os.Getenv(name)
-		if val == "" {
-			log.Error("Error: missing required '%s' argument", name)
-			os.Exit(1)
-		}
-		return val
-	}
-	pname := getvar("INIT_PROFILE")
-	sockaddr := getvar("INIT_SOCKET")
-	uidval := getvar("INIT_UID")
-	dispval := os.Getenv("INIT_DISPLAY")
-
-	stnip := os.Getenv("INIT_ADDR")
-	stnvhost := os.Getenv("INIT_VHOST")
-	stnvguest := os.Getenv("INIT_VGUEST")
-	stngateway := os.Getenv("INIT_GATEWAY")
-
-	var config *oz.Config
-	config, err := oz.LoadConfig(oz.DefaultConfigPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			log.Info("Configuration file (%s) is missing, using defaults.", oz.DefaultConfigPath)
-			config = oz.NewDefaultConfig()
-		} else {
-			log.Error("Could not load configuration: %s", oz.DefaultConfigPath, err)
-			os.Exit(1)
-		}
-	}
-
-	p, err := loadProfile(config.ProfileDir, pname)
-	if err != nil {
-		log.Error("Could not load profile %s: %v", pname, err)
+	initData := new(InitData)
+	if err := json.NewDecoder(os.Stdin).Decode(&initData); err != nil {
+		log.Error("unable to decode init data: %v", err)
 		os.Exit(1)
 	}
-	uid, err := strconv.Atoi(uidval)
-	if err != nil {
-		log.Error("Could not parse INIT_UID argument (%s) into an integer: %v", uidval, err)
-		os.Exit(1)
-	}
-	u, err := user.LookupId(uidval)
-	if err != nil {
-		log.Error("Failed to look up user with uid=%s: %v", uidval, err)
-		os.Exit(1)
-	}
-	gid, err := strconv.Atoi(u.Gid)
-	if err != nil {
-		log.Error("Failed to parse gid value (%s) from user struct: %v", u.Gid, err)
-		os.Exit(1)
-	}
-	display := 0
-	if dispval != "" {
-		d, err := strconv.Atoi(dispval)
-		if err != nil {
-			log.Error("Unable to parse display (%s) into an integer: %v", dispval, err)
-			os.Exit(1)
-		}
-		display = d
-	}
+	log.Debug("Init state: %+v", initData)
 
-	stn := new(network.SandboxNetwork)
-	if stnip != "" {
-		gateway, _, err := net.ParseCIDR(stngateway)
-		if err != nil {
-			log.Error("Unable to parse network configuration gateway (%s): %v", stngateway, err)
-			os.Exit(1)
-		}
-
-		stn.Ip = stnip
-		stn.VethHost = stnvhost
-		stn.VethGuest = stnvguest
-		stn.Gateway = gateway
+	if (initData.User.Uid != strconv.Itoa(int(initData.Uid))) || (initData.Uid == 0) {
+		log.Error("invalid uid or user passed to init.")
+		os.Exit(1)
 	}
 
 	env := []string{}
-	for _, e := range os.Environ() {
-		if strings.HasPrefix(e, EnvPrefix) {
-			e = e[len(EnvPrefix):]
-			log.Debug("Adding (%s) to launch environment", e)
-			env = append(env, e)
-		}
-	}
-
+	env = append(env, initData.LaunchEnv...)
 	env = append(env, "PATH=/usr/bin:/bin")
 
-	if p.XServer.Enabled {
-		env = append(env, "DISPLAY=:"+strconv.Itoa(display))
+	if initData.Profile.XServer.Enabled {
+		env = append(env, "DISPLAY=:"+strconv.Itoa(initData.Display))
 	}
 
 	return &initState{
 		log:       log,
-		config:    config,
-		sockaddr:  sockaddr,
+		config:    &initData.Config,
+		sockaddr:  initData.Sockaddr,
 		launchEnv: env,
-		profile:   p,
+		profile:   &initData.Profile,
 		children:  make(map[int]*exec.Cmd),
-		uid:       uid,
-		gid:       gid,
-		user:      u,
-		display:   display,
-		fs:        fs.NewFilesystem(config, log),
-		network:   stn,
+		uid:       initData.Uid,
+		gid:       initData.Gid,
+		gids:      initData.Gids,
+		user:      &initData.User,
+		display:   initData.Display,
+		fs:        fs.NewFilesystem(&initData.Config, log),
+		network:   &initData.Network,
 	}
 }
 
@@ -196,7 +140,7 @@ func (st *initState) runInit() {
 		os.Exit(1)
 	}
 
-	if err := os.Chown(st.sockaddr, st.uid, st.gid); err != nil {
+	if err := os.Chown(st.sockaddr, int(st.uid), int(st.gid)); err != nil {
 		st.log.Warning("Failed to chown oz-init control socket: %v", err)
 	}
 
@@ -238,6 +182,7 @@ func (st *initState) runInit() {
 	fsbx := path.Join("/tmp", "oz-sandbox")
 	err = ioutil.WriteFile(fsbx, []byte(st.profile.Name), 0644)
 
+	// Signal the daemon we are ready
 	os.Stderr.WriteString("OK\n")
 
 	go st.processSignals(sigs, s)
@@ -267,10 +212,22 @@ func (st *initState) startXpraServer() {
 	xpra.Process.Env = []string{
 		"HOME=" + st.user.HomeDir,
 	}
+
+	groups := append([]uint32{}, st.gid)
+	if gid, gexists := st.gids["video"]; gexists {
+		groups = append(groups, gid)
+	}
+	if st.profile.XServer.AudioMode != "" && st.profile.XServer.AudioMode != oz.PROFILE_AUDIO_NONE {
+		if gid, gexists := st.gids["audio"]; gexists {
+			groups = append(groups, gid)
+		}
+	}
+	
 	xpra.Process.SysProcAttr = &syscall.SysProcAttr{}
 	xpra.Process.SysProcAttr.Credential = &syscall.Credential{
-		Uid: uint32(st.uid),
-		Gid: uint32(st.gid),
+		Uid:    st.uid,
+		Gid:    st.gid,
+		Groups: groups,
 	}
 	st.log.Info("Starting xpra server")
 	if err := xpra.Process.Start(); err != nil {
@@ -325,10 +282,15 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		st.log.Warning("Failed to create stderr pipe: %v", err)
 		return nil, err
 	}
+	groups := append([]uint32{}, st.gid)
+	for _, gid := range st.gids {
+		groups = append(groups, gid)
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Credential = &syscall.Credential{
-		Uid: uint32(st.uid),
-		Gid: uint32(st.gid),
+		Uid:    st.uid,
+		Gid:    st.gid,
+		Groups: groups,
 	}
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 
@@ -338,6 +300,9 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 
 	cmd.Args = append(cmd.Args, cmdArgs...)
 
+	if pwd == "" {
+		pwd = st.user.HomeDir
+	}
 	if _, err := os.Stat(pwd); err == nil {
 		cmd.Dir = pwd
 	}
@@ -398,12 +363,19 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	if (msg.Ucred.Uid == 0 || msg.Ucred.Gid == 0) && st.config.AllowRootShell != true {
 		return msg.Respond(&ErrorMsg{"Cannot open shell because allowRootShell is disabled"})
 	}
+	groups := append([]uint32{}, st.gid)
+	if (msg.Ucred.Uid != 0 && msg.Ucred.Gid != 0) {
+		for _, gid := range st.gids {
+			groups = append(groups, gid)
+		}
+	}
 	st.log.Info("Starting shell with uid = %d, gid = %d", msg.Ucred.Uid, msg.Ucred.Gid)
 	cmd := exec.Command(st.config.ShellPath, "-i")
 	cmd.SysProcAttr = &syscall.SysProcAttr{}
 	cmd.SysProcAttr.Credential = &syscall.Credential{
-		Uid: msg.Ucred.Uid,
-		Gid: msg.Ucred.Gid,
+		Uid:    msg.Ucred.Uid,
+		Gid:    msg.Ucred.Gid,
+		Groups: groups,
 	}
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 	if rs.Term != "" {

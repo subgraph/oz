@@ -53,20 +53,28 @@ func ListSandboxes() ([]SandboxInfo, error) {
 	return body.Sandboxes, nil
 }
 
-func Launch(arg, cpath string, args, env []string, noexec bool) error {
+func Launch(arg, cpath string, args []string, noexec bool) error {
 	idx, name, err := parseProfileArg(arg)
 	if err != nil {
 		return err
 	}
 	pwd, _ := os.Getwd()
-
+	groups, _ := os.Getgroups()
+	gg := []uint32{}
+	if len(groups) > 0 {
+		gg = make([]uint32, len(groups))
+		for i, v := range groups {
+			gg[i] = uint32(v)
+		}
+	}
 	resp, err := clientSend(&LaunchMsg{
 		Index:  idx,
 		Name:   name,
 		Path:   cpath,
 		Pwd:    pwd,
+		Gids:   gg,
 		Args:   args,
-		Env:    env,
+		Env:    os.Environ(),
 		Noexec: noexec,
 	})
 	if err != nil {

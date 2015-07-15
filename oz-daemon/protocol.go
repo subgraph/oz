@@ -39,6 +39,7 @@ type LaunchMsg struct {
 	Path   string
 	Name   string
 	Pwd    string
+	Gids   []uint32
 	Args   []string
 	Env    []string
 	Noexec bool

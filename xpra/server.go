@@ -10,7 +10,6 @@ import (
 var xpraServerDefaultArgs = []string{
 	"--no-mdns",
 	//"--pulseaudio",
-	"--no-pulseaudio",
 	"--input-method=keep",
 }
 
@@ -36,5 +35,10 @@ func prepareServerArgs(config *oz.XServerConf, display uint64, workdir string) [
 		"start",
 		fmt.Sprintf(":%d", display),
 	)
+	if config.UsePulseaudio {
+		args = append(args, "--pulseaudio")
+	} else {
+		args = append(args, "--no-pulseaudio")
+	}
 	return args
 }

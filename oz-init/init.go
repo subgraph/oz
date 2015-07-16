@@ -545,6 +545,9 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		if wl.ReadOnly {
 			flags |= fs.BindReadOnly
 		}
+		if wl.Path == "" {
+			continue
+		}
 		if err := fsys.BindPath(wl.Path, flags, st.user); err != nil {
 			return err
 		}
@@ -557,6 +560,9 @@ func (st *initState) applyBlacklist(fsys *fs.Filesystem, blist []oz.BlacklistIte
 		return nil
 	}
 	for _, bl := range blist {
+		if bl.Path == "" {
+			continue
+		}
 		if err := fsys.BlacklistPath(bl.Path, st.user); err != nil {
 			return err
 		}

@@ -41,7 +41,7 @@ func NewDefaultConfig() *Config {
 		LogXpra:         false,
 		EnvironmentVars: []string{
 			"USER", "USERNAME", "LOGNAME",
-			"LANG", "LANGUAGE", "_",
+			"LANG", "LANGUAGE", "_", "TZ=UTC",
 		},
 		DefaultGroups:   []string{
 			"audio", "video",

@@ -62,7 +62,7 @@ type XServerConf struct {
 	WindowIcon          string    `json:"window_icon"`
 	EnableTray          bool      `json:"enable_tray"`
 	EnableNotifications bool      `json:"enable_notifications"`
-	UsePulseAudio       bool      `json:"use_pulse_audio"`
+	UsePulseaudio       bool      `json:"use_pulseaudio"`
 	DisableClipboard    bool      `json:"disable_clipboard"`
 	AudioMode           AudioMode `json:"audio_mode"`
 }
@@ -124,7 +124,7 @@ func NewDefaultProfile() *Profile {
 			Enabled:             true,
 			EnableTray:          false,
 			EnableNotifications: false,
-			UsePulseAudio:       false,
+			UsePulseaudio:       false,
 			AudioMode:           PROFILE_AUDIO_NONE,
 		},
 	}

@@ -260,6 +260,10 @@ func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) []stri
 	newEnv := []string{}
 
 	for _, EnvItem := range d.config.EnvironmentVars {
+		if strings.Contains(EnvItem, "=") {
+			newEnv = append(newEnv, EnvItem)
+			continue
+		}
 		for _, OldItem := range oldEnv {
 			if strings.HasPrefix(OldItem, EnvItem+"=") {
 				newEnv = append(newEnv, EnvItem+"="+strings.Replace(OldItem, EnvItem+"=", "", 1))

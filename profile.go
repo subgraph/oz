@@ -62,9 +62,9 @@ type XServerConf struct {
 	WindowIcon          string    `json:"window_icon"`
 	EnableTray          bool      `json:"enable_tray"`
 	EnableNotifications bool      `json:"enable_notifications"`
-	UsePulseaudio       bool      `json:"use_pulseaudio"`
 	DisableClipboard    bool      `json:"disable_clipboard"`
 	AudioMode           AudioMode `json:"audio_mode"`
+	Border              bool      `json:"border"`
 }
 
 type SeccompMode string
@@ -124,8 +124,8 @@ func NewDefaultProfile() *Profile {
 			Enabled:             true,
 			EnableTray:          false,
 			EnableNotifications: false,
-			UsePulseaudio:       false,
 			AudioMode:           PROFILE_AUDIO_NONE,
+			Border:              false,
 		},
 	}
 }
@@ -193,6 +193,10 @@ func LoadProfiles(dir string) (Profiles, error) {
 }
 
 func loadProfileFile(file string) (*Profile, error) {
+	if err := checkConfigPermissions(file); err != nil {
+		return nil, err
+	}
+
 	bs, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err

@@ -1,12 +1,16 @@
 package xpra
 
 import (
+	"crypto/md5"
 	"fmt"
-	"github.com/op/go-logging"
-	"github.com/subgraph/oz"
+	"io"
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/subgraph/oz"
+
+	"github.com/op/go-logging"
 )
 
 var xpraClientDefaultArgs = []string{
@@ -40,12 +44,19 @@ func prepareClientArgs(config *oz.XServerConf, display uint64, workdir string, l
 	args = append(args, xpraClientDefaultArgs...)
 	if !config.EnableTray {
 		args = append(args, "--no-tray")
-	}
-	if exists(config.TrayIcon, "Tray icon", log) {
-		args = append(args, fmt.Sprintf("--tray-icon=%s", config.TrayIcon))
+	} else {
+		args = append(args, "--tray")
+		if exists(config.TrayIcon, "Tray icon", log) {
+			args = append(args, fmt.Sprintf("--tray-icon=%s", config.TrayIcon))
+		}
 	}
 	if exists(config.WindowIcon, "Window icon", log) {
 		args = append(args, fmt.Sprintf("--window-icon=%s", config.WindowIcon))
+	}
+	if config.Border {
+		h := md5.New()
+		io.WriteString(h, workdir)
+		args = append(args, "--border=#" + fmt.Sprintf("%x", h.Sum(nil)[0:3]))
 	}
 	args = append(args,
 		fmt.Sprintf("--socket-dir=%s", workdir),

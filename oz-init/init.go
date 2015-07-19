@@ -311,7 +311,11 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
-		cmdArgs = append([]string{"-w",cpath}, cmdArgs...)
+		cmdArgs = append([]string{"-w", cpath}, cmdArgs...)
+		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+	} else if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
+		st.log.Notice("Enabling seccomp blacklist for: %s", cpath)
+		cmdArgs = append([]string{"-b", cpath}, cmdArgs...)
 		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 	}
 	cmd := exec.Command(cpath)
@@ -332,7 +336,8 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	}
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 
-	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
+	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST ||
+		st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
 		cmd.Env = append(cmd.Env, "_OZ_PROFILE="+st.profile.Name)
 	}
 

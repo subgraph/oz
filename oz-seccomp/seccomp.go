@@ -82,8 +82,25 @@ func Main() {
 			os.Exit(1)
 		}
 	case "-b":
-		fmt.Println("Not yet implemented.")
-		os.Exit(1)
+		if p.Seccomp.Seccomp_Blacklist == "" {
+			log.Error("No seccomp blacklist policy file.")
+			os.Exit(1)
+		}
+		filter, err := seccomp.CompileBlacklist(p.Seccomp.Seccomp_Blacklist)
+		if err != nil {
+			log.Error("Seccomp blacklist filter compile failed: %v", err)
+			os.Exit(1)
+		}
+		err = seccomp.InstallBlacklist(filter)
+		if err != nil {
+			log.Error("Error (seccomp): %v", err)
+			os.Exit(1)
+		}
+		err = syscall.Exec(cmd, cmdArgs, env)
+		if err != nil {
+			log.Error("Error (exec): %v", err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Println("Bad switch.")
 		os.Exit(1)

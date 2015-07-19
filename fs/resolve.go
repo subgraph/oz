@@ -2,12 +2,12 @@ package fs
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"os/user"
 	"path"
 	"path/filepath"
 	"strings"
-	"os"
 )
 
 func resolvePath(p string, u *user.User) ([]string, error) {

@@ -2,8 +2,10 @@ package daemon
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -52,7 +54,7 @@ func createSocketPath(base string) (string, error) {
 	return path.Join(base, fmt.Sprintf("oz-init-control-%s", hex.EncodeToString(bs))), nil
 }
 
-func createInitCommand(initPath, name string, socketPath string, env []string, uid uint32, display int, stn *network.SandboxNetwork) *exec.Cmd {
+func createInitCommand(initPath string, cloneNet bool) *exec.Cmd {
 	cmd := exec.Command(initPath)
 	cmd.Dir = "/"
 
@@ -61,7 +63,7 @@ func createInitCommand(initPath, name string, socketPath string, env []string, u
 	cloneFlags |= syscall.CLONE_NEWPID
 	cloneFlags |= syscall.CLONE_NEWUTS
 
-	if stn.Nettype != network.TYPE_HOST {
+	if cloneNet {
 		cloneFlags |= syscall.CLONE_NEWNET
 	}
 
@@ -69,25 +71,7 @@ func createInitCommand(initPath, name string, socketPath string, env []string, u
 		//Chroot:     chroot,
 		Cloneflags: cloneFlags,
 	}
-	cmd.Env = []string{
-		"INIT_PROFILE=" + name,
-		"INIT_SOCKET=" + socketPath,
-		fmt.Sprintf("INIT_UID=%d", uid),
-	}
-
-	if stn.Ip != "" {
-		cmd.Env = append(cmd.Env, "INIT_ADDR="+stn.Ip)
-		cmd.Env = append(cmd.Env, "INIT_VHOST="+stn.VethHost)
-		cmd.Env = append(cmd.Env, "INIT_VGUEST="+stn.VethGuest)
-		cmd.Env = append(cmd.Env, "INIT_GATEWAY="+stn.Gateway.String()+"/"+stn.Class)
-	}
-
-	cmd.Env = append(cmd.Env, fmt.Sprintf("INIT_DISPLAY=%d", display))
-
-	for _, e := range env {
-		cmd.Env = append(cmd.Env, ozinit.EnvPrefix+e)
-	}
-
+	
 	return cmd
 }
 
@@ -107,8 +91,11 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 	*/
 	u, err := user.LookupId(strconv.FormatUint(uint64(uid), 10))
 	if err != nil {
-		log.Error("Failed to look up user with uid=%ld: %v", uid, err)
-		os.Exit(1)
+		return nil, fmt.Errorf("Failed to look up user with uid=%ld: %v", uid, err)
+	}
+	groups, err := d.sanitizeGroups(p, u.Username, msg.Gids)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to sanitize user groups: %v", err)
 	}
 
 	display := 0
@@ -131,20 +118,40 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		return nil, fmt.Errorf("Failed to create random socket path: %v", err)
 	}
 	initPath := path.Join(d.config.PrefixPath, "bin", "oz-init")
-	cmd := createInitCommand(initPath, p.Name, socketPath, msg.Env, uid, display, stn)
-	log.Debug("Command environment: %+v", cmd.Env)
+	cmd := createInitCommand(initPath, (stn.Nettype != network.TYPE_HOST))
 	pp, err := cmd.StderrPipe()
 	if err != nil {
 		//fs.Cleanup()
 		return nil, fmt.Errorf("error creating stderr pipe for init process: %v", err)
-
 	}
+	pi, err := cmd.StdinPipe()
+	if err != nil {
+		//fs.Cleanup()
+		return nil, fmt.Errorf("error creating stdin pipe for init process: %v", err)
+	}
+
+	jdata, err := json.Marshal(ozinit.InitData{
+		Display:   display,
+		User:      *u,
+		Uid:       uid,
+		Gid:       gid,
+		Gids:      groups,
+		Network:   *stn,
+		Profile:   *p,
+		Config:    *d.config,
+		Sockaddr:  socketPath,
+		LaunchEnv: msg.Env,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Unable to marshal init state: %+v", err)
+	}
+	io.Copy(pi, bytes.NewBuffer(jdata))
+	pi.Close()
 
 	if err := cmd.Start(); err != nil {
 		//fs.Cleanup()
 		return nil, fmt.Errorf("Unable to start process: %+v", err)
 	}
-
 	//rootfs := path.Join(d.config.SandboxPath, "rootfs")
 	sbox := &Sandbox{
 		daemon:  d,
@@ -152,7 +159,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		display: display,
 		profile: p,
 		init:    cmd,
-		cred:    &syscall.Credential{Uid: uid, Gid: gid},
+		cred:    &syscall.Credential{Uid: uid, Gid: gid, Groups: msg.Gids},
 		user:    u,
 		fs:      fs.NewFilesystem(d.config, log),
 		//addr:    path.Join(rootfs, ozinit.SocketAddress),
@@ -205,6 +212,38 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 	return sbox, nil
 }
 
+func (d *daemonState) sanitizeGroups(p *oz.Profile, username string, gids []uint32) (map[string]uint32, error) {
+	allowedGroups := d.config.DefaultGroups
+	allowedGroups = append(allowedGroups, p.AllowedGroups...)
+	if len(d.systemGroups) == 0 {
+		if err := d.cacheSystemGroups(); err != nil {
+			return nil, err
+		}
+	}
+	groups := map[string]uint32{}
+	for _, sg := range d.systemGroups {
+		for _, gg := range allowedGroups {
+			if sg.Name == gg {
+				found := false
+				for _, uname := range sg.Members {
+					if uname == username {
+						found = true
+						break
+					}
+				}
+				if !found {
+					continue
+				}
+				d.log.Debug("Allowing user: %s (%d)", gg, sg.Gid)
+				groups[sg.Name] = sg.Gid
+				break
+			}
+		}
+	}
+
+	return groups, nil
+}
+
 func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, log *logging.Logger) {
 	if sbox.profile.AllowFiles {
 		sbox.whitelistArgumentFiles(binpath, pwd, args, log)
@@ -215,7 +254,7 @@ func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, lo
 	}
 }
 
-func (sbox *Sandbox) MountFiles(files []string, readonly bool,  binpath string, log *logging.Logger) error {
+func (sbox *Sandbox) MountFiles(files []string, readonly bool, binpath string, log *logging.Logger) error {
 	pmnt := path.Join(binpath, "bin", "oz-mount")
 	args := files
 	if readonly {
@@ -235,12 +274,12 @@ func (sbox *Sandbox) MountFiles(files []string, readonly bool,  binpath string, 
 	for _, mfile := range files {
 		found := false
 		for _, mmfile := range sbox.mountedFiles {
-			if (mfile == mmfile) {
+			if mfile == mmfile {
 				found = true
-				break;
+				break
 			}
 		}
-		if (!found) {
+		if !found {
 			sbox.mountedFiles = append(sbox.mountedFiles, mfile)
 		}
 	}
@@ -284,7 +323,7 @@ func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, 
 		}
 	}
 	if len(files) > 0 {
-		sbox.MountFiles(files, false, binpath, log);
+		sbox.MountFiles(files, false, binpath, log)
 	}
 }
 

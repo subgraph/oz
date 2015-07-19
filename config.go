@@ -2,11 +2,8 @@ package oz
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
-	"syscall"
 )
 
 type Config struct {
@@ -21,6 +18,7 @@ type Config struct {
 	AllowRootShell  bool     `json:"allow_root_shell" desc:"Allow entering a sandbox shell as root"`
 	LogXpra         bool     `json:"log_xpra" desc:"Log output of Xpra"`
 	EnvironmentVars []string `json:"environment_vars" desc:"Default environment variables passed to sandboxes"`
+	DefaultGroups  []string  `json:"default_groups" desc:"List of default group names that can be used inside the sandbox"`
 }
 
 const OzVersion = "0.0.1"
@@ -28,19 +26,22 @@ const DefaultConfigPath = "/etc/oz/oz.conf"
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		ProfileDir:     "/var/lib/oz/cells.d",
-		ShellPath:      "/bin/bash",
-		PrefixPath:     "/usr/local",
-		SandboxPath:    "/srv/oz",
-		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",
-		BridgeMACAddr:  "6A:A8:2E:56:E8:9C",
-		DivertSuffix:   "unsafe",
-		UseFullDev:     false,
-		AllowRootShell: false,
-		LogXpra:        false,
+		ProfileDir:      "/var/lib/oz/cells.d",
+		ShellPath:       "/bin/bash",
+		PrefixPath:      "/usr/local",
+		SandboxPath:     "/srv/oz",
+		NMIgnoreFile:    "/etc/NetworkManager/conf.d/oz.conf",
+		BridgeMACAddr:   "6A:A8:2E:56:E8:9C",
+		DivertSuffix:    "unsafe",
+		UseFullDev:      false,
+		AllowRootShell:  false,
+		LogXpra:         false,
 		EnvironmentVars: []string{
 			"USER", "USERNAME", "LOGNAME",
-			"LANG", "LANGUAGE", "_",
+			"LANG", "LANGUAGE", "_", "TZ=UTC",
+		},
+		DefaultGroups:   []string{
+			"audio", "video",
 		},
 	}
 }
@@ -62,28 +63,4 @@ func LoadConfig(cpath string) (*Config, error) {
 		return nil, err
 	}
 	return c, nil
-}
-
-func checkConfigPermissions(fpath string) error {
-	pd := path.Dir(fpath)
-	for _, fp := range []string{pd, fpath} {
-		if err := checkPathRootPermissions(fp); err != nil {
-			return fmt.Errorf("file (%s) is %s", fp, err)
-		}
-	}
-	return nil
-}
-
-func checkPathRootPermissions(fpath string) error {
-	fstat, err := os.Stat(fpath)
-	if err != nil {
-		return err
-	}
-	if (fstat.Mode().Perm() & syscall.S_IWOTH) != 0 {
-		return fmt.Errorf("writable by everyone!", fpath)
-	}
-	if (fstat.Mode().Perm()&syscall.S_IWGRP) != 0 && fstat.Sys().(*syscall.Stat_t).Gid != 0 {
-		return fmt.Errorf("writable by someone else than root!", err)
-	}
-	return nil
 }

@@ -49,7 +49,7 @@ func runSandboxed() {
 			os.Exit(1)
 		}
 	}
-	if err := daemon.Launch("0", apath, os.Args[1:], os.Environ(), false); err != nil {
+	if err := daemon.Launch("0", apath, os.Args[1:], false); err != nil {
 		fmt.Fprintf(os.Stderr, "launch command failed: %v.\n", err)
 		os.Exit(1)
 	}
@@ -128,7 +128,7 @@ func handleLaunch(c *cli.Context) {
 		fmt.Println("Argument needed to launch command")
 		os.Exit(1)
 	}
-	err := daemon.Launch(c.Args()[0], "", c.Args()[1:], os.Environ(), noexec)
+	err := daemon.Launch(c.Args()[0], "", c.Args()[1:], noexec)
 	if err != nil {
 		fmt.Printf("launch command failed: %v\n", err)
 		os.Exit(1)
@@ -177,7 +177,7 @@ func handleShell(c *cli.Context) {
 		fmt.Printf("start shell command failed: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("Entering interactive shell?\n")
+	fmt.Printf("Entering interactive shell in `%s`\n\n", sb.Profile)
 	st, err := SetRawTerminal(0)
 	HandleResize(fd)
 	f := os.NewFile(uintptr(fd), "")

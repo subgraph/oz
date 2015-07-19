@@ -38,7 +38,6 @@ var xpraDefaultArgs = []string{
 	//"--no-xsettings",
 	"--cursors",
 	"--encoding=rgb",
-	"--no-pulseaudio",
 }
 
 func getDefaultArgs(config *oz.XServerConf) []string {

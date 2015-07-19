@@ -33,6 +33,7 @@ type Profile struct {
 	NoDefaults bool
 	// Allow bind mounting of files passed as arguments inside the sandbox
 	AllowFiles bool `json:"allow_files"`
+	AllowedGroups []string `json:"allowed_groups"`
 	// List of paths to bind mount inside jail
 	Whitelist []WhitelistItem
 	// List of paths to blacklist inside jail
@@ -61,9 +62,9 @@ type XServerConf struct {
 	WindowIcon          string    `json:"window_icon"`
 	EnableTray          bool      `json:"enable_tray"`
 	EnableNotifications bool      `json:"enable_notifications"`
-	UsePulseAudio       bool      `json:"use_pulse_audio"`
 	DisableClipboard    bool      `json:"disable_clipboard"`
 	AudioMode           AudioMode `json:"audio_mode"`
+	Border              bool      `json:"border"`
 }
 
 type SeccompMode string
@@ -118,12 +119,13 @@ func NewDefaultProfile() *Profile {
 	return &Profile{
 		Multi:      false,
 		AllowFiles: false,
+		AllowedGroups: []string{},
 		XServer: XServerConf{
 			Enabled:             true,
 			EnableTray:          false,
 			EnableNotifications: false,
-			UsePulseAudio:       false,
 			AudioMode:           PROFILE_AUDIO_NONE,
+			Border:              false,
 		},
 	}
 }
@@ -191,6 +193,10 @@ func LoadProfiles(dir string) (Profiles, error) {
 }
 
 func loadProfileFile(file string) (*Profile, error) {
+	if err := checkConfigPermissions(file); err != nil {
+		return nil, err
+	}
+
 	bs, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err

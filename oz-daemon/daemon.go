@@ -1,11 +1,13 @@
 package daemon
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"path"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -16,16 +18,23 @@ import (
 	"github.com/op/go-logging"
 )
 
+type groupEntry struct {
+	Name    string
+	Gid     uint32
+	Members []string
+}
+
 type daemonState struct {
-	log         *logging.Logger
-	config      *oz.Config
-	profiles    oz.Profiles
-	sandboxes   []*Sandbox
-	nextSboxId  int
-	nextDisplay int
-	memBackend  *logging.ChannelMemoryBackend
-	backends    []logging.Backend
-	network     *network.HostNetwork
+	log          *logging.Logger
+	config       *oz.Config
+	profiles     oz.Profiles
+	sandboxes    []*Sandbox
+	nextSboxId   int
+	nextDisplay  int
+	memBackend   *logging.ChannelMemoryBackend
+	backends     []logging.Backend
+	network      *network.HostNetwork
+	systemGroups map[string]groupEntry
 }
 
 func Main() {
@@ -66,6 +75,9 @@ func initialize() *daemonState {
 		os.Exit(1)
 	}
 	d.profiles = ps
+	if err := d.cacheSystemGroups(); err != nil {
+		d.log.Fatalf("Unable to cache list of system groups: %v", err)
+	}
 	oz.ReapChildProcs(d.log, d.handleChildExit)
 	d.nextSboxId = 1
 	d.nextDisplay = 100
@@ -80,9 +92,7 @@ func initialize() *daemonState {
 			}
 
 			d.network = htn
-
 			//network.NetPrint(d.log)
-
 			break
 		}
 	}
@@ -139,6 +149,39 @@ func (d *daemonState) processSignals(c <-chan os.Signal) {
 		}
 	}
 }
+
+func (d *daemonState) cacheSystemGroups() error {
+	fg, err := os.Open("/etc/group")
+	if err != nil {
+		return err
+	}
+	defer fg.Close()
+
+	sg := bufio.NewScanner(fg)
+	newGroups := make(map[string]groupEntry)
+	for sg.Scan() {
+		gd := strings.Split(sg.Text(), ":")
+		if len(gd) < 4 {
+			continue
+		}
+		gid, err := strconv.ParseUint(gd[2], 10, 32)
+		if err != nil {
+			continue
+		}
+		newGroups[gd[0]] = groupEntry{
+			Name: gd[0],
+			Gid: uint32(gid),
+			Members: strings.Split(gd[3], ","),
+		}
+	}
+
+	if err := sg.Err(); err != nil {
+		return err
+	}
+	d.systemGroups = newGroups
+	return nil
+}
+
 
 func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	d.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
@@ -217,6 +260,10 @@ func (d *daemonState) sanitizeEnvironment(p *oz.Profile, oldEnv []string) []stri
 	newEnv := []string{}
 
 	for _, EnvItem := range d.config.EnvironmentVars {
+		if strings.Contains(EnvItem, "=") {
+			newEnv = append(newEnv, EnvItem)
+			continue
+		}
 		for _, OldItem := range oldEnv {
 			if strings.HasPrefix(OldItem, EnvItem+"=") {
 				newEnv = append(newEnv, EnvItem+"="+strings.Replace(OldItem, EnvItem+"=", "", 1))
@@ -281,7 +328,6 @@ func (d *daemonState) handleMountFiles(msg *MountFilesMsg, m *ipc.Message) error
 	return m.Respond(&OkMsg{})
 }
 
-
 func (d *daemonState) handleUnmountFile(msg *UnmountFileMsg, m *ipc.Message) error {
 	sbox := d.sandboxById(msg.Id)
 	if sbox == nil {
@@ -292,8 +338,6 @@ func (d *daemonState) handleUnmountFile(msg *UnmountFileMsg, m *ipc.Message) err
 	}
 	return m.Respond(&OkMsg{})
 }
-
-
 
 func (d *daemonState) sandboxById(id int) *Sandbox {
 	for _, sb := range d.sandboxes {

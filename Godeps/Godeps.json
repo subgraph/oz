@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/subgraph/oz",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.3.3",
 	"Packages": [
 		"./..."
 	],
@@ -35,6 +35,10 @@
 		{
 			"ImportPath": "github.com/op/go-logging",
 			"Rev": "e8d5414f0947014548c2334044a0fac13187dfee"
+		},
+		{
+			"ImportPath": "github.com/subgraph/go-seccomp",
+			"Rev": "2eb74b38c2f37e0f48efa3a0974fd2e4edbd0ef5"
 		}
 	]
 }

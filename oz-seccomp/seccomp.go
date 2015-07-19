@@ -44,7 +44,6 @@ func Main() {
 
 	cmd := os.Args[2]
 	cmdArgs := os.Args[2:]
-	env := os.Environ()
 	pname := getvar("_OZ_PROFILE")
 
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
@@ -81,7 +80,7 @@ func Main() {
 			log.Error("Error (seccomp): %v", err)
 			os.Exit(1)
 		}
-		err = syscall.Exec(cmd, cmdArgs, env)
+		err = syscall.Exec(cmd, cmdArgs, oz.Environ())
 		if err != nil {
 			log.Error("Error (exec): %v", err)
 			os.Exit(1)
@@ -101,7 +100,7 @@ func Main() {
 			log.Error("Error (seccomp): %v", err)
 			os.Exit(1)
 		}
-		err = syscall.Exec(cmd, cmdArgs, env)
+		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
 			log.Error("Error (exec): %v", err)
 			os.Exit(1)

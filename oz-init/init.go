@@ -500,7 +500,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 
 	fs := fs.NewFilesystem(st.config, st.log)
 
-	if err := setupRootfs(fs, st.config.UseFullDev); err != nil {
+	if err := setupRootfs(fs, st.uid, st.gid, st.config.UseFullDev); err != nil {
 		return err
 	}
 

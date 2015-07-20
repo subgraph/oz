@@ -2,10 +2,13 @@ package ozinit
 
 import (
 	"fmt"
-	"github.com/subgraph/oz/fs"
+
 	"os"
 	"path"
+	"strconv"
 	"syscall"
+	
+	"github.com/subgraph/oz/fs"
 )
 
 var basicBindDirs = []string{
@@ -72,7 +75,7 @@ func _makedev(x, y int) int {
 	return (((x) << 8) | (y))
 }
 
-func setupRootfs(fsys *fs.Filesystem, useFullDev bool) error {
+func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool) error {
 	if err := os.MkdirAll(fsys.Root(), 0755); err != nil {
 		return fmt.Errorf("could not create rootfs path '%s': %v", fsys.Root(), err)
 	}
@@ -100,6 +103,14 @@ func setupRootfs(fsys *fs.Filesystem, useFullDev bool) error {
 		if err := fsys.CreateEmptyDir(p); err != nil {
 			return fmt.Errorf("failed to create empty directory '%s': %v", p, err)
 		}
+	}
+
+	rup := path.Join(fsys.Root(), "/run/user", strconv.FormatUint(uint64(uid), 10))
+	if err := os.MkdirAll(rup, 0700); err != nil {
+		return fmt.Errorf("failed to create user rundir: %v", err)
+	}
+	if err := os.Chown(rup, int(uid), int(gid)); err != nil {
+		return fmt.Errorf("failed to chiwn user rundir: %v", err)
 	}
 
 	dp := path.Join(fsys.Root(), "dev")

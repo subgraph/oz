@@ -42,6 +42,7 @@ type Sandbox struct {
 	ready        sync.WaitGroup
 	network      *network.SandboxNetwork
 	mountedFiles []string
+	rawEnv       []string
 }
 
 func createSocketPath(base string) (string, error) {
@@ -71,11 +72,13 @@ func createInitCommand(initPath string, cloneNet bool) *exec.Cmd {
 		//Chroot:     chroot,
 		Cloneflags: cloneFlags,
 	}
+
+	cmd.Env = []string{}
 	
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
+func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
 
 	/*
 		u, err := user.LookupId(fmt.Sprintf("%d", uid))
@@ -166,6 +169,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, uid, gid uint32, log
 		addr:    socketPath,
 		stderr:  pp,
 		network: stn,
+		rawEnv:  rawEnv,
 	}
 
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
@@ -405,6 +409,8 @@ func (sbox *Sandbox) startXpraClient() {
 		xpraPath,
 		sbox.profile.Name,
 		sbox.daemon.log)
+
+	sbox.xpra.Process.Env = append(sbox.rawEnv, sbox.xpra.Process.Env...)
 
 	if sbox.daemon.config.LogXpra {
 		sbox.setupXpraLogging()

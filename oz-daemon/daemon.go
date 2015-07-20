@@ -102,6 +102,8 @@ func initialize() *daemonState {
 		d.log.Fatalf("Failed to create sockets directory: %v", err)
 	}
 
+	os.Clearenv()
+
 	go d.processSignals(sigs)
 
 	return d
@@ -246,8 +248,9 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 		}
 	} else {
 		d.Debug("Would launch %s", p.Name)
-		msg.Env = d.sanitizeEnvironment(p, msg.Env)
-		_, err = d.launch(p, msg, m.Ucred.Uid, m.Ucred.Gid, d.log)
+		rawEnv := msg.Env
+		msg.Env = d.sanitizeEnvironment(p, rawEnv)
+		_, err = d.launch(p, msg, rawEnv, m.Ucred.Uid, m.Ucred.Gid, d.log)
 		if err != nil {
 			d.Warning("Launch of %s failed: %v", p.Name, err)
 			return m.Respond(&ErrorMsg{err.Error()})

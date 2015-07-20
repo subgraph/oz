@@ -18,8 +18,6 @@
 	, {"path":"${HOME}/.cache/torbrowser"}
 	, {"path":"${HOME}/.config/torbrowser"}
 	, {"path":"${HOME}/Downloads/TorBrowser"}
-	, {"path":"/var/lib/oz/cells.d/torbrowser-launcher.json"}
-	, {"path":"/var/lib/oz/cells.d/generic-blacklist.seccomp"}
 ]
 , "blacklist": [
 ]
@@ -33,8 +31,6 @@
 	, {"name":"TOR_CONTROL_COOKIE_AUTH_FILE"}
 ]
 , "seccomp": {
-        "mode":"blacklist"
-        , "enforce": true
-        , "seccomp_whitelist":""
-        , "seccomp_blacklist":"/var/lib/oz/cells.d/generic-blacklist.seccomp"}
+	"mode":"blacklist"
+	, "enforce": true
 }

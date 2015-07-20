@@ -23,8 +23,6 @@
 	, {"path":"${HOME}/.cache/gajim"}
 	, {"path":"${HOME}/.config/gajim"}
 	, {"path":"${HOME}/.local/share/keyrings"}
-	, {"path":"/var/lib/oz/cells.d/gajim.json"}
-	, {"path":"/var/lib/oz/cells.d/generic-blacklist.seccomp"}
 ]
 , "blacklist": [
 	{"path":"/run/user/${UID}/keyring-*/ssh"}
@@ -32,8 +30,6 @@
 	, {"path":"/run/user/${UID}/keyring-*/gpg"}
 ]
 , "seccomp": {
-        "mode":"blacklist"
-        , "enforce": true
-        , "seccomp_whitelist":""
-        , "seccomp_blacklist":"/var/lib/oz/cells.d/generic-blacklist.seccomp"}
+	"mode":"blacklist"
+	, "enforce": true
 }

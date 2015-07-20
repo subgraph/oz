@@ -380,8 +380,17 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST ||
-		st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
-		cmd.Env = append(cmd.Env, "_OZ_PROFILE="+st.profile.Name)
+	st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
+		pi, err := cmd.StdinPipe()
+		if err != nil {
+			return nil, fmt.Errorf("error creating stdin pipe for seccomp process: %v", err)
+		}
+		jdata, err := json.Marshal(st.profile)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to marshal seccomp state: %+v", err)
+		}
+		io.Copy(pi, bytes.NewBuffer(jdata))
+		pi.Close()
 	}
 
 	cmd.Args = append(cmd.Args, cmdArgs...)

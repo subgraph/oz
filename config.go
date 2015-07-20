@@ -10,6 +10,7 @@ type Config struct {
 	ProfileDir      string   `json:"profile_dir" desc:"Directory containing the sandbox profiles"`
 	ShellPath       string   `json:"shell_path" desc:"Path of the shell used when entering a sandbox"`
 	PrefixPath      string   `json:"prefix_path" desc:"Prefix path containing the oz executables"`
+	EtcPrefix       string   `json:"etc_prefix" desc:"Prefix for configuration files"`
 	SandboxPath     string   `json:"sandbox_path" desc:"Path of the sandboxes base"`
 	BridgeMACAddr   string   `json:"bridge_mac" desc:"MAC Address of the bridge interface"`
 	DivertSuffix    string   `json:"divert_suffix" desc:"Suffix using for dpkg-divert of application executables"`
@@ -29,6 +30,7 @@ func NewDefaultConfig() *Config {
 		ProfileDir:      "/var/lib/oz/cells.d",
 		ShellPath:       "/bin/bash",
 		PrefixPath:      "/usr/local",
+		EtcPrefix:       "/etc/oz",
 		SandboxPath:     "/srv/oz",
 		NMIgnoreFile:    "/etc/NetworkManager/conf.d/oz.conf",
 		BridgeMACAddr:   "6A:A8:2E:56:E8:9C",

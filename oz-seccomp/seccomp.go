@@ -1,13 +1,16 @@
 package seccomp
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"syscall"
 
-	"github.com/op/go-logging"
 	"github.com/subgraph/go-seccomp"
 	"github.com/subgraph/oz"
+
+	"github.com/op/go-logging"
 )
 
 func createLogger() *logging.Logger {
@@ -32,19 +35,8 @@ func Main() {
 		os.Exit(1)
 	}
 
-	var getvar = func(name string) string {
-		val := os.Getenv(name)
-		if val == "" {
-			log.Error("Error: missing required '%s' argument", name)
-			os.Exit(1)
-		}
-		os.Setenv(name, "")
-		return val
-	}
-
 	cmd := os.Args[2]
 	cmdArgs := os.Args[2:]
-	pname := getvar("_OZ_PROFILE")
 
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
@@ -57,13 +49,19 @@ func Main() {
 		}
 	}
 
+	p := new(oz.Profile)
+	if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
+		log.Error("unable to decode profile data: %v", err)
+		os.Exit(1)
+	}
+/*
 	p, err := loadProfile(config.ProfileDir, pname)
 
 	if err != nil {
 		log.Error("Could not load profile %s: %v", pname, err)
 		os.Exit(1)
 	}
-
+*/
 	switch os.Args[1] {
 	case "-w":
 		if p.Seccomp.Seccomp_Whitelist == "" {
@@ -80,15 +78,14 @@ func Main() {
 			log.Error("Error (seccomp): %v", err)
 			os.Exit(1)
 		}
-		err = syscall.Exec(cmd, cmdArgs, oz.Environ())
+		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
 			log.Error("Error (exec): %v", err)
 			os.Exit(1)
 		}
 	case "-b":
 		if p.Seccomp.Seccomp_Blacklist == "" {
-			log.Error("No seccomp blacklist policy file.")
-			os.Exit(1)
+			p.Seccomp.Seccomp_Blacklist = path.Join(config.EtcPrefix, "blacklist-generic.seccomp")
 		}
 		filter, err := seccomp.CompileBlacklist(p.Seccomp.Seccomp_Blacklist)
 		if err != nil {

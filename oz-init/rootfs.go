@@ -7,7 +7,7 @@ import (
 	"path"
 	"strconv"
 	"syscall"
-	
+
 	"github.com/subgraph/oz/fs"
 )
 
@@ -18,7 +18,7 @@ var basicBindDirs = []string{
 var basicEmptyDirs = []string{
 	"/boot", "/dev", "/home", "/media", "/mnt",
 	"/opt", "/proc", "/root", "/run", "/run/lock", "/run/user",
-	"/sbin", "/srv", "/sys", "/tmp", "/var", "/var/lib",
+	"/sbin", "/srv", "/sys", "/tmp", "/var", "/var/lib", "/var/lib/dbus",
 	"/var/cache", "/var/crash",
 }
 
@@ -38,7 +38,12 @@ var deviceSymlinks = [][2]string{
 }
 
 var basicBlacklist = []string{
-	"/usr/sbin", "/sbin", "/etc/X11",
+	/*"${PATH}/dbus-daemon", "${PATH}/dbus-launch", "${PATH}/pulseaudio",*/
+	"/usr/lib/gvfs",
+
+	"/usr/sbin", "/sbin",
+
+	"/etc/X11", "/etc/machine-id",
 	"${PATH}/sudo", "${PATH}/su",
 	"${PATH}/xinput", "${PATH}/strace",
 	"${PATH}/mount", "${PATH}/umount",

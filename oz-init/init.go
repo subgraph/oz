@@ -2,6 +2,7 @@ package ozinit
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +46,7 @@ type initState struct {
 	xpra      *xpra.Xpra
 	xpraReady sync.WaitGroup
 	network   *network.SandboxNetwork
+	dbusUuid  string
 }
 
 type InitData struct {
@@ -58,6 +61,12 @@ type InitData struct {
 	Network   network.SandboxNetwork
 	Display   int
 }
+
+const (
+	DBUS_VAR_REGEXP = "[A-Za-z_]+=[a-zA-Z_:-@]+=/tmp/.+"
+)
+
+var dbusValidVar = regexp.MustCompile(DBUS_VAR_REGEXP)
 
 // By convention oz-init writes log messages to stderr with a single character
 // prefix indicating the logging level.  These messages are read one line at a time
@@ -164,11 +173,19 @@ func (st *initState) runInit() {
 
 	if syscall.Sethostname([]byte(st.profile.Name)) != nil {
 		st.log.Error("Failed to set hostname to (%s)", st.profile.Name)
+		os.Exit(1)
 	}
 	if syscall.Setdomainname([]byte("local")) != nil {
 		st.log.Error("Failed to set domainname")
 	}
 	st.log.Info("Hostname set to (%s.local)", st.profile.Name)
+
+	if st.needsDbus() {
+		if err := st.setupDbus(); err != nil {
+			st.log.Error("Unable to setup dbus: %v", err)
+			os.Exit(1)
+		}
+	}
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
@@ -178,6 +195,13 @@ func (st *initState) runInit() {
 	}
 	st.xpraReady.Wait()
 	st.log.Info("XPRA started")
+
+	if st.needsDbus() {
+		if err := st.getDbusSession(); err != nil {
+			st.log.Error("Unable to get dbus session information: %v", err)
+			os.Exit(1)
+		}
+	}
 
 	fsbx := path.Join("/tmp", "oz-sandbox")
 	err = ioutil.WriteFile(fsbx, []byte(st.profile.Name), 0644)
@@ -193,6 +217,63 @@ func (st *initState) runInit() {
 		st.log.Warning("MsgServer.Run() return err: %v", err)
 	}
 	st.log.Info("oz-init exiting...")
+}
+
+func (st *initState) needsDbus() bool {
+	return (st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_FULL ||
+			st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_SPEAKER ||
+			st.profile.XServer.EnableNotifications == true)
+}
+
+func (st *initState) setupDbus() error {
+	exec.Command("/usr/bin/dbus-uuidgen", "--ensure").Run()
+	buuid, err := exec.Command("/usr/bin/dbus-uuidgen", "--get").CombinedOutput()
+	if err != nil || string(buuid) == "" {
+		return fmt.Errorf("dbus-uuidgen failed: %v %v", err, string(buuid))
+	}
+	st.dbusUuid = strings.TrimSpace(string(bytes.Trim(buuid, "\x00")))
+	st.log.Debug("dbus-uuid: %s", st.dbusUuid)
+	return nil
+}
+
+func (st *initState) getDbusSession() error {
+	args := []string{
+		"--autolaunch",
+		st.dbusUuid,
+		"--sh-syntax",
+		"--close-stderr",
+	}
+	dcmd := exec.Command("/usr/bin/dbus-launch", args...)
+	dcmd.Env = append([]string{}, st.launchEnv...)
+	st.log.Debug("%s /usr/bin/dbus-launch %s", strings.Join(dcmd.Env, " "), strings.Join(args, " "))
+	dcmd.SysProcAttr = &syscall.SysProcAttr{}
+	dcmd.SysProcAttr.Credential = &syscall.Credential{
+		Uid:    st.uid,
+		Gid:    st.gid,
+	}
+
+	benvs, err := dcmd.Output()
+	if err != nil && len(benvs) <= 1 {
+		return fmt.Errorf("dbus-launch failed: %v %v", err, string(benvs))
+	}
+	benvs = bytes.Trim(benvs, "\x00")
+	senvs := strings.TrimSpace(string(benvs))
+	senvs = strings.Replace(senvs, "export ", "", -1)
+	senvs = strings.Replace(senvs, ";", "", -1)
+	senvs = strings.Replace(senvs, "'", "", -1)
+	dbusenv := ""
+	for _, line := range strings.Split(senvs, "\n") {
+		if dbusValidVar.MatchString(line) {
+			dbusenv = line
+			break;
+		}
+	}
+	if dbusenv != "" {
+		st.launchEnv = append(st.launchEnv, dbusenv)
+		vv := strings.Split(dbusenv, "=")
+		os.Setenv(vv[0], strings.Join(vv[1:], "="))
+	}
+	return nil
 }
 
 func (st *initState) startXpraServer() {

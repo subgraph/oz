@@ -131,6 +131,12 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool) error {
 		}
 	}
 
+	tp := path.Join(fsys.Root(), "/tmp")
+	tflags := uintptr(syscall.MS_NODEV | syscall.MS_NOSUID | syscall.MS_NOEXEC | syscall.MS_REC)
+	if err := syscall.Mount("", tp, "tmpfs", tflags, "mode=777"); err != nil {
+		return err
+	}
+
 	for _, sl := range append(basicSymlinks, deviceSymlinks...) {
 		if err := fsys.CreateSymlink(sl[0], sl[1]); err != nil {
 			return err

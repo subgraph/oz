@@ -628,7 +628,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 	if st.config.UseFullDev {
 		mo.add(fs.MountFullDev)
 	}
-	mo.add(fs.MountShm, fs.MountTmp, fs.MountPts)
+	mo.add(fs.MountShm, /*fs.MountTmp, */fs.MountPts)
 	if !st.profile.NoSysProc {
 		mo.add(fs.MountProc, fs.MountSys)
 	}

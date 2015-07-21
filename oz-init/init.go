@@ -180,11 +180,9 @@ func (st *initState) runInit() {
 	}
 	st.log.Info("Hostname set to (%s.local)", st.profile.Name)
 
-	if st.needsDbus() {
-		if err := st.setupDbus(); err != nil {
-			st.log.Error("Unable to setup dbus: %v", err)
-			os.Exit(1)
-		}
+	if err := st.setupDbus(); err != nil {
+		st.log.Error("Unable to setup dbus: %v", err)
+		os.Exit(1)
 	}
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)

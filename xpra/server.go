@@ -2,9 +2,10 @@ package xpra
 
 import (
 	"fmt"
-	"github.com/subgraph/oz"
 	"os"
 	"os/exec"
+
+	"github.com/subgraph/oz"
 )
 
 var xpraServerDefaultArgs = []string{
@@ -13,16 +14,23 @@ var xpraServerDefaultArgs = []string{
 	"--input-method=keep",
 }
 
-func NewServer(config *oz.XServerConf, display uint64, workdir string) *Xpra {
+func NewServer(config *oz.XServerConf, display uint64, spath, workdir string) *Xpra {
 	x := new(Xpra)
 	x.Config = config
 	x.Display = display
 	x.WorkDir = workdir
 	x.xpraArgs = prepareServerArgs(config, display, workdir)
-	x.Process = exec.Command("/usr/bin/xpra", x.xpraArgs...)
+
+	x.xpraArgs = append([]string{"-b", "/usr/bin/xpra"}, x.xpraArgs...)
+
+	x.Process = exec.Command(spath, x.xpraArgs...)
 	x.Process.Env = append(os.Environ(),
 		"TMPDIR="+workdir,
 	)
+
+	if err := writeFakeProfile(x.Process); err != nil {
+		return nil
+	}
 
 	return x
 }
@@ -30,15 +38,15 @@ func NewServer(config *oz.XServerConf, display uint64, workdir string) *Xpra {
 func prepareServerArgs(config *oz.XServerConf, display uint64, workdir string) []string {
 	args := getDefaultArgs(config)
 	args = append(args, xpraServerDefaultArgs...)
-	args = append(args,
-		fmt.Sprintf("--socket-dir=%s", workdir),
-		"start",
-		fmt.Sprintf(":%d", display),
-	)
 	if config.AudioMode == oz.PROFILE_AUDIO_FULL || config.AudioMode == oz.PROFILE_AUDIO_SPEAKER {
 		args = append(args, "--pulseaudio")
 	} else {
 		args = append(args, "--no-pulseaudio")
 	}
+	args = append(args,
+		fmt.Sprintf("--socket-dir=%s", workdir),
+		"start",
+		fmt.Sprintf(":%d", display),
+	)
 	return args
 }

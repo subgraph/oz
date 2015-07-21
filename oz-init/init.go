@@ -243,7 +243,7 @@ func (st *initState) getDbusSession() error {
 	}
 	dcmd := exec.Command("/usr/bin/dbus-launch", args...)
 	dcmd.Env = append([]string{}, st.launchEnv...)
-	st.log.Debug("%s /usr/bin/dbus-launch %s", strings.Join(dcmd.Env, " "), strings.Join(args, " "))
+	//st.log.Debug("%s /usr/bin/dbus-launch %s", strings.Join(dcmd.Env, " "), strings.Join(args, " "))
 	dcmd.SysProcAttr = &syscall.SysProcAttr{}
 	dcmd.SysProcAttr.Credential = &syscall.Credential{
 		Uid:    st.uid,
@@ -281,10 +281,16 @@ func (st *initState) startXpraServer() {
 	}
 	workdir := path.Join(st.user.HomeDir, ".Xoz", st.profile.Name)
 	st.log.Info("xpra work dir is %s", workdir)
-	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), workdir)
+	spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), spath, workdir)
+	//st.log.Debug("%s %s", strings.Join(xpra.Process.Env, " "), strings.Join(xpra.Process.Args, " "))
+	if xpra == nil {
+		st.log.Error("Error creating xpra server command")
+		os.Exit(1)
+	}
 	p, err := xpra.Process.StderrPipe()
 	if err != nil {
-		st.log.Warning("Error creating stderr pipe for xpra output: %v", err)
+		st.log.Error("Error creating stderr pipe for xpra output: %v", err)
 		os.Exit(1)
 	}
 	go st.readXpraOutput(p)

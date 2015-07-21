@@ -22,16 +22,15 @@ func createLogger() *logging.Logger {
 	return l
 }
 
-func Main() {
-	log := createLogger()
+var log *logging.Logger
 
+func init() {
+	log = createLogger()
+}
+
+func Main() {
 	if len(os.Args) < 3 {
 		log.Error("seccomp-wrapper: Not enough arguments.")
-		os.Exit(1)
-	}
-
-	if os.Getppid() != 1 {
-		log.Error("oz-seccomp wrapper must be called from oz-init!")
 		os.Exit(1)
 	}
 
@@ -54,14 +53,7 @@ func Main() {
 		log.Error("unable to decode profile data: %v", err)
 		os.Exit(1)
 	}
-/*
-	p, err := loadProfile(config.ProfileDir, pname)
 
-	if err != nil {
-		log.Error("Could not load profile %s: %v", pname, err)
-		os.Exit(1)
-	}
-*/
 	switch os.Args[1] {
 	case "-w":
 		if p.Seccomp.Seccomp_Whitelist == "" {

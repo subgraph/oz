@@ -406,12 +406,14 @@ func (sbox *Sandbox) startXpraClient() {
 		&sbox.profile.XServer,
 		uint64(sbox.display),
 		sbox.cred,
+		path.Join(sbox.daemon.config.PrefixPath, "bin", "oz-seccomp"),
 		xpraPath,
 		sbox.profile.Name,
 		sbox.daemon.log)
 
 	sbox.xpra.Process.Env = append(sbox.rawEnv, sbox.xpra.Process.Env...)
 
+	//sbox.daemon.log.Debug("%s %s", strings.Join(sbox.xpra.Process.Env, " "), strings.Join(sbox.xpra.Process.Args, " "))
 	if sbox.daemon.config.LogXpra {
 		sbox.setupXpraLogging()
 	}

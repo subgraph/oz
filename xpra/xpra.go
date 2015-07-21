@@ -1,15 +1,19 @@
 package xpra
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/subgraph/oz"
+	"io"
 	"os"
 	"os/exec"
 	"os/user"
 	"path"
 	"strconv"
 	"syscall"
+
+	"github.com/subgraph/oz"
 )
 
 type Xpra struct {
@@ -120,4 +124,22 @@ func userIds(user *user.User) (int, int, error) {
 		return -1, -1, errors.New("failed to parse gid from user struct: " + err.Error())
 	}
 	return uid, gid, nil
+}
+
+func writeFakeProfile(cmd *exec.Cmd) error {
+	pi, err := cmd.StdinPipe()
+	if err != nil {
+		return nil
+	}
+	emptyProfile := new(oz.Profile)
+	emptyProfile.Seccomp.Mode = "blacklist"
+	emptyProfile.Seccomp.Enforce = true
+	jdata, err := json.Marshal(emptyProfile)
+	if err != nil {
+		return err
+	}
+	io.Copy(pi, bytes.NewBuffer(jdata))
+	pi.Close()
+
+	return nil
 }

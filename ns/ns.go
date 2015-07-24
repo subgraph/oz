@@ -28,12 +28,14 @@ var (
 
 func init() {
 	Types = []Namespace{
-		Namespace{Path: "ns/user", Type: syscall.CLONE_NEWUSER},
 		Namespace{Path: "ns/ipc", Type: syscall.CLONE_NEWIPC},
 		Namespace{Path: "ns/uts", Type: syscall.CLONE_NEWUTS},
 		Namespace{Path: "ns/net", Type: syscall.CLONE_NEWNET},
 		Namespace{Path: "ns/pid", Type: syscall.CLONE_NEWPID},
-		Namespace{Path: "ns/mnt", Type: syscall.CLONE_NEWNS},
+		// Cannot be used from golang as they can one be entered from
+		//  single threaded processes. See: setns(2)
+		//Namespace{Path: "ns/mnt", Type: syscall.CLONE_NEWNS},
+		//Namespace{Path: "ns/user", Type: syscall.CLONE_NEWUSER},
 	}
 }
 

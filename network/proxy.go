@@ -1,12 +1,12 @@
 package network
 
 import (
-	//Builtin
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/subgraph/oz/ns"
@@ -24,9 +24,11 @@ const (
 type ProtoType string
 
 const (
-	PROTO_TCP    ProtoType = "tcp"
-	PROTO_UDP    ProtoType = "udp"
-	PROTO_SOCKET ProtoType = "socket"
+	PROTO_TCP        ProtoType = "tcp"
+	PROTO_UDP        ProtoType = "udp"
+	PROTO_UNIX       ProtoType = "unix"
+	PROTO_UNIXGRAM   ProtoType = "unixgram"
+	PROTO_UNIXPACKET ProtoType = "unixpacket"
 )
 
 // Socket list, used to hold ports that should be forwarded
@@ -40,13 +42,10 @@ type ProxyConfig struct {
 	// TCP or UDP port number
 	Port int
 
-	// Unix socket to attach to
-	//  applies to proto: socket only
-	Socket string
-
 	// Optional: Destination address
 	// In client mode: the host side address to connect to
 	// In server mode: the sandbox side address to bind to
+	// For unix sockets this is an abstract path
 	// If left empty, localhost is used
 	Destination string
 }
@@ -55,15 +54,18 @@ var wgProxy sync.WaitGroup
 
 func ProxySetup(childPid int, ozSockets []ProxyConfig, log *logging.Logger, ready sync.WaitGroup) error {
 	for _, socket := range ozSockets {
-		if socket.Nettype == "" || socket.Nettype == PROXY_CLIENT {
-			err := newProxyClient(childPid, socket.Proto, socket.Destination, socket.Port, log, ready)
+		if socket.Nettype == "" {
+			continue
+		}
+		if socket.Nettype == PROXY_CLIENT {
+			err := newProxyClient(childPid, &socket, log, ready)
 			if err != nil {
-				return fmt.Errorf("Unable to setup client socket forwarding %+v, %s", socket, err)
+				return fmt.Errorf("%+v, %s", socket, err)
 			}
 		} else if socket.Nettype == PROXY_SERVER {
-			err := newProxyServer(childPid, socket.Proto, socket.Destination, socket.Port, log, ready)
+			err := newProxyServer(childPid, &socket, log, ready)
 			if err != nil {
-				return fmt.Errorf("Unable to setup server socket forwarding %+s, %s", socket, err)
+				return fmt.Errorf("%+s, %s", socket, err)
 			}
 		}
 	}
@@ -86,17 +88,27 @@ func proxyClientConn(conn *net.Conn, proto ProtoType, rAddr string, ready sync.W
 	return nil
 }
 
-func newProxyClient(pid int, proto ProtoType, dest string, port int, log *logging.Logger, ready sync.WaitGroup) error {
-	if dest == "" {
-		dest = "127.0.0.1"
+func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready sync.WaitGroup) error {
+	if config.Destination == "" {
+		config.Destination = "127.0.0.1"
 	}
 
-	lAddr := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
-	rAddr := net.JoinHostPort(dest, strconv.Itoa(port))
+	var lAddr, rAddr string
+	if !strings.HasPrefix(string(config.Proto), "unix") {
+		lAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(config.Port))
+		rAddr = net.JoinHostPort(config.Destination, strconv.Itoa(config.Port))
+	} else {
+		if !strings.HasPrefix(config.Destination, "@") {
+			log.Warning("Only abstract unix socket are supported!")
+			return nil
+		}
+		lAddr = config.Destination
+		rAddr = config.Destination
+	}
 
-	log.Info("Starting socket client forwarding: %s://%s.", proto, rAddr)
+	log.Info("Starting socket client forwarding: %s://%s.", config.Proto, rAddr)
 
-	listen, err := proxySocketListener(pid, proto, lAddr)
+	listen, err := proxySocketListener(pid, config.Proto, lAddr)
 	if err != nil {
 		return err
 	}
@@ -112,7 +124,7 @@ func newProxyClient(pid int, proto ProtoType, dest string, port int, log *loggin
 				continue
 			}
 
-			go proxyClientConn(&conn, proto, rAddr, ready)
+			go proxyClientConn(&conn, config.Proto, rAddr, ready)
 		}
 	}()
 
@@ -159,17 +171,28 @@ func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log
 	return nil
 }
 
-func newProxyServer(pid int, proto ProtoType, dest string, port int, log *logging.Logger, ready sync.WaitGroup) error {
-	if dest == "" {
-		dest = "127.0.0.1"
+func newProxyServer(pid int, config *ProxyConfig, log *logging.Logger, ready sync.WaitGroup) error {
+	if config.Destination == "" {
+		config.Destination = "127.0.0.1"
 	}
 
-	lAddr := net.JoinHostPort(dest, strconv.Itoa(port))
-	rAddr := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
 
-	log.Info("Starting socket server forwarding: %s://%s.", proto, lAddr)
+	var lAddr, rAddr string
+	if !strings.HasPrefix(string(config.Proto), "unix") {
+		lAddr = net.JoinHostPort(config.Destination, strconv.Itoa(config.Port))
+		rAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(config.Port))
+	} else {
+		if !strings.HasPrefix(config.Destination, "@") {
+			log.Warning("Only abstract unix socket are supported!")
+			return nil
+		}
+		lAddr = config.Destination
+		rAddr = config.Destination
+	}
 
-	listen, err := net.Listen(string(proto), lAddr)
+	log.Info("Starting socket server forwarding: %s://%s.", config.Proto, lAddr)
+
+	listen, err := net.Listen(string(config.Proto), lAddr)
 	if err != nil {
 		return err
 	}
@@ -185,7 +208,7 @@ func newProxyServer(pid int, proto ProtoType, dest string, port int, log *loggin
 				continue
 			}
 
-			go proxyServerConn(pid, &conn, proto, rAddr, log, ready)
+			go proxyServerConn(pid, &conn, config.Proto, rAddr, log, ready)
 		}
 	}()
 

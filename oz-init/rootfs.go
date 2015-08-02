@@ -2,10 +2,13 @@ package ozinit
 
 import (
 	"fmt"
-	"github.com/subgraph/oz/fs"
+
 	"os"
 	"path"
+	"strconv"
 	"syscall"
+
+	"github.com/subgraph/oz/fs"
 )
 
 var basicBindDirs = []string{
@@ -15,7 +18,7 @@ var basicBindDirs = []string{
 var basicEmptyDirs = []string{
 	"/boot", "/dev", "/home", "/media", "/mnt",
 	"/opt", "/proc", "/root", "/run", "/run/lock", "/run/user",
-	"/sbin", "/srv", "/sys", "/tmp", "/var", "/var/lib",
+	"/sbin", "/srv", "/sys", "/tmp", "/var", "/var/lib", "/var/lib/dbus",
 	"/var/cache", "/var/crash",
 }
 
@@ -35,7 +38,12 @@ var deviceSymlinks = [][2]string{
 }
 
 var basicBlacklist = []string{
-	"/usr/sbin", "/sbin", "/etc/X11",
+	/*"${PATH}/dbus-daemon", "${PATH}/dbus-launch", "${PATH}/pulseaudio",*/
+	"/usr/lib/gvfs",
+
+	"/usr/sbin", "/sbin",
+
+	"/etc/X11", "/etc/machine-id",
 	"${PATH}/sudo", "${PATH}/su",
 	"${PATH}/xinput", "${PATH}/strace",
 	"${PATH}/mount", "${PATH}/umount",
@@ -72,7 +80,7 @@ func _makedev(x, y int) int {
 	return (((x) << 8) | (y))
 }
 
-func setupRootfs(fsys *fs.Filesystem, useFullDev bool) error {
+func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool) error {
 	if err := os.MkdirAll(fsys.Root(), 0755); err != nil {
 		return fmt.Errorf("could not create rootfs path '%s': %v", fsys.Root(), err)
 	}
@@ -102,6 +110,14 @@ func setupRootfs(fsys *fs.Filesystem, useFullDev bool) error {
 		}
 	}
 
+	rup := path.Join(fsys.Root(), "/run/user", strconv.FormatUint(uint64(uid), 10))
+	if err := os.MkdirAll(rup, 0700); err != nil {
+		return fmt.Errorf("failed to create user rundir: %v", err)
+	}
+	if err := os.Chown(rup, int(uid), int(gid)); err != nil {
+		return fmt.Errorf("failed to chiwn user rundir: %v", err)
+	}
+
 	dp := path.Join(fsys.Root(), "dev")
 	if err := syscall.Mount("", dp, "tmpfs", syscall.MS_NOSUID|syscall.MS_NOEXEC, "mode=755"); err != nil {
 		return err
@@ -113,6 +129,12 @@ func setupRootfs(fsys *fs.Filesystem, useFullDev bool) error {
 				return err
 			}
 		}
+	}
+
+	tp := path.Join(fsys.Root(), "/tmp")
+	tflags := uintptr(syscall.MS_NODEV | syscall.MS_NOSUID | syscall.MS_NOEXEC | syscall.MS_REC)
+	if err := syscall.Mount("", tp, "tmpfs", tflags, "mode=777"); err != nil {
+		return err
 	}
 
 	for _, sl := range append(basicSymlinks, deviceSymlinks...) {
@@ -132,3 +154,4 @@ func setupRootfs(fsys *fs.Filesystem, useFullDev bool) error {
 	}
 	return nil
 }
+

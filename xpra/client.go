@@ -21,13 +21,16 @@ var xpraClientDefaultArgs = []string{
 	"--no-keyboard-sync",
 }
 
-func NewClient(config *oz.XServerConf, display uint64, cred *syscall.Credential, workdir string, hostname string, log *logging.Logger) *Xpra {
+func NewClient(config *oz.XServerConf, display uint64, cred *syscall.Credential, spath, workdir, hostname string, log *logging.Logger) *Xpra {
 	x := new(Xpra)
 	x.Config = config
 	x.Display = display
 	x.WorkDir = workdir
 	x.xpraArgs = prepareClientArgs(config, display, workdir, log)
-	x.Process = exec.Command("/usr/bin/xpra", x.xpraArgs...)
+
+	x.xpraArgs = append([]string{"-b", "/usr/bin/xpra"}, x.xpraArgs...)
+
+	x.Process = exec.Command(spath, x.xpraArgs...)
 	x.Process.SysProcAttr = &syscall.SysProcAttr{
 		Credential: cred,
 	}
@@ -36,6 +39,11 @@ func NewClient(config *oz.XServerConf, display uint64, cred *syscall.Credential,
 		fmt.Sprintf("TMPDIR=%s", workdir),
 		fmt.Sprintf("XPRA_SOCKET_HOSTNAME=%s", hostname),
 	}
+
+	if err := writeFakeProfile(x.Process); err != nil {
+		return nil
+	}
+
 	return x
 }
 

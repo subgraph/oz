@@ -2,6 +2,7 @@ package ozinit
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +46,7 @@ type initState struct {
 	xpra      *xpra.Xpra
 	xpraReady sync.WaitGroup
 	network   *network.SandboxNetwork
+	dbusUuid  string
 }
 
 type InitData struct {
@@ -58,6 +61,12 @@ type InitData struct {
 	Network   network.SandboxNetwork
 	Display   int
 }
+
+const (
+	DBUS_VAR_REGEXP = "[A-Za-z_]+=[a-zA-Z_:-@]+=/tmp/.+"
+)
+
+var dbusValidVar = regexp.MustCompile(DBUS_VAR_REGEXP)
 
 // By convention oz-init writes log messages to stderr with a single character
 // prefix indicating the logging level.  These messages are read one line at a time
@@ -164,11 +173,17 @@ func (st *initState) runInit() {
 
 	if syscall.Sethostname([]byte(st.profile.Name)) != nil {
 		st.log.Error("Failed to set hostname to (%s)", st.profile.Name)
+		os.Exit(1)
 	}
 	if syscall.Setdomainname([]byte("local")) != nil {
 		st.log.Error("Failed to set domainname")
 	}
 	st.log.Info("Hostname set to (%s.local)", st.profile.Name)
+
+	if err := st.setupDbus(); err != nil {
+		st.log.Error("Unable to setup dbus: %v", err)
+		os.Exit(1)
+	}
 
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
@@ -178,6 +193,13 @@ func (st *initState) runInit() {
 	}
 	st.xpraReady.Wait()
 	st.log.Info("XPRA started")
+
+	if st.needsDbus() {
+		if err := st.getDbusSession(); err != nil {
+			st.log.Error("Unable to get dbus session information: %v", err)
+			os.Exit(1)
+		}
+	}
 
 	fsbx := path.Join("/tmp", "oz-sandbox")
 	err = ioutil.WriteFile(fsbx, []byte(st.profile.Name), 0644)
@@ -195,6 +217,63 @@ func (st *initState) runInit() {
 	st.log.Info("oz-init exiting...")
 }
 
+func (st *initState) needsDbus() bool {
+	return (st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_FULL ||
+			st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_SPEAKER ||
+			st.profile.XServer.EnableNotifications == true)
+}
+
+func (st *initState) setupDbus() error {
+	exec.Command("/usr/bin/dbus-uuidgen", "--ensure").Run()
+	buuid, err := exec.Command("/usr/bin/dbus-uuidgen", "--get").CombinedOutput()
+	if err != nil || string(buuid) == "" {
+		return fmt.Errorf("dbus-uuidgen failed: %v %v", err, string(buuid))
+	}
+	st.dbusUuid = strings.TrimSpace(string(bytes.Trim(buuid, "\x00")))
+	st.log.Debug("dbus-uuid: %s", st.dbusUuid)
+	return nil
+}
+
+func (st *initState) getDbusSession() error {
+	args := []string{
+		"--autolaunch",
+		st.dbusUuid,
+		"--sh-syntax",
+		"--close-stderr",
+	}
+	dcmd := exec.Command("/usr/bin/dbus-launch", args...)
+	dcmd.Env = append([]string{}, st.launchEnv...)
+	//st.log.Debug("%s /usr/bin/dbus-launch %s", strings.Join(dcmd.Env, " "), strings.Join(args, " "))
+	dcmd.SysProcAttr = &syscall.SysProcAttr{}
+	dcmd.SysProcAttr.Credential = &syscall.Credential{
+		Uid:    st.uid,
+		Gid:    st.gid,
+	}
+
+	benvs, err := dcmd.Output()
+	if err != nil && len(benvs) <= 1 {
+		return fmt.Errorf("dbus-launch failed: %v %v", err, string(benvs))
+	}
+	benvs = bytes.Trim(benvs, "\x00")
+	senvs := strings.TrimSpace(string(benvs))
+	senvs = strings.Replace(senvs, "export ", "", -1)
+	senvs = strings.Replace(senvs, ";", "", -1)
+	senvs = strings.Replace(senvs, "'", "", -1)
+	dbusenv := ""
+	for _, line := range strings.Split(senvs, "\n") {
+		if dbusValidVar.MatchString(line) {
+			dbusenv = line
+			break;
+		}
+	}
+	if dbusenv != "" {
+		st.launchEnv = append(st.launchEnv, dbusenv)
+		vv := strings.Split(dbusenv, "=")
+		os.Setenv(vv[0], strings.Join(vv[1:], "="))
+	}
+	return nil
+}
+
 func (st *initState) startXpraServer() {
 	if st.user == nil {
 		st.log.Warning("Cannot start xpra server because no user is set")
@@ -202,10 +281,16 @@ func (st *initState) startXpraServer() {
 	}
 	workdir := path.Join(st.user.HomeDir, ".Xoz", st.profile.Name)
 	st.log.Info("xpra work dir is %s", workdir)
-	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), workdir)
+	spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), spath, workdir)
+	//st.log.Debug("%s %s", strings.Join(xpra.Process.Env, " "), strings.Join(xpra.Process.Args, " "))
+	if xpra == nil {
+		st.log.Error("Error creating xpra server command")
+		os.Exit(1)
+	}
 	p, err := xpra.Process.StderrPipe()
 	if err != nil {
-		st.log.Warning("Error creating stderr pipe for xpra output: %v", err)
+		st.log.Error("Error creating stderr pipe for xpra output: %v", err)
 		os.Exit(1)
 	}
 	go st.readXpraOutput(p)
@@ -299,8 +384,17 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST ||
-		st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
-		cmd.Env = append(cmd.Env, "_OZ_PROFILE="+st.profile.Name)
+	st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
+		pi, err := cmd.StdinPipe()
+		if err != nil {
+			return nil, fmt.Errorf("error creating stdin pipe for seccomp process: %v", err)
+		}
+		jdata, err := json.Marshal(st.profile)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to marshal seccomp state: %+v", err)
+		}
+		io.Copy(pi, bytes.NewBuffer(jdata))
+		pi.Close()
 	}
 
 	cmd.Args = append(cmd.Args, cmdArgs...)
@@ -500,7 +594,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 
 	fs := fs.NewFilesystem(st.config, st.log)
 
-	if err := setupRootfs(fs, st.config.UseFullDev); err != nil {
+	if err := setupRootfs(fs, st.uid, st.gid, st.config.UseFullDev); err != nil {
 		return err
 	}
 
@@ -534,7 +628,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 	if st.config.UseFullDev {
 		mo.add(fs.MountFullDev)
 	}
-	mo.add(fs.MountShm, fs.MountTmp, fs.MountPts)
+	mo.add(fs.MountShm, /*fs.MountTmp, */fs.MountPts)
 	if !st.profile.NoSysProc {
 		mo.add(fs.MountProc, fs.MountSys)
 	}

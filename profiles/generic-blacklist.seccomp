@@ -3,7 +3,6 @@ add_key: 1
 delete_module: 1
 finit_module: 1
 get_mempolicy: 1
-get_robust_list: 1
 init_module: 1
 io_cancel: 1
 io_destroy: 1
@@ -27,6 +26,7 @@ quotactl: 1
 remap_file_pages: 1
 request_key: 1
 set_mempolicy: 1
+get_robust_list: 1
 set_robust_list: 1
 set_thread_area: 1
 swapoff: 1

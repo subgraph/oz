@@ -279,7 +279,13 @@ func isPrintableASCII(s string) bool {
 func getProcessCmdLine(pid int) string {
 	path := "/proc/" + strconv.Itoa(pid) + "/cmdline"
 	cmdline, err := ioutil.ReadFile(path)
-
+	for b := range cmdline {
+		if b < (len(cmdline) - 1) {
+			if cmdline[b] == 0x00 {
+				cmdline[b] = 0x20
+			}
+		}
+	}
 	if err != nil {
 		log.Error("Error (read): %v", err)
 		return "unknown"

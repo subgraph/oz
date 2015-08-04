@@ -52,7 +52,7 @@ func Main() {
 	if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
 		log.Error("unable to decode profile data: %v", err)
 		os.Exit(1)
-	}
+	} 
 
 	switch os.Args[1] {
 	case "-w":
@@ -60,7 +60,7 @@ func Main() {
 			log.Error("No seccomp policy file.")
 			os.Exit(1)
 		}
-		filter, err := seccomp.Compile(p.Seccomp.Seccomp_Whitelist)
+		filter, err := seccomp.Compile(p.Seccomp.Seccomp_Whitelist, p.Seccomp.Enforce)
 		if err != nil {
 			log.Error("Seccomp filter compile failed: %v", err)
 			os.Exit(1)
@@ -72,14 +72,14 @@ func Main() {
 		}
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
-			log.Error("Error (exec): %v", err)
+			log.Error("Error (exec): %v %s", err, cmd)
 			os.Exit(1)
 		}
 	case "-b":
 		if p.Seccomp.Seccomp_Blacklist == "" {
 			p.Seccomp.Seccomp_Blacklist = path.Join(config.EtcPrefix, "blacklist-generic.seccomp")
 		}
-		filter, err := seccomp.CompileBlacklist(p.Seccomp.Seccomp_Blacklist)
+		filter, err := seccomp.CompileBlacklist(p.Seccomp.Seccomp_Blacklist, p.Seccomp.Enforce)
 		if err != nil {
 			log.Error("Seccomp blacklist filter compile failed: %v", err)
 			os.Exit(1)
@@ -91,13 +91,14 @@ func Main() {
 		}
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
-			log.Error("Error (exec): %v", err)
+			log.Error("Error (exec): %v %s", err, cmd)
 			os.Exit(1)
 		}
 	default:
 		fmt.Println("Bad switch.")
 		os.Exit(1)
 	}
+
 }
 
 func loadProfile(dir, name string) (*oz.Profile, error) {
@@ -112,4 +113,3 @@ func loadProfile(dir, name string) (*oz.Profile, error) {
 	}
 	return nil, fmt.Errorf("no profile named '%s'", name)
 }
-

@@ -43,8 +43,6 @@ func Tracer() {
 		os.Exit(1)
 	}
 
-	log := createLogger()
-
 	var proc_attr syscall.ProcAttr
 	var sys_attr syscall.SysProcAttr
 

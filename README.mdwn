@@ -31,7 +31,7 @@ It is highly recommend that you run it in conjunction with [grsecurity](https://
 ### Dependencies
 
 ```
-$ sudo apt-get install golang xpra bridge-utils
+$ sudo apt-get install golang xpra bridge-utils ebtables
 ```
 
 You need golang version 1.4.

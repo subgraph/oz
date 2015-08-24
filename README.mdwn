@@ -34,6 +34,8 @@ It is highly recommend that you run it in conjunction with [grsecurity](https://
 $ sudo apt-get install golang xpra bridge-utils
 ```
 
+You need golang version 1.4.
+
 You must also have the `veth` and `bridge` kernel module loaded to use *bridge network mode*.
 
 ### Grsec

@@ -104,6 +104,8 @@ $ $GOPATH/bin/godep go install ./...
 $ sudo cp $GOPATH/bin/oz* /usr/local/bin
 $ sudo mkdir -p /var/lib/oz/cells.d
 $ sudo cp $GOPATH/src/github.com/subgraph/oz/profiles/*.json /var/lib/oz/cells.d/
+$ sudo mkdir /etc/oz
+$ sudo cp $GOPATH/src/github.com/subgraph/oz/profiles/generic-blacklist.seccomp /etc/oz/blacklist-generic.seccomp
 ```
 
 ## Enabling a profile

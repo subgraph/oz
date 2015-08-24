@@ -25,6 +25,5 @@
 	"mode":"whitelist"
 	, "enforce": true
 	, "seccomp_whitelist":"/var/lib/oz/cells.d/eog-whitelist.seccomp"
-	, "seccomp_blacklist":""
 }
 }

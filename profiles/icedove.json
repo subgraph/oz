@@ -2,7 +2,7 @@
 "path": "/usr/bin/icedove"
 , "xserver": {
 	"enabled": true
-	, "enable_tray": true
+	, "enable_tray": false
 	, "tray_icon": "/usr/share/icons/hicolor/scalable/apps/icedove.svg"
 }
 , "networking":{
@@ -14,7 +14,7 @@
 , "whitelist": [
 	{"path":"/run/resolvconf"}
 	, {"path":"/run/user/${UID}/keyring"}
-	, {"path":"/tmp/gpg-*"}
+	, {"path":"/tmp/gpg-*/S.gpg-agent"}
 	, {"path":"${HOME}/.cache/icedove"}
 	, {"path":"${HOME}/.gnupg"}
 	, {"path":"${HOME}/..thunderbird"}

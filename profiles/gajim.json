@@ -7,8 +7,9 @@
 ]
 , "xserver": {
 	"enabled": true
-	, "enable_tray": true
+	, "enable_tray": false
 	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/gajim.svg"
+	, "enable_notifications": true
 }
 , "networking":{
 	"type":"empty"
@@ -17,17 +18,17 @@
 	]
 }
 , "whitelist": [
-	{"path":"/run/resolvconf"}
-	, {"path":"/run/user/${UID}/keyring-*"}
+	{"path":"/run/user/${UID}/keyring/control"}
 	, {"path":"${HOME}/.local/share/gajim"}
 	, {"path":"${HOME}/.cache/gajim"}
 	, {"path":"${HOME}/.config/gajim"}
 	, {"path":"${HOME}/.local/share/keyrings"}
 ]
 , "blacklist": [
-	{"path":"/run/user/${UID}/keyring-*/ssh"}
-	, {"path":"/run/user/${UID}/keyring-*/pkcs11"}
-	, {"path":"/run/user/${UID}/keyring-*/gpg"}
+]
+, "environment": [
+	{"name":"GNOME_KEYRING_SOCKET", "value":"/run/user/1000/keyring/control"}
+	, {"name":"GNOME_KEYRING_PID", "value":"6"}
 ]
 , "seccomp": {
 	"mode":"blacklist"

@@ -8,7 +8,7 @@
 , "allow_files": true
 , "xserver": {
 	"enabled": true
-	, "enable_tray": true
+	, "enable_tray": false
 	, "tray_icon":"/usr/share/icons/hicolor/48x48/apps/evince.png"
 }
 , "networking":{
@@ -25,7 +25,7 @@
 ]
 , "seccomp": {
 	"mode":"whitelist"
-	, "enforce": false
+	, "enforce": true
 	, "seccomp_whitelist":"/var/lib/oz/cells.d/evince-whitelist.seccomp"
 	, "seccomp_blacklist":"/var/lib/oz/cells.d/evince-blacklist.seccomp"
 	}

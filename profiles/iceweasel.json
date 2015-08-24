@@ -2,7 +2,8 @@
 "path": "/usr/bin/iceweasel"
 , "xserver": {
 	"enabled": true
-	, "enable_tray": true
+	, "audio_mode": "none"
+	, "enable_tray": false
 	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/iceweasel.svg"
 }
 , "networking":{
@@ -13,8 +14,8 @@
 }
 , "whitelist": [
 	{"path":"/run/resolvconf"}
-	, {"path":"${HOME}/.mozilla"}
-	, {"path":"${HOME}/.cache/mozilla"}
+	, {"path":"${HOME}/.mozilla", "can_create": true}
+	, {"_path":"${HOME}/.cache/mozilla"}
 	, {"path":"${HOME}/Downloads/"}
 
 	, {"path":"${HOME}/.config/gtk-3.0"}

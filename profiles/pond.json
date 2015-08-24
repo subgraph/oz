@@ -2,7 +2,7 @@
 "path": "/usr/local/bin/pond"
 , "xserver": {
 	"enabled": true
-	, "enable_tray": true
+	, "enable_tray": false
 	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/office-mail.svg"
 	, "window_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/office-mail.svg"
 }

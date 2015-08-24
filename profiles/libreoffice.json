@@ -19,7 +19,7 @@
 , "allow_files": true
 , "xserver": {
 	"enabled": true
-	, "enable_tray": true
+	, "enable_tray": false
 	, "tray_icon":"/usr/share/icons/gnome/scalable/apps/libreoffice-startcenter.svg"
 	, "window_icon":"/usr/share/icons/gnome/scalable/apps/libreoffice-startcenter.svg"
 }

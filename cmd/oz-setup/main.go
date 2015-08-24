@@ -395,10 +395,10 @@ func loadConfig() *oz.Config {
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Fprintln(os.Stderr, "Configuration file (%s) is missing, using defaults.", oz.DefaultConfigPath)
+			fmt.Fprintf(os.Stderr, "Configuration file (%s) is missing, using defaults.\n", oz.DefaultConfigPath)
 			config = oz.NewDefaultConfig()
 		} else {
-			fmt.Fprintln(os.Stderr, "Could not load configuration: %s", oz.DefaultConfigPath, err)
+			fmt.Fprintf(os.Stderr, "Could not load configuration `%s`: %v", oz.DefaultConfigPath, err)
 			os.Exit(1)
 		}
 	}

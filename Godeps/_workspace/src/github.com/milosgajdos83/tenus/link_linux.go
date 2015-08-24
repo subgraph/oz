@@ -6,8 +6,8 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/milosgajdos83/libcontainer-milosgajdos83/system"
-	"github.com/milosgajdos83/libcontainer-milosgajdos83/netlink"
+	"github.com/opencontainers/runc/libcontainer/netlink"
+	"github.com/opencontainers/runc/libcontainer/system"
 )
 
 // LinkOptions allows you to specify network link options.
@@ -79,6 +79,7 @@ func NewLink(ifcName string) (Linker, error) {
 		ifc: newIfc,
 	}, nil
 }
+
 // NewLink creates new network link on Linux host.
 //
 // It is equivalent of running: ip link add name ${ifcName} type dummy
@@ -99,6 +100,7 @@ func NewLinkFrom(ifcName string) (Linker, error) {
 		ifc: newIfc,
 	}, nil
 }
+
 
 // NewLinkWithOptions creates new network link on Linux host and sets some of its network
 // parameters passed in as LinkOptions
@@ -252,7 +254,7 @@ func (l *Link) SetLinkNsToDocker(name string, dockerHost string) error {
 	return l.SetLinkNetNsPid(pid)
 }
 
-func RenameInterface(old string, newName string) error {
+func RenameInterfaceByName(old string, newName string) error {
 	iface, err := net.InterfaceByName(old)
 	if err != nil {
 		return err

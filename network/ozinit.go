@@ -77,7 +77,7 @@ func setupVEth(stn *SandboxNetwork) error {
 	}
 
 	// Rename the interface to a standard eth0 (not really a necessity)
-	if err = tenus.RenameInterface(stn.VethGuest, ozDefaultInterfaceInternal); err != nil {
+	if err = tenus.RenameInterfaceByName(stn.VethGuest, ozDefaultInterfaceInternal); err != nil {
 		return fmt.Errorf("Unable to rename interface %s, %s.", stn.VethGuest, err)
 	}
 

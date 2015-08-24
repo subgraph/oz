@@ -97,7 +97,7 @@ func mount(fpath string, readonly bool, fsys *fs.Filesystem, log *logging.Logger
 		log.Error("%v", err)
 		os.Exit(1)
 	}
-	flags := fs.BindCanCreate
+	flags := 0//fs.BindCanCreate
 	if readonly {
 		flags |= fs.BindReadOnly
 	}

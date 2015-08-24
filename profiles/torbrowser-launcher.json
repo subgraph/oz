@@ -19,6 +19,7 @@
 	, {"_path":"${HOME}/.cache/torbrowser"}
 	, {"path":"${HOME}/.config/torbrowser"}
 	, {"path":"${HOME}/Downloads/TorBrowser"}
+	, {"path":"/var/run/tor/control.authcookie"}
 ]
 , "blacklist": [
 ]

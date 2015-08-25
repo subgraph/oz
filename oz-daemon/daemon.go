@@ -186,8 +186,7 @@ func (d *daemonState) cacheSystemGroups() error {
 
 
 func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
-	d.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
-
+	d.Debug("Child process pid=%d exited from daemon with status %d", pid, wstatus.ExitStatus())
 	for _, sbox := range d.sandboxes {
 		if sbox.init.Process.Pid == pid {
 			sbox.remove(d.log)

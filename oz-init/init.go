@@ -547,7 +547,7 @@ func (st *initState) removeChildProcess(pid int) bool {
 }
 
 func (st *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
-	st.log.Debug("Child process pid=%d exited with status %d", pid, wstatus.ExitStatus())
+	st.log.Debug("Child process pid=%d exited from init with status %d", pid, wstatus.ExitStatus())
 	st.removeChildProcess(pid)
 }
 

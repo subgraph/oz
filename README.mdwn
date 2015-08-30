@@ -103,7 +103,7 @@ $ cd $GOPATH/src/github.com/subgraph/oz/
 $ $GOPATH/bin/godep go install ./...
 $ sudo cp $GOPATH/bin/oz* /usr/local/bin
 $ sudo mkdir -p /var/lib/oz/cells.d
-$ sudo cp $GOPATH/src/github.com/subgraph/oz/profiles/*.json /var/lib/oz/cells.d/
+$ sudo cp $GOPATH/src/github.com/subgraph/oz/profiles/* /var/lib/oz/cells.d/
 $ sudo mkdir /etc/oz
 $ sudo cp $GOPATH/src/github.com/subgraph/oz/profiles/generic-blacklist.seccomp /etc/oz/blacklist-generic.seccomp
 ```
@@ -227,6 +227,7 @@ The network can be configured in one of three different ways: host, bridge, and 
 
 * `empty`: the sandbox will live with an empty network namespace (ie: only `lo` interface)
 * `bridge`: the sandbox will have its own network namespace and use *veth* to join a bridge named `oz0`
+* `none`: don't even configure the loopback interface, connection proxy will be unavailable
 * `host`: the sandbox will share the network namespace with the host (usually not desirable)
 
 

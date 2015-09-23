@@ -93,154 +93,76 @@ func Tracer() {
 				}
 				continue
 			}
-			if uint32(s)>>8 == (uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8)) {
+/*
+		        if s.Signaled() == true {
+			        log.Error("Other pid signalled %v %v", pid, s) 
+				delete(children, pid)
+																			                                        continue
+																								                                }
+*/
+			switch uint32(s) >> 8 {
+
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8):
 				if err != nil {
 					log.Error("Error (ptrace): %v", err)
 					continue
 				}
 				var regs syscall.PtraceRegs
 				err = syscall.PtraceGetRegs(pid, &regs)
+
 				if err != nil {
 					log.Error("Error (ptrace): %v", err)
 				}
-				systemcall, err := syscallByNum(int(regs.Orig_rax))
+
+				systemcall, err := syscallByNum(getSyscallNumber(regs))
+
 				if err != nil {
 					log.Error("Error: %v", err)
 					continue
 				}
-				var callrep string = fmt.Sprintf("%s(", systemcall.name)
-				var reg uint64 = 0
+				log.Info(renderSyscallBasic(pid, systemcall, regs))
+				continue
 
-				for arg := range systemcall.args {
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):
+				log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 
-					if systemcall.args[arg] == 0 {
-						break
-					}
-
-					if arg > 0 {
-						callrep += fmt.Sprintf(",")
-					}
-
-					switch arg {
-					case 0:
-						reg = regs.Rdi
-					case 1:
-						reg = regs.Rsi
-					case 2:
-						reg = regs.Rdx
-					case 3:
-						reg = regs.Rcx
-					case 4:
-						reg = regs.R8
-					case 5:
-						reg = regs.R9
-					}
-					if systemcall.args[arg] == STRINGARG {
-						str, err := readStringArg(pid, uintptr(reg))
-						if err != nil {
-							log.Error("Error: %v", err)
-						} else {
-							callrep += fmt.Sprintf("\"%s\"", str)
-						}
-					} else if systemcall.args[arg] == INTARG {
-						callrep += fmt.Sprintf("%d", uint64(reg))
-					} else {
-						/* Stringify pointers in writes to stdout/stderr */
-						write, err := syscallByName("write")
-						if err != nil {
-							log.Error("Error: %v", err)
-						}
-						if systemcall.num == write.num && (regs.Rdi == uint64(syscall.Stdout) || regs.Rdi == uint64(syscall.Stderr)) {
-							str, err := readStringArg(pid, uintptr(reg))
-							if err != nil {
-								log.Error("Error %v", err)
-							} else {
-								if isPrintableASCII(str) == true {
-									callrep += fmt.Sprintf("\"%s\"", str)
-								} else {
-									callrep += fmt.Sprintf("0x%X", uintptr(reg))
-								}
-							}
-						} else {
-							callrep += fmt.Sprintf("0x%X", uintptr(reg))
-						}
-					}
-
-				}
-				callrep += ")"
-				log.Info("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v): \n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), systemcall.name, regs.Orig_rax, callrep)
-			} else {
-				if s.Signaled() == true {
-					log.Error("Other pid signalled %v %v", pid, s)
-					delete(children, pid)
-					continue
-				} else {
-
-					switch uint32(s) >> 8 {
-
-					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):
-						log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
-
-					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8):
-						log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_FORK << 8):
-						log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
-						log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
-						log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
-						log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_STOP << 8):
-						log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8):
-						log.Error("Ptrace seccomp event detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGTRAP):
-						log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGCHLD):
-						log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					case uint32(unix.SIGSTOP):
-						log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
-						continue
-					default:
-						y := s.StopSignal()
-						log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
-						continue
-					}
-
-					/*
-						  if uint32(s)>>8 == (uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8)) {
-							log.Error("Ptrace exit event detected. %v %v", pid, s)
-						  }
-						  if (uint32(s)>>8 == (uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8))) || (uint32(s)>>8 == (uint32(unix.SIGTRAP) | unix.PTRACE_EVENT_FORK << 8)) {
-							  log.Error("Clone event %v %v", pid, s)
-							  continue
-						  }
-						  if s.Stopped() == true {
-							log.Error("Stopped wtf %v %v", pid, s)
-						  }
-						  if s.CoreDump() == true {
-							  log.Error("Core dumped wtf %v %v", pid, s)
-						  }
-						  log.Error("Not signalled, wtf %v %v", pid, s)
-					*/
-				}
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8):
+				log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_FORK << 8):
+				log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
+				log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
+				log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
+				log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_STOP << 8):
+				log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP):
+				log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGCHLD):
+				log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGSTOP):
+				log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			default:
+				y := s.StopSignal()
+				log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
+				continue
 			}
 		}
-	} else {
-		log.Error("Error: %v", err)
 	}
 
 }
+
 
 func readStringArg(pid int, addr uintptr) (s string, err error) {
 	buf := make([]byte, unsafe.Sizeof(addr))

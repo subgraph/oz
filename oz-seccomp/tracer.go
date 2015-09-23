@@ -23,17 +23,7 @@ const (
 	INTARG
 )
 
-const MAXARGS int = 6
-const MAXSTRING int = 100
-
-type SystemCallArgs [MAXARGS]int
-
-type SystemCall struct {
-	prefix string
-	name   string
-	num    int
-	args   SystemCallArgs
-}
+type SystemCallArgs []int
 
 func Tracer() {
 
@@ -80,15 +70,15 @@ func Tracer() {
 		pid, err := syscall.Wait4(-1, &s, syscall.WALL, nil)
 		children[pid] = true
 		if err != nil {
-			log.Error("Error (wait4): %v", err)
+			log.Error("Error (wait4) here first: %v %i", err, pid)
 		}
 		log.Info("Tracing child pid: %v\n", pid)
 		for done == false {
-			syscall.PtraceSetOptions(pid, unix.PTRACE_O_TRACESECCOMP|unix.PTRACE_O_TRACEFORK|unix.PTRACE_O_TRACEVFORK|unix.PTRACE_O_TRACECLONE|unix.PTRACE_O_TRACEEXIT)
+			syscall.PtraceSetOptions(pid, unix.PTRACE_O_TRACESECCOMP|unix.PTRACE_O_TRACEFORK|unix.PTRACE_O_TRACEVFORK|unix.PTRACE_O_TRACECLONE)
 			syscall.PtraceCont(pid, 0)
 			pid, err = syscall.Wait4(-1, &s, syscall.WALL, nil)
 			if err != nil {
-				log.Error("Error (wait4): %v\n", err)
+				log.Error("Error (wait4) here: %v %i %v\n", err, pid, children)
 				if len(children) == 0 {
 					done = true
 				}
@@ -179,6 +169,71 @@ func Tracer() {
 				}
 				callrep += ")"
 				log.Info("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v): \n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), systemcall.name, regs.Orig_rax, callrep)
+			} else {
+				if s.Signaled() == true {
+					log.Error("Other pid signalled %v %v", pid, s)
+					delete(children, pid)
+					continue
+				} else {
+
+					switch uint32(s) >> 8 {
+
+					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):
+						log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+
+					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8):
+						log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_FORK << 8):
+						log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
+						log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
+						log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
+						log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_STOP << 8):
+						log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8):
+						log.Error("Ptrace seccomp event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGTRAP):
+						log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGCHLD):
+						log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					case uint32(unix.SIGSTOP):
+						log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
+						continue
+					default:
+						y := s.StopSignal()
+						log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
+						continue
+					}
+
+					/*
+						  if uint32(s)>>8 == (uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8)) {
+							log.Error("Ptrace exit event detected. %v %v", pid, s)
+						  }
+						  if (uint32(s)>>8 == (uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8))) || (uint32(s)>>8 == (uint32(unix.SIGTRAP) | unix.PTRACE_EVENT_FORK << 8)) {
+							  log.Error("Clone event %v %v", pid, s)
+							  continue
+						  }
+						  if s.Stopped() == true {
+							log.Error("Stopped wtf %v %v", pid, s)
+						  }
+						  if s.CoreDump() == true {
+							  log.Error("Core dumped wtf %v %v", pid, s)
+						  }
+						  log.Error("Not signalled, wtf %v %v", pid, s)
+					*/
+				}
 			}
 		}
 	} else {
@@ -244,7 +299,7 @@ func readPtrArg(pid int, addr uintptr) (uintptr, error) {
 }
 
 func syscallByNum(num int) (s SystemCall, err error) {
-	var q SystemCall = SystemCall{"", "", -1, [6]int{0, 0, 0, 0, 0, 0}}
+	var q SystemCall = SystemCall{"", "", -1, []int{0, 0, 0, 0, 0, 0}}
 	for i := range syscalls {
 		if syscalls[i].num == num {
 			q = syscalls[i]
@@ -255,7 +310,7 @@ func syscallByNum(num int) (s SystemCall, err error) {
 }
 
 func syscallByName(name string) (s SystemCall, err error) {
-	var q SystemCall = SystemCall{"", "", -1, [6]int{0, 0, 0, 0, 0, 0}}
+	var q SystemCall = SystemCall{"", "", -1, []int{0, 0, 0, 0, 0, 0}}
 	for i := range syscalls {
 		if syscalls[i].name == name {
 			q = syscalls[i]
@@ -278,7 +333,7 @@ func getProcessCmdLine(pid int) string {
 	path := "/proc/" + strconv.Itoa(pid) + "/cmdline"
 	cmdline, err := ioutil.ReadFile(path)
 	for b := range cmdline {
-		if b < (len(cmdline) - 1) {
+		if b <= (len(cmdline) - 1) {
 			if cmdline[b] == 0x00 {
 				cmdline[b] = 0x20
 			}

@@ -2,6 +2,7 @@ package seccomp
 
 import (
 	"fmt"
+	"syscall"
 )
 
 const (
@@ -24,29 +25,17 @@ func render_access(pid int, args RegisterArgs) (string, error) {
 	mode := args[1]
 	path, err := readStringArg(pid, uintptr(args[0]))
 
-	if (err != nil) {
-		return "", err	
+	if err != nil {
+		return "", err
 	}
 
-	found := false
-	var flagstr string
-
+	flagstr := ""
 	if mode == F_OK {
 		flagstr = "F_OK"
 	} else {
-
-		for flag := range flags {
-			if (mode & uint64(flag)) == mode {
-				if found == true {
-					flagstr += "|"
-				}
-				flagstr += flags[flag]
-				found = true
-			}
-		}
-
+		flagstr = renderFlags(flags, uint(mode))
 	}
 	callrep := fmt.Sprintf("access(\"%s\", %s)", path, flagstr)
 
-	return fmt.Sprintf("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v): \n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), "access", 1, callrep), nil
+	return fmt.Sprintf("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v): \n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), "access", syscall.SYS_ACCESS, callrep), nil
 }

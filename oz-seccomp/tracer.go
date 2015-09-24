@@ -58,6 +58,7 @@ func Tracer() {
 	pi.Close()
 
 	children := make(map[int]bool)
+	renderFunctions := getRenderingFunctions()
 
 	if err := c.Start(); err == nil {
 		children[c.Process.Pid] = true
@@ -113,18 +114,19 @@ func Tracer() {
 					continue
 				}
 
-				/* TEMPORARY */
+				/* Render the system call invocation */
 
-				if getSyscallNumber(regs) == 21 {
-					str, err := readStringArg(pid, uintptr(regs.Rdi))
-					if err == nil {
-						log.Info(render_access(pid, str, int(regs.Rsi)))
+				r := getSyscallRegisterArgs(regs)
+				if f, ok := renderFunctions[getSyscallNumber(regs)]; ok {
+					logentry, err := f(pid, r)
+					if (err != nil) {
+						log.Info("%v", err)
 					} else {
-						log.Info("error %v", err)
+						log.Info("%s", logentry)
 					}
-
+				} else {
+					log.Info(renderSyscallBasic(pid, systemcall, regs))
 				}
-				log.Info(renderSyscallBasic(pid, systemcall, regs))
 				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):

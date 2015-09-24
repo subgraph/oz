@@ -5,6 +5,12 @@ import (
 	"fmt"
 )
 
+type RegisterArgs []uint64
+
+func getSyscallRegisterArgs(regs syscall.PtraceRegs) RegisterArgs {
+	return []uint64{regs.Rdi, regs.Rsi, regs.Rdx, regs.Rcx, regs.R8, regs.R9}
+}
+
 func getSyscallNumber(regs syscall.PtraceRegs) int {
 	return int(regs.Orig_rax)
 }

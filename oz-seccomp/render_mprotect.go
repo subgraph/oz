@@ -8,7 +8,6 @@ import (
 func render_mprotect(pid int, args RegisterArgs) (string, error) {
 
 	flags := map[uint]string{
-		syscall.PROT_NONE:  "PROT_NONE",
 		syscall.PROT_READ:  "PROT_READ",
 		syscall.PROT_WRITE: "PROT_WRITE",
 		syscall.PROT_EXEC:  "PROT_EXEC",

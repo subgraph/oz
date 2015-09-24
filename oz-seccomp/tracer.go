@@ -119,7 +119,7 @@ func Tracer() {
 				r := getSyscallRegisterArgs(regs)
 				if f, ok := renderFunctions[getSyscallNumber(regs)]; ok {
 					logentry, err := f(pid, r)
-					if (err != nil) {
+					if err != nil {
 						log.Info("%v", err)
 					} else {
 						log.Info("%s", logentry)

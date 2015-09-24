@@ -1,8 +1,8 @@
 package seccomp
 
 import (
-	"syscall"
 	"fmt"
+	"syscall"
 )
 
 type RegisterArgs []uint64

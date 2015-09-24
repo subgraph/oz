@@ -3,11 +3,11 @@ package seccomp
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"strconv"
-	"unsafe"
-	"fmt"
 	"syscall"
+	"unsafe"
 )
 
 func readStringArg(pid int, addr uintptr) (s string, err error) {

@@ -2,7 +2,6 @@ package seccomp
 
 import (
 	"fmt"
-	"syscall"
 )
 
 const (
@@ -36,6 +35,5 @@ func render_access(pid int, args RegisterArgs) (string, error) {
 		flagstr = renderFlags(flags, uint(mode))
 	}
 	callrep := fmt.Sprintf("access(\"%s\", %s)", path, flagstr)
-
-	return fmt.Sprintf("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v): \n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), "access", syscall.SYS_ACCESS, callrep), nil
+	return callrep, nil
 }

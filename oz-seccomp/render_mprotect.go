@@ -22,6 +22,5 @@ func render_mprotect(pid int, args RegisterArgs) (string, error) {
 		flagstr = renderFlags(flags, uint(mode))
 	}
 	callrep := fmt.Sprintf("mprotect(0x%X, %d, %s)", uintptr(args[0]), args[1], flagstr)
-
-	return fmt.Sprintf("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v): \n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), "mprotect", syscall.SYS_MPROTECT, callrep), nil
+	return callrep, nil
 }

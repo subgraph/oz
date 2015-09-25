@@ -117,16 +117,19 @@ func Tracer() {
 				/* Render the system call invocation */
 
 				r := getSyscallRegisterArgs(regs)
+				call := ""
+
 				if f, ok := renderFunctions[getSyscallNumber(regs)]; ok {
-					logentry, err := f(pid, r)
+					call, err = f(pid, r)
 					if err != nil {
 						log.Info("%v", err)
-					} else {
-						log.Info("%s", logentry)
+						continue
 					}
 				} else {
-					log.Info(renderSyscallBasic(pid, systemcall, regs))
+					call = renderSyscallBasic(pid, systemcall, regs)
 				}
+
+				log.Info("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v):\n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), systemcall.name, systemcall.num, call)
 				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):

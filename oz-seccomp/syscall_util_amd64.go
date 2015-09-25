@@ -77,5 +77,5 @@ func renderSyscallBasic(pid int, systemcall SystemCall, regs syscall.PtraceRegs)
 
 	}
 	callrep += ")"
-	return fmt.Sprintf("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v): \n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), systemcall.name, regs.Orig_rax, callrep)
+	return callrep
 }

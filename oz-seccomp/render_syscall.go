@@ -11,6 +11,7 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_ACCESS:   render_access,
 		syscall.SYS_MPROTECT: render_mprotect,
 		syscall.SYS_MMAP:     render_mmap,
+		syscall.SYS_MREMAP:   render_mremap,
 	}
 	return r
 }
@@ -20,7 +21,7 @@ func renderFlags(flags map[uint]string, val uint) string {
 	flagstr := ""
 
 	for flag := range flags {
-		if (val & uint(flag) == uint(flag)) {
+		if val&uint(flag) == uint(flag) {
 			if found == true {
 				flagstr += "|"
 			}
@@ -30,4 +31,13 @@ func renderFlags(flags map[uint]string, val uint) string {
 	}
 	return flagstr
 
+}
+
+func allFlagsTest(flags []uint, val uint) bool {
+	var i uint = 0
+
+	for flag := range flags {
+		i |= uint(flag)
+	}
+	return i == val
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+// TODO: Get constants from C headers unless in golang syscall
+
 const (
 	F_OK        = 0x0
 	R_OK        = 0x4

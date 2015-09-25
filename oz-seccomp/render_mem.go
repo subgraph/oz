@@ -5,6 +5,8 @@ import (
 	"syscall"
 )
 
+// TODO: Get constants from C headers
+
 const (
 	MREMAP_MAYMOVE = 1
 	MREMAP_FIXED   = 2

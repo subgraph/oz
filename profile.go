@@ -32,7 +32,7 @@ type Profile struct {
 	// Normally not used
 	NoDefaults bool
 	// Allow bind mounting of files passed as arguments inside the sandbox
-	AllowFiles bool `json:"allow_files"`
+	AllowFiles    bool     `json:"allow_files"`
 	AllowedGroups []string `json:"allowed_groups"`
 	// List of paths to bind mount inside jail
 	Whitelist []WhitelistItem
@@ -117,8 +117,8 @@ type Profiles []*Profile
 
 func NewDefaultProfile() *Profile {
 	return &Profile{
-		Multi:      false,
-		AllowFiles: false,
+		Multi:         false,
+		AllowFiles:    false,
 		AllowedGroups: []string{},
 		XServer: XServerConf{
 			Enabled:             true,

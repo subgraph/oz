@@ -83,8 +83,10 @@ type SeccompConf struct {
 }
 
 type WhitelistItem struct {
-	Path     string
-	ReadOnly bool `json:"read_only"`
+	Path      string
+	ReadOnly  bool `json:"read_only"`
+	CanCreate bool `json:"can_create"`
+	Ignore    bool `json:"ignore"`
 }
 
 type BlacklistItem struct {
@@ -207,6 +209,9 @@ func loadProfileFile(file string) (*Profile, error) {
 	}
 	if p.Name == "" {
 		p.Name = path.Base(p.Path)
+	}
+	if p.XServer.AudioMode == "" {
+		p.XServer.AudioMode = PROFILE_AUDIO_NONE
 	}
 	p.ProfilePath = file
 	return p, nil

@@ -51,11 +51,16 @@ func (fs *Filesystem) CreateEmptyDir(target string) error {
 	return copyFileInfo(fi, target)
 }
 
-func (fs *Filesystem) CreateDevice(devpath string, dev int, mode uint32) error {
+func (fs *Filesystem) CreateDevice(devpath string, dev int, mode uint32, gid int) error {
 	p := fs.absPath(devpath)
 	um := syscall.Umask(0)
 	if err := syscall.Mknod(p, mode, dev); err != nil {
 		return fmt.Errorf("failed to mknod device '%s': %v", p, err)
+	}
+	if gid > 0 {
+		if err := os.Chown(p, 0, gid); err != nil {
+			return fmt.Errorf("failed to change group for device '%s': %v", p, err)
+		}
 	}
 	syscall.Umask(um)
 	return nil
@@ -298,7 +303,7 @@ func (fs *Filesystem) MountTmp() error {
 }
 
 func (fs *Filesystem) MountPts() error {
-	return fs.mountSpecial("/dev/pts", "devpts", 0, "newinstance,ptmxmode=0666")
+	return fs.mountSpecial("/dev/pts", "devpts", 0, "newinstance,mode=620,gid=5,ptmxmode=0600")
 }
 
 func (fs *Filesystem) MountShm() error {

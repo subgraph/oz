@@ -52,6 +52,7 @@ func Main() {
 		d.handleUnmountFile,
 		d.handleLogs,
 	)
+
 	if err != nil {
 		d.log.Error("Error running server: %v", err)
 	}
@@ -82,19 +83,24 @@ func initialize() *daemonState {
 	d.nextSboxId = 1
 	d.nextDisplay = 100
 
+	bridgeNeeded := false
 	for _, pp := range d.profiles {
 		if pp.Networking.Nettype == network.TYPE_BRIDGE {
-			d.log.Info("Initializing bridge networking")
-			htn, err := network.BridgeInit(d.config.BridgeMACAddr, d.config.NMIgnoreFile, d.log)
-			if err != nil {
-				d.log.Fatalf("Failed to initialize bridge networking: %+v", err)
-				return nil
-			}
-
-			d.network = htn
-			//network.NetPrint(d.log)
+			bridgeNeeded = true
 			break
 		}
+	}
+
+	if bridgeNeeded {
+		d.log.Info("Initializing bridge networking")
+		htn, err := network.BridgeInit(d.config.BridgeMACAddr, d.config.NMIgnoreFile, d.log)
+		if err != nil {
+			d.log.Fatalf("Failed to initialize bridge networking: %+v", err)
+			return nil
+		}
+
+		d.network = htn
+		//network.NetPrint(d.log)
 	}
 
 	sockets := path.Join(config.SandboxPath, "sockets")

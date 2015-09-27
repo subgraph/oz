@@ -40,6 +40,7 @@ type Sandbox struct {
 	addr         string
 	xpra         *xpra.Xpra
 	ready        sync.WaitGroup
+	waiting      sync.WaitGroup
 	network      *network.SandboxNetwork
 	mountedFiles []string
 	rawEnv       []string
@@ -114,6 +115,9 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		if err != nil {
 			return nil, fmt.Errorf("Unable to prepare veth network: %+v", err)
 		}
+		if err := network.NetInit(stn, d.network, log); err != nil {
+			return nil, fmt.Errorf("Unable to create veth networking: %+v", err)
+		}
 	}
 
 	socketPath, err := createSocketPath(path.Join(d.config.SandboxPath, "sockets"))
@@ -139,7 +143,15 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		Uid:       uid,
 		Gid:       gid,
 		Gids:      groups,
-		Network:   *stn,
+		Network:   network.SandboxNetwork{
+			Interface: stn.Interface,
+			VethHost:  stn.VethHost,
+			VethGuest: stn.VethGuest,
+			Ip:        stn.Ip,
+			Gateway:   stn.Gateway,
+			Class:     stn.Class,
+			Nettype:   stn.Nettype,
+		},
 		Profile:   *p,
 		Config:    *d.config,
 		Sockaddr:  socketPath,
@@ -172,16 +184,18 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		rawEnv:  rawEnv,
 	}
 
+	sbox.ready.Add(1)
+	sbox.waiting.Add(1)
+	go sbox.logMessages()
+
+	sbox.waiting.Wait()
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
-		if err := network.NetInit(stn, d.network, cmd.Process.Pid, log); err != nil {
+		if err := network.NetAttach(stn, d.network, cmd.Process.Pid); err != nil {
 			cmd.Process.Kill()
-			//fs.Cleanup()
-			return nil, fmt.Errorf("Unable to create veth networking: %+v", err)
+			return nil, fmt.Errorf("Unable to attach veth networking: %+v", err)
 		}
 	}
-
-	sbox.ready.Add(1)
-	go sbox.logMessages()
+	cmd.Process.Signal(syscall.SIGUSR1)
 
 	wgNet := new(sync.WaitGroup)
 	if p.Networking.Nettype != network.TYPE_HOST && len(p.Networking.Sockets) > 0 {
@@ -350,9 +364,14 @@ func (sbox *Sandbox) remove(log *logging.Logger) {
 func (sbox *Sandbox) logMessages() {
 	scanner := bufio.NewScanner(sbox.stderr)
 	seenOk := false
+	seenWaiting := false
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "OK" && !seenOk {
+		if line == "WAITING" && !seenWaiting {
+			sbox.daemon.log.Info("oz-init (%s) is waiting for init", sbox.profile.Name)
+			seenWaiting = true
+			sbox.waiting.Done()
+		} else if line == "OK" && !seenOk {
 			sbox.daemon.log.Info("oz-init (%s) is ready", sbox.profile.Name)
 			seenOk = true
 			sbox.ready.Done()

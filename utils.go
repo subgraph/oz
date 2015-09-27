@@ -1,6 +1,6 @@
 package oz
 
-import(
+import (
 	"fmt"
 	"os"
 	"path"

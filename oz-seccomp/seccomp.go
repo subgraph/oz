@@ -52,7 +52,7 @@ func Main() {
 	if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
 		log.Error("unable to decode profile data: %v", err)
 		os.Exit(1)
-	} 
+	}
 
 	switch os.Args[1] {
 	case "-w":

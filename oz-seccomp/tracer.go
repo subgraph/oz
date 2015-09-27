@@ -2,19 +2,14 @@ package seccomp
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/subgraph/oz"
 	"golang.org/x/sys/unix"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"strconv"
 	"syscall"
-	"unsafe"
 )
 
 const (
@@ -23,17 +18,7 @@ const (
 	INTARG
 )
 
-const MAXARGS int = 6
-const MAXSTRING int = 100
-
-type SystemCallArgs [MAXARGS]int
-
-type SystemCall struct {
-	prefix string
-	name   string
-	num    int
-	args   SystemCallArgs
-}
+type SystemCallArgs []int
 
 func Tracer() {
 
@@ -73,6 +58,7 @@ func Tracer() {
 	pi.Close()
 
 	children := make(map[int]bool)
+	renderFunctions := getRenderingFunctions()
 
 	if err := c.Start(); err == nil {
 		children[c.Process.Pid] = true
@@ -80,15 +66,15 @@ func Tracer() {
 		pid, err := syscall.Wait4(-1, &s, syscall.WALL, nil)
 		children[pid] = true
 		if err != nil {
-			log.Error("Error (wait4): %v", err)
+			log.Error("Error (wait4) here first: %v %i", err, pid)
 		}
 		log.Info("Tracing child pid: %v\n", pid)
 		for done == false {
-			syscall.PtraceSetOptions(pid, unix.PTRACE_O_TRACESECCOMP|unix.PTRACE_O_TRACEFORK|unix.PTRACE_O_TRACEVFORK|unix.PTRACE_O_TRACECLONE|unix.PTRACE_O_TRACEEXIT)
+			syscall.PtraceSetOptions(pid, unix.PTRACE_O_TRACESECCOMP|unix.PTRACE_O_TRACEFORK|unix.PTRACE_O_TRACEVFORK|unix.PTRACE_O_TRACECLONE)
 			syscall.PtraceCont(pid, 0)
 			pid, err = syscall.Wait4(-1, &s, syscall.WALL, nil)
 			if err != nil {
-				log.Error("Error (wait4): %v\n", err)
+				log.Error("Error (wait4) here: %v %i %v\n", err, pid, children)
 				if len(children) == 0 {
 					done = true
 				}
@@ -103,190 +89,85 @@ func Tracer() {
 				}
 				continue
 			}
-			if uint32(s)>>8 == (uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8)) {
+			if s.Signaled() == true {
+				log.Error("Other pid signalled %v %v", pid, s)
+				delete(children, pid)
+				continue
+			}
+			switch uint32(s) >> 8 {
+
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8):
 				if err != nil {
 					log.Error("Error (ptrace): %v", err)
 					continue
 				}
 				var regs syscall.PtraceRegs
 				err = syscall.PtraceGetRegs(pid, &regs)
+
 				if err != nil {
 					log.Error("Error (ptrace): %v", err)
 				}
-				systemcall, err := syscallByNum(int(regs.Orig_rax))
+
+				systemcall, err := syscallByNum(getSyscallNumber(regs))
 				if err != nil {
 					log.Error("Error: %v", err)
 					continue
 				}
-				var callrep string = fmt.Sprintf("%s(", systemcall.name)
-				var reg uint64 = 0
 
-				for arg := range systemcall.args {
+				/* Render the system call invocation */
 
-					if systemcall.args[arg] == 0 {
-						break
+				r := getSyscallRegisterArgs(regs)
+				call := ""
+
+				if f, ok := renderFunctions[getSyscallNumber(regs)]; ok {
+					call, err = f(pid, r)
+					if err != nil {
+						log.Info("%v", err)
+						continue
 					}
-
-					if arg > 0 {
-						callrep += fmt.Sprintf(",")
-					}
-
-					switch arg {
-					case 0:
-						reg = regs.Rdi
-					case 1:
-						reg = regs.Rsi
-					case 2:
-						reg = regs.Rdx
-					case 3:
-						reg = regs.Rcx
-					case 4:
-						reg = regs.R8
-					case 5:
-						reg = regs.R9
-					}
-					if systemcall.args[arg] == STRINGARG {
-						str, err := readStringArg(pid, uintptr(reg))
-						if err != nil {
-							log.Error("Error: %v", err)
-						} else {
-							callrep += fmt.Sprintf("\"%s\"", str)
-						}
-					} else if systemcall.args[arg] == INTARG {
-						callrep += fmt.Sprintf("%d", uint64(reg))
-					} else {
-						/* Stringify pointers in writes to stdout/stderr */
-						write, err := syscallByName("write")
-						if err != nil {
-							log.Error("Error: %v", err)
-						}
-						if systemcall.num == write.num && (regs.Rdi == uint64(syscall.Stdout) || regs.Rdi == uint64(syscall.Stderr)) {
-							str, err := readStringArg(pid, uintptr(reg))
-							if err != nil {
-								log.Error("Error %v", err)
-							} else {
-								if isPrintableASCII(str) == true {
-									callrep += fmt.Sprintf("\"%s\"", str)
-								} else {
-									callrep += fmt.Sprintf("0x%X", uintptr(reg))
-								}
-							}
-						} else {
-							callrep += fmt.Sprintf("0x%X", uintptr(reg))
-						}
-					}
-
-				}
-				callrep += ")"
-				log.Info("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v): \n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), systemcall.name, regs.Orig_rax, callrep)
-			}
-		}
-	} else {
-		log.Error("Error: %v", err)
-	}
-
-}
-
-func readStringArg(pid int, addr uintptr) (s string, err error) {
-	buf := make([]byte, unsafe.Sizeof(addr))
-	done := false
-	err = nil
-	for done == false {
-		_, err := syscall.PtracePeekText(pid, addr, buf)
-		if err != nil {
-			fmt.Printf("Error (ptrace): %v\n", err)
-		} else {
-			for b := range buf {
-				if buf[b] == 0 {
-					done = true
-					break
 				} else {
-					s += string(buf[b])
-					if len(s) > 90 {
-						s += "..."
-						break
-					}
+					call = renderSyscallBasic(pid, systemcall, regs)
 				}
-			}
-		}
-		addr += unsafe.Sizeof(addr)
-	}
-	return s, nil
-}
 
-func readUIntArg(pid int, addr uintptr) (uint64, error) {
-	buf := make([]byte, unsafe.Sizeof(addr))
+				log.Info("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v):\n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), systemcall.name, systemcall.num, call)
+				continue
 
-	_, err := syscall.PtracePeekText(pid, addr, buf)
-	if err != nil {
-		fmt.Printf("Error (ptrace): %v\n", err)
-		return 0, err
-	} else {
-		i := binary.LittleEndian.Uint64(buf)
-		return i, nil
-	}
-	return 0, errors.New("Error.")
-}
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):
+				log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 
-func readPtrArg(pid int, addr uintptr) (uintptr, error) {
-
-	buf := make([]byte, unsafe.Sizeof(addr))
-
-	_, err := syscall.PtracePeekText(pid, addr, buf)
-	if err != nil {
-		fmt.Printf("Error (ptrace): %v\n", err)
-		return 0, err
-	} else {
-		i := binary.LittleEndian.Uint64(buf)
-		return uintptr(i), nil
-	}
-	return 0, nil
-}
-
-func syscallByNum(num int) (s SystemCall, err error) {
-	var q SystemCall = SystemCall{"", "", -1, [6]int{0, 0, 0, 0, 0, 0}}
-	for i := range syscalls {
-		if syscalls[i].num == num {
-			q = syscalls[i]
-			return q, nil
-		}
-	}
-	return q, errors.New("System call not found.\n")
-}
-
-func syscallByName(name string) (s SystemCall, err error) {
-	var q SystemCall = SystemCall{"", "", -1, [6]int{0, 0, 0, 0, 0, 0}}
-	for i := range syscalls {
-		if syscalls[i].name == name {
-			q = syscalls[i]
-			return q, nil
-		}
-	}
-	return q, errors.New("System call not found.\n")
-}
-
-func isPrintableASCII(s string) bool {
-	for _, x := range s {
-		if x > 127 {
-			return false
-		}
-	}
-	return true
-}
-
-func getProcessCmdLine(pid int) string {
-	path := "/proc/" + strconv.Itoa(pid) + "/cmdline"
-	cmdline, err := ioutil.ReadFile(path)
-	for b := range cmdline {
-		if b < (len(cmdline) - 1) {
-			if cmdline[b] == 0x00 {
-				cmdline[b] = 0x20
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8):
+				log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_FORK << 8):
+				log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
+				log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
+				log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
+				log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_STOP << 8):
+				log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGTRAP):
+				log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGCHLD):
+				log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			case uint32(unix.SIGSTOP):
+				log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				continue
+			default:
+				y := s.StopSignal()
+				log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
+				continue
 			}
 		}
 	}
-	if err != nil {
-		log.Error("Error (read): %v", err)
-		return "unknown"
-	}
-	return string(cmdline)
+
 }

@@ -62,6 +62,10 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 	return htn, nil
 }
 
+func (htn *HostNetwork) BridgeConfigure() error {
+	return nil
+}
+
 func (htn *HostNetwork) BridgeReconfigure(log *logging.Logger) error {
 	if os.Getpid() == 1 {
 		panic(errors.New("Cannot use BridgeReconfigure from child."))
@@ -91,13 +95,13 @@ func PrepareSandboxNetwork(htn *HostNetwork, log *logging.Logger) (*SandboxNetwo
 	return stn, nil
 }
 
-func NetInit(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.Logger) error {
+func NetInit(stn *SandboxNetwork, htn *HostNetwork, log *logging.Logger) error {
 	if os.Getpid() == 1 {
 		panic(errors.New("Cannot use NetInit from child."))
 	}
 
 	// Seed random number generator (poorly but we're not doing crypto)
-	rand.Seed(time.Now().Unix() ^ int64((os.Getpid() + childPid)))
+	rand.Seed(time.Now().Unix() ^ int64(os.Getpid()))
 
 	log.Info("Configuring host veth pair '%s' with: %s", stn.VethHost, stn.Ip+"/"+htn.Class)
 	/*
@@ -137,8 +141,15 @@ func NetInit(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.L
 		return fmt.Errorf("Unable to bring veth pair %s up, %s.", stn.VethHost, err)
 	}
 
+	stn.Veth = veth
+
+	return nil
+
+}
+
+func NetAttach(stn *SandboxNetwork, htn *HostNetwork, childPid int) error {
 	// Assign the veth path to the namespace
-	if err := veth.SetPeerLinkNsPid(childPid); err != nil {
+	if err := stn.Veth.SetPeerLinkNsPid(childPid); err != nil {
 		return fmt.Errorf("Unable to add veth pair %s to namespace, %s.", stn.VethHost, err)
 	}
 
@@ -149,14 +160,10 @@ func NetInit(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.L
 	}
 
 	// Set interface address in the namespace
-	if err := veth.SetPeerLinkNetInNs(childPid, vethGuestIp, vethGuestIpNet, nil); err != nil {
+	if err := stn.Veth.SetPeerLinkNetInNs(childPid, vethGuestIp, vethGuestIpNet, nil); err != nil {
 		return fmt.Errorf("Unable to parse ip link in namespace, %s.", err)
 	}
-
-	stn.Veth = veth
-
 	return nil
-
 }
 
 func NetReconfigure(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.Logger) error {

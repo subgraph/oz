@@ -22,7 +22,6 @@ func NewServer(config *oz.XServerConf, display uint64, spath, workdir string) *X
 	x.xpraArgs = prepareServerArgs(config, display, workdir)
 
 	x.xpraArgs = append([]string{"-b", "/usr/bin/xpra"}, x.xpraArgs...)
-
 	x.Process = exec.Command(spath, x.xpraArgs...)
 	x.Process.Env = append(os.Environ(),
 		"TMPDIR="+workdir,
@@ -37,6 +36,7 @@ func NewServer(config *oz.XServerConf, display uint64, spath, workdir string) *X
 
 func prepareServerArgs(config *oz.XServerConf, display uint64, workdir string) []string {
 	args := getDefaultArgs(config)
+	//args = append(args, "--start-child \"/bin/echo _OZ_XXSTARTEDXX\"")
 	args = append(args, xpraServerDefaultArgs...)
 	if config.AudioMode == oz.PROFILE_AUDIO_FULL || config.AudioMode == oz.PROFILE_AUDIO_SPEAKER {
 		args = append(args, "--pulseaudio")
@@ -48,10 +48,5 @@ func prepareServerArgs(config *oz.XServerConf, display uint64, workdir string) [
 		"start",
 		fmt.Sprintf(":%d", display),
 	)
-	if config.AudioMode == oz.PROFILE_AUDIO_FULL || config.AudioMode == oz.PROFILE_AUDIO_SPEAKER {
-		args = append(args, "--pulseaudio")
-	} else {
-		args = append(args, "--no-pulseaudio")
-	}
 	return args
 }

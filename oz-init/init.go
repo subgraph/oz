@@ -81,7 +81,7 @@ func createLogger() *logging.Logger {
 }
 
 func Main() {
-	parseArgs().runInit()
+	parseArgs().waitForParentReady().runInit()
 }
 
 func parseArgs() *initState {
@@ -132,6 +132,20 @@ func parseArgs() *initState {
 		fs:        fs.NewFilesystem(&initData.Config, log),
 		network:   &initData.Network,
 	}
+}
+
+func (st *initState) waitForParentReady() *initState {
+	// Signal the daemon we are ready
+	os.Stderr.WriteString("WAITING\n")
+
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGUSR1)
+
+	sig := <-c
+	st.log.Info("Recieved SIGUSR1 from parent (%v), ready to init.", sig)
+	signal.Stop(c)
+
+	return st
 }
 
 func (st *initState) runInit() {
@@ -328,6 +342,8 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 	for sc.Scan() {
 		line := sc.Text()
 		if len(line) > 0 {
+			//if strings.Contains(line, "_OZ_XXSTARTEDXX") &&
+			//	strings.Contains(line, "has terminated") && !seenReady {
 			if strings.Contains(line, "xpra is ready.") && !seenReady {
 				seenReady = true
 				st.xpraReady.Done()

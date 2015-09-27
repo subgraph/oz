@@ -36,7 +36,7 @@ func NewServer(config *oz.XServerConf, display uint64, spath, workdir string) *X
 
 func prepareServerArgs(config *oz.XServerConf, display uint64, workdir string) []string {
 	args := getDefaultArgs(config)
-	args = append(args, "--start-child /bin/echo _OZ_XXSTARTEDXX")
+	//args = append(args, "--start-child \"/bin/echo _OZ_XXSTARTEDXX\"")
 	args = append(args, xpraServerDefaultArgs...)
 	if config.AudioMode == oz.PROFILE_AUDIO_FULL || config.AudioMode == oz.PROFILE_AUDIO_SPEAKER {
 		args = append(args, "--pulseaudio")

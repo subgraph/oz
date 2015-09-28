@@ -49,11 +49,6 @@ func runSandboxed() {
 			os.Exit(1)
 		}
 	}
-	//opath := apath
-	//apath, _ = os.Readlink(apath)
-	//if !filepath.IsAbs(apath) {
-	//	apath = path.Join(path.Dir(opath), apath)
-	//}
 	if err := daemon.Launch("0", apath, os.Args[1:], false); err != nil {
 		fmt.Fprintf(os.Stderr, "launch command failed: %v.\n", err)
 		os.Exit(1)

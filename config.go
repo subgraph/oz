@@ -67,7 +67,7 @@ func LoadConfig(cpath string) (*Config, error) {
 		return nil, err
 	}
 
-	if c.DivertSuffix == "" && c.DivertPath == false{
+	if c.DivertSuffix == "" && c.DivertPath == false {
 		c.DivertSuffix = "unsafe"
 	}
 

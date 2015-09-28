@@ -13,7 +13,8 @@ type Config struct {
 	EtcPrefix       string   `json:"etc_prefix" desc:"Prefix for configuration files"`
 	SandboxPath     string   `json:"sandbox_path" desc:"Path of the sandboxes base"`
 	BridgeMACAddr   string   `json:"bridge_mac" desc:"MAC Address of the bridge interface"`
-	DivertSuffix    string   `json:"divert_suffix" desc:"Suffix using for dpkg-divert of application executables"`
+	DivertSuffix    string   `json:"divert_suffix" desc:"Suffix using for dpkg-divert of application executables, can be left empty when using a divert path"`
+	DivertPath      bool    `json:"divert_path" desc:"Whether the diverted executable should be moved out of the path"`
 	NMIgnoreFile    string   `json:"nm_ignore_file" desc:"Path to the NetworkManager ignore config file, disables the warning if empty"`
 	UseFullDev      bool     `json:"use_full_dev" desc:"Give sandboxes full access to devices instead of a restricted set"`
 	AllowRootShell  bool     `json:"allow_root_shell" desc:"Allow entering a sandbox shell as root"`
@@ -32,9 +33,10 @@ func NewDefaultConfig() *Config {
 		PrefixPath:      "/usr/local",
 		EtcPrefix:       "/etc/oz",
 		SandboxPath:     "/srv/oz",
+		DivertPath:      true,
 		NMIgnoreFile:    "/etc/NetworkManager/conf.d/oz.conf",
 		BridgeMACAddr:   "6A:A8:2E:56:E8:9C",
-		DivertSuffix:    "unsafe",
+		DivertSuffix:    "",
 		UseFullDev:      false,
 		AllowRootShell:  false,
 		LogXpra:         false,
@@ -64,5 +66,10 @@ func LoadConfig(cpath string) (*Config, error) {
 	if err := json.Unmarshal(bs, c); err != nil {
 		return nil, err
 	}
+
+	if c.DivertSuffix == "" && c.DivertPath == false{
+		c.DivertSuffix = "unsafe"
+	}
+
 	return c, nil
 }

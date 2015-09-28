@@ -68,7 +68,7 @@ func render_mmap(pid int, args RegisterArgs) (string, error) {
 	}
 
 	addr := ptrtostrornull(uintptr(args[0]))
-	callrep := fmt.Sprintf("mmap(%s, %d, %s, %s, %d, %d)", addr, args[1], protflagstr, mmapflagstr, args[4], args[5])
+	callrep := fmt.Sprintf("mmap(%s, %d, %s, %s, %d, %d)", addr, args[1], protflagstr, mmapflagstr, int32(args[4]), args[5])
 	return callrep, nil
 }
 

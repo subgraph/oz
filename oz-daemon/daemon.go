@@ -52,7 +52,6 @@ func Main() {
 		d.handleUnmountFile,
 		d.handleLogs,
 	)
-
 	if err != nil {
 		d.log.Error("Error running server: %v", err)
 	}

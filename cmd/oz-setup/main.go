@@ -183,7 +183,7 @@ func handleInstall(c *cli.Context) {
 		return // For clarity
 	}
 
-	if OzConfig.DivertSuffix == "" {
+	if OzConfig.DivertSuffix == "" && OzConfig.DivertPath == false {
 		installExit(c.Bool("hook"), fmt.Errorf("Divert requires a suffix to be set.\n"))
 		return // For clarity
 	}
@@ -210,6 +210,14 @@ func handleInstall(c *cli.Context) {
 			"--divert",
 			getBinaryPath(cpath),
 			cpath,
+		}
+
+		cdir := path.Dir(getBinaryPath(cpath))
+		if _, err := os.Stat(cdir); os.IsNotExist(err) {
+			um := syscall.Umask(0)
+			os.Mkdir(cdir, 0755)
+			os.Chown(cdir, 0, 0)
+			syscall.Umask(um)
 		}
 
 		_, err = exec.Command(PathDpkgDivert, dpkgArgs...).Output()
@@ -246,7 +254,7 @@ func handleRemove(c *cli.Context) {
 		return // For clarity
 	}
 
-	if OzConfig.DivertSuffix == "" {
+	if OzConfig.DivertSuffix == "" && OzConfig.DivertPath == false {
 		installExit(c.Bool("hook"), fmt.Errorf("Divert requires a suffix to be set.\n"))
 		return // For clarity
 	}
@@ -295,6 +303,10 @@ func handleRemove(c *cli.Context) {
 
 func handleStatus(c *cli.Context) {
 	OzConfig = loadConfig()
+	if len(c.Args()) == 0 {
+		fmt.Fprintf(os.Stderr, "You must supply the name of a profile or an executable path.")
+		os.Exit(1)
+	}
 	pname := c.Args()[0]
 	OzProfile, err := loadProfile(pname, OzConfig.ProfileDir)
 	if err != nil || OzProfile == nil {
@@ -302,7 +314,7 @@ func handleStatus(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	if OzConfig.DivertSuffix == "" {
+	if OzConfig.DivertSuffix == "" && OzConfig.DivertPath == false {
 		fmt.Fprintf(os.Stderr, "Divert requires a suffix to be set.\n")
 		os.Exit(1)
 	}
@@ -384,8 +396,14 @@ func isDivertInstalled(bpath string) (bool, error) {
 func getBinaryPath(bpath string) string {
 	bpath = strings.TrimSpace(string(bpath))
 
-	if strings.HasSuffix(bpath, "."+OzConfig.DivertSuffix) == false {
-		bpath += "." + OzConfig.DivertSuffix
+	if OzConfig.DivertSuffix != "" {
+		if strings.HasSuffix(bpath, "."+OzConfig.DivertSuffix) == false {
+			bpath += "." + OzConfig.DivertSuffix
+		}
+	}
+
+	if OzConfig.DivertPath == true {
+		bpath = path.Join(path.Dir(bpath)+"-oz", path.Base(bpath))
 	}
 
 	return bpath

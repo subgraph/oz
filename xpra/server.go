@@ -38,11 +38,11 @@ func prepareServerArgs(config *oz.XServerConf, display uint64, workdir string) [
 	args := getDefaultArgs(config)
 	//args = append(args, "--start-child \"/bin/echo _OZ_XXSTARTEDXX\"")
 	args = append(args, xpraServerDefaultArgs...)
-	if config.AudioMode == oz.PROFILE_AUDIO_FULL || config.AudioMode == oz.PROFILE_AUDIO_SPEAKER {
-		args = append(args, "--pulseaudio")
-	} else {
-		args = append(args, "--no-pulseaudio")
-	}
+	//if config.AudioMode == oz.PROFILE_AUDIO_FULL || config.AudioMode == oz.PROFILE_AUDIO_SPEAKER {
+	//	args = append(args, "--pulseaudio")
+	//} else {
+	//	args = append(args, "--no-pulseaudio")
+	//}
 	args = append(args,
 		fmt.Sprintf("--socket-dir=%s", workdir),
 		"start",

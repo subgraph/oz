@@ -54,10 +54,12 @@ type fsDeviceDefinition struct {
 	path string
 	mode uint32
 	dev  int
+	gid  int
 }
 
 const ugorw = syscall.S_IRUSR | syscall.S_IWUSR | syscall.S_IRGRP | syscall.S_IWGRP | syscall.S_IROTH | syscall.S_IWOTH
 const urwgr = syscall.S_IRUSR | syscall.S_IWUSR | syscall.S_IRGRP
+const urwgw = syscall.S_IRUSR | syscall.S_IWUSR | syscall.S_IWGRP
 const urw = syscall.S_IRUSR | syscall.S_IWUSR
 
 var basicDevices = []fsDeviceDefinition{
@@ -66,11 +68,13 @@ var basicDevices = []fsDeviceDefinition{
 	{path: "/dev/random", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 8)},
 
 	{path: "/dev/console", mode: syscall.S_IFCHR | urw, dev: _makedev(5, 1)},
-	{path: "/dev/tty", mode: syscall.S_IFCHR | ugorw, dev: _makedev(5, 0)},
-	{path: "/dev/tty1", mode: syscall.S_IFREG | urwgr, dev: 0},
-	{path: "/dev/tty2", mode: syscall.S_IFREG | urwgr, dev: 0},
-	{path: "/dev/tty3", mode: syscall.S_IFREG | urwgr, dev: 0},
-	{path: "/dev/tty4", mode: syscall.S_IFREG | urwgr, dev: 0},
+	{path: "/dev/tty", mode: syscall.S_IFCHR | ugorw, dev: _makedev(5, 0), gid: 5},
+	{path: "/dev/tty0", mode: syscall.S_IFCHR | urwgw, dev: _makedev(4, 0), gid: 5},
+	{path: "/dev/tty1", mode: syscall.S_IFCHR | urwgw, dev: _makedev(4, 1), gid: 5},
+	{path: "/dev/tty2", mode: syscall.S_IFCHR | urwgw, dev: _makedev(4, 2), gid: 5},
+	{path: "/dev/tty3", mode: syscall.S_IFCHR | urwgw, dev: _makedev(4, 3), gid: 5},
+	{path: "/dev/tty4", mode: syscall.S_IFCHR | urwgw, dev: _makedev(4, 4), gid: 5},
+	{path: "/dev/tty5", mode: syscall.S_IFCHR | urwgw, dev: _makedev(4, 5), gid: 5},
 
 	{path: "/dev/urandom", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 9)},
 	{path: "/dev/zero", mode: syscall.S_IFCHR | ugorw, dev: _makedev(1, 5)},
@@ -125,7 +129,7 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool) error {
 	}
 	if !useFullDev {
 		for _, d := range basicDevices {
-			if err := fsys.CreateDevice(d.path, d.dev, d.mode); err != nil {
+			if err := fsys.CreateDevice(d.path, d.dev, d.mode, d.gid); err != nil {
 				return err
 			}
 		}

@@ -116,7 +116,7 @@ Once installed you can enable profiles using the `oz-setup` command as such (usi
 $ sudo oz-setup install evince
 ```
 
-This will install a symlink to the oz client executable in place of the original, and rename the original with the `.unsafe` suffix.
+This will install a symlink to the oz client executable in place of the original, the original executable will be moved to `dirname(path)-oz/basename(path).unsafe`. This behavior can be altered using the divert_path and divert_suffix configuration flags.
 
 ## Disabling a profile
 
@@ -160,10 +160,10 @@ Any files inside of your home passed as arguments to the command (either via dou
 The [OZ gnome-shell extension](https://github.com/subgraph/ozshell-gnome-extension) allows you to easily interface running sandboxes:
 to add/remove files inside a sandbox, open a shell inside a sandbox, and terminate a sandbox.
 
-If you wish to run an executable outside of the sandbox simply call it with the `unsafe` suffix:
+If you wish to run an executable outside of the sandbox simply call it at `dirname(path)-oz/basename(path).unsafe`, for example:
 
 ```
-$ /usr/bin/evince.unsafe
+$ /usr/bin-oz/evince.unsafe
 ```
 
 # Advanced Usage Information
@@ -188,18 +188,21 @@ In nearly every case the default configurations should be used, but for debuggin
 $ oz-setup config show
 
 Config file     : /etc/oz/oz.conf
-###########################################################
-profile_dir     : /var/lib/oz/cells.d                     # Directory containing the sandbox profiles
-shell_path      : /bin/bash                               # Path of the shell using when entering a sandbox
-prefix_path     : /usr                                    # Prefix path containing the oz executables
-sandbox_path    : /srv/oz                                 # Path of the sandboxes base
-bridge_mac      : 6A:A8:2E:56:E8:9C                       # MAC Address of the bridge interface
-divert_suffix   : unsafe                                  # Suffix using for dpkg-divert of application executables
-nm_ignore_file  : /etc/NetworkManager/conf.d/oz.conf      # Path to the NetworkManager ignore config file, disables the warning if empty
-use_full_dev    : false                                   # Give sandboxes full access to devices instead of a restricted set
-allow_root_shell: false                                   # Allow entering a sandbox shell as root
-log_xpra        : false                                   # Log output of Xpra
-environment_vars: [USER USERNAME LOGNAME LANG LANGUAGE _] # Default environment variables passed to sandboxes
+##################################################################
+profile_dir     : /var/lib/oz/cells.d                            # Directory containing the sandbox profiles
+shell_path      : /bin/bash                                      # Path of the shell used when entering a sandbox
+prefix_path     : /usr/local                                     # Prefix path containing the oz executables
+etc_prefix      : /etc/oz                                        # Prefix for configuration files
+sandbox_path    : /srv/oz                                        # Path of the sandboxes base
+bridge_mac      : 6A:A8:2E:56:E8:9C                              # MAC Address of the bridge interface
+divert_suffix   : unsafe                                         # Suffix using for dpkg-divert of application executables, can be left empty when using a divert path
+divert_path     : true                                           # Whether the diverted executable should be moved out of the path
+nm_ignore_file  : /etc/NetworkManager/conf.d/oz.conf             # Path to the NetworkManager ignore config file, disables the warning if empty
+use_full_dev    : false                                          # Give sandboxes full access to devices instead of a restricted set
+allow_root_shell: false                                          # Allow entering a sandbox shell as root
+log_xpra        : false                                          # Log output of Xpra
+environment_vars: [USER USERNAME LOGNAME LANG LANGUAGE _ TZ=UTC] # Default environment variables passed to sandboxes
+default_groups  : [audio video]                                  # List of default group names that can be used inside the sandbox
 ```
 
 ## Profiles

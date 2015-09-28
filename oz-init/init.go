@@ -366,6 +366,9 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	if st.config.DivertSuffix != "" {
 		cpath += "." + st.config.DivertSuffix
 	}
+	if st.config.DivertPath {
+		cpath = path.Join(path.Dir(cpath) + "-oz", path.Base(cpath))
+	}
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)

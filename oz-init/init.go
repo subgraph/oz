@@ -176,7 +176,8 @@ func (st *initState) runInit() {
 		st.launchEnv = append(st.launchEnv, "HOME="+st.user.HomeDir)
 	}
 
-	if st.profile.Networking.Nettype != network.TYPE_HOST {
+	if st.profile.Networking.Nettype != network.TYPE_HOST ||
+		st.profile.Networking.Nettype != network.TYPE_NONE {
 		err := network.NetSetup(st.network)
 		if err != nil {
 			st.log.Error("Unable to setup networking: %+v", err)

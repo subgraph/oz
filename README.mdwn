@@ -74,8 +74,8 @@ Bridge networking is automatically configured by Oz, but you will need to setup
 at minimum a few iptables masquerading rules and ebtables isolation rules as follows:
 
 ```
-sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-sudo iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o enx... -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o wlp2s0 -j MASQUERADE
 sudo ebtables -P FORWARD DROP
 sudo ebtables -F FORWARD
 sudo ebtables -A FORWARD -i oz0 -j ACCEPT

@@ -38,6 +38,8 @@ type Linker interface {
 	SetLinkDown() error
 	// SetLinkIp configures the link's IP address
 	SetLinkIp(net.IP, *net.IPNet) error
+	// UnsetLinkIp remove and IP address from the link
+	UnsetLinkIp(net.IP, *net.IPNet) error
 	// SetLinkDefaultGw configures the link's default gateway
 	SetLinkDefaultGw(*net.IP) error
 	// SetLinkNetNsPid moves the link to network namespace specified by PID
@@ -194,6 +196,12 @@ func (l *Link) SetLinkDown() error {
 // It is equivalent of running: ip address add ${address}/${mask} dev ${interface name}
 func (l *Link) SetLinkIp(ip net.IP, network *net.IPNet) error {
 	return netlink.NetworkLinkAddIp(l.NetInterface(), ip, network)
+}
+
+// SetLinkIp configures the link's IP address.
+// It is equivalent of running: ip address add ${address}/${mask} dev ${interface name}
+func (l *Link) UnsetLinkIp(ip net.IP, network *net.IPNet) error {
+	return netlink.NetworkLinkDelIp(l.NetInterface(), ip, network)
 }
 
 // SetLinkDefaultGw configures the link's default Gateway.

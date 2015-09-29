@@ -59,7 +59,7 @@ func Main() {
 
 func initialize() *daemonState {
 	sigs := make(chan os.Signal)
-	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGUSR1)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGUSR2)
 
 	d := &daemonState{}
 	d.initializeLogging()
@@ -151,7 +151,7 @@ func (d *daemonState) processSignals(c <-chan os.Signal) {
 				return
 			}
 			d.profiles = ps
-		case syscall.SIGUSR1:
+		case syscall.SIGUSR2:
 			d.handleNetworkReconfigure()
 		}
 	}
@@ -427,33 +427,34 @@ func (d *daemonState) handleLogs(logs *LogsMsg, msg *ipc.Message) error {
 func (d *daemonState) handleNetworkReconfigure() {
 	brIP, brNet, err := network.FindEmptyRange()
 	if err != nil {
+		d.log.Error("Unable to find new network range: %v", err)
 		return
 	}
 	if brIP.Equal(d.network.Gateway) {
-		d.log.Notice("Range is still available, not reconfiguring.")
+		d.log.Notice("Range %s is still available, not reconfiguring %s.", d.network.GatewayNet.String(), brNet.String())
 		return
 	}
-	d.log.Notice("Network has changed, reconfiguring with %s %s", brIP.String(), brNet.String())
-
-	if err := d.network.BridgeReconfigure(d.log); err != nil {
+	d.log.Notice("Network has changed, reconfiguring %s to %s", d.network.GatewayNet.String(), brNet.String())
+	newhtn, err := d.network.BridgeReconfigure(d.log)
+	if err != nil {
 		d.log.Error("Unable to reconfigure bridge network: %v", err)
 		return
 	}
-	/*
-		for _, sbox := range d.sandboxes {
-			if sbox.profile.Networking.Nettype == network.TYPE_BRIDGE {
-				sbox.network, err := network.PrepareSandboxNetwork(d.network, d.log)
-				if err != nil {
-					d.log.Error("Unable to prepare reconfigure of sandbox `%s` networking: %v", sbox.profile.Name, err)
-					continue
-				}
-				if err := d.network.NetReconfigure(d.network, sbox.network, sbox.Pid, d.log); err != nil {
-					d.log.Error("Unable to reconfigure sandbox `%s` networking: %v", sbox.profile.Name, err)
-					continue
-				}
-				// TODO: Reconfigure default gateway inside sandbox
+	d.network = newhtn
+	for _, sbox := range d.sandboxes {
+		if sbox.profile.Networking.Nettype == network.TYPE_BRIDGE {
+			d.log.Debug("Reconfiguring network for sandbox `%s` (%d).", sbox.profile.Name, sbox.init.Process.Pid)
+			sbox.network, err = network.PrepareSandboxNetwork(sbox.network, d.network, d.log)
+			if err != nil {
+				d.log.Error("Unable to prepare reconfigure of sandbox `%s` networking: %v", sbox.profile.Name, err)
+				continue
+			}
+			if err := network.NetReconfigure(sbox.network, d.network, sbox.init.Process.Pid, d.log); err != nil {
+				d.log.Error("Unable to reconfigure sandbox `%s` networking: %v", sbox.profile.Name, err)
+				continue
 			}
 		}
-	*/
+	}
+
 	return
 }

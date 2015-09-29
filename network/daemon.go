@@ -62,26 +62,49 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 	return htn, nil
 }
 
-func (htn *HostNetwork) BridgeConfigure() error {
-	return nil
-}
-
-func (htn *HostNetwork) BridgeReconfigure(log *logging.Logger) error {
+func (htn *HostNetwork) BridgeReconfigure(log *logging.Logger) (*HostNetwork, error) {
 	if os.Getpid() == 1 {
 		panic(errors.New("Cannot use BridgeReconfigure from child."))
 	}
 
-	htn.Gateway = nil
-	return htn.configureBridgeInterface(log)
+	newhtn := &HostNetwork{
+		BridgeMAC: htn.BridgeMAC,
+	}
 
-	// TODO: Reconfigure guest networks
+	if err := htn.Interface.UnsetLinkIp(htn.Gateway, htn.GatewayNet); err != nil {
+		log.Warning("Unable to remove old IP address from bridge: %+v", err)
+	}
+
+	br, err := tenus.BridgeFromName(ozDefaultInterfaceBridge)
+	if err != nil {
+		return nil, err
+	}
+	newhtn.Interface = br
+
+	if err := newhtn.configureBridgeInterface(log); err != nil {
+		return nil, err
+	}
+
+	brL := newhtn.Interface.NetInterface()
+	addrs, err := brL.Addrs()
+	if err != nil {
+		return nil, fmt.Errorf("Unable to get bridge interface addresses: %+v", err)
+	}
+
+	// Build the ip range which we will use for the network
+	if err := newhtn.buildBridgeNetwork(addrs); err != nil {
+		return nil, err
+	}
+
+	return newhtn, nil
 }
 
-func PrepareSandboxNetwork(htn *HostNetwork, log *logging.Logger) (*SandboxNetwork, error) {
-	stn := new(SandboxNetwork)
-
-	stn.VethHost = tenus.MakeNetInterfaceName(ozDefaultInterfacePrefix)
-	stn.VethGuest = stn.VethHost + "1"
+func PrepareSandboxNetwork(stn *SandboxNetwork, htn *HostNetwork, log *logging.Logger) (*SandboxNetwork, error) {
+	if stn == nil {
+		stn = new(SandboxNetwork)
+		stn.VethHost = tenus.MakeNetInterfaceName(ozDefaultInterfacePrefix)
+		stn.VethGuest = stn.VethHost + "1"
+	}
 
 	stn.Gateway = htn.Gateway
 	stn.Class = htn.Class
@@ -104,20 +127,6 @@ func NetInit(stn *SandboxNetwork, htn *HostNetwork, log *logging.Logger) error {
 	rand.Seed(time.Now().Unix() ^ int64(os.Getpid()))
 
 	log.Info("Configuring host veth pair '%s' with: %s", stn.VethHost, stn.Ip+"/"+htn.Class)
-	/*
-		// Fetch the bridge from the ifname
-		br, err := tenus.BridgeFromName(ozDefaultInterfaceBridge)
-		if err != nil {
-			return fmt.Errorf("Unable to attach to bridge interface %, %s.", ozDefaultInterfaceBridge, err)
-		}
-	*/
-	// Make sure the bridge is configured and the link is up
-	//  This really shouldn't be needed, but Network-Manager is a PITA
-	//  and even if you actualy ignore the interface there's a race
-	//  between the interface being created and setting it's hwaddr
-	//if err := htn.configureBridgeInterface(log); err != nil {
-	//	return fmt.Errorf("Unable to reconfigure bridge: %+v", err)
-	//}
 
 	// Create the veth pair
 	veth, err := tenus.NewVethPairWithOptions(stn.VethHost, tenus.VethOptions{PeerName: stn.VethGuest})
@@ -148,6 +157,10 @@ func NetInit(stn *SandboxNetwork, htn *HostNetwork, log *logging.Logger) error {
 }
 
 func NetAttach(stn *SandboxNetwork, htn *HostNetwork, childPid int) error {
+	if os.Getpid() == 1 {
+		panic(errors.New("Cannot use NetAttach from child."))
+	}
+
 	// Assign the veth path to the namespace
 	if err := stn.Veth.SetPeerLinkNsPid(childPid); err != nil {
 		return fmt.Errorf("Unable to add veth pair %s to namespace, %s.", stn.VethHost, err)
@@ -160,29 +173,22 @@ func NetAttach(stn *SandboxNetwork, htn *HostNetwork, childPid int) error {
 	}
 
 	// Set interface address in the namespace
-	if err := stn.Veth.SetPeerLinkNetInNs(childPid, vethGuestIp, vethGuestIpNet, nil); err != nil {
+	if err := stn.Veth.SetPeerLinkNetInNs(childPid, vethGuestIp, vethGuestIpNet, &htn.Gateway); err != nil {
 		return fmt.Errorf("Unable to parse ip link in namespace, %s.", err)
 	}
+
 	return nil
 }
 
 func NetReconfigure(stn *SandboxNetwork, htn *HostNetwork, childPid int, log *logging.Logger) error {
 	if os.Getpid() == 1 {
-		panic(errors.New("Cannot use NetInit from child."))
+		panic(errors.New("Cannot use NetReconfigure from child."))
 	}
-
-	// Parse the ip/class into the the appropriate formats
-	vethGuestIp, vethGuestIpNet, err := net.ParseCIDR(stn.Ip + "/" + htn.Class)
-	if err != nil {
-		return fmt.Errorf("Unable to parse ip %s, %s.", stn.Ip, err)
+	tenus.DeleteLink(stn.VethHost)
+	if err := NetInit(stn, htn, log); err != nil {
+		return err
 	}
-
-	// Set interface address in the namespace
-	if err := stn.Veth.SetPeerLinkNetInNs(childPid, vethGuestIp, vethGuestIpNet, nil); err != nil {
-		return fmt.Errorf("Unable to parse ip link in namespace, %s.", err)
-	}
-
-	return nil
+	return NetAttach(stn, htn, childPid)
 }
 
 func (stn *SandboxNetwork) Cleanup(log *logging.Logger) {
@@ -214,6 +220,7 @@ func (htn *HostNetwork) configureBridgeInterface(log *logging.Logger) error {
 		}
 		htn.Gateway = brIp
 		htn.GatewayNet = brIpNet
+		htn.Broadcast = net_getbroadcast(brIp, brIpNet.Mask)
 		log.Info("Found available range: %+v", htn.GatewayNet.String())
 	}
 

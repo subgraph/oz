@@ -1,0 +1,17 @@
+[Unit]
+Description=Launches oz-daemon for application sandboxing
+Wants=network.target filesystem.target
+After=network.target filesystem.target
+
+[Service]
+ExecStart=/usr/local/bin/oz-daemon
+ExecReload=/bin/kill -HUP ${MAINPID}
+ExecStop=/bin/kill -INT ${MAINPID}
+#Restart=on-failure
+StandardOutput=syslog
+StandardError=syslog
+SyslogFacility=daemon
+SyslogIdentifier=oz-daemon
+
+[Install]
+WantedBy=graphical.target

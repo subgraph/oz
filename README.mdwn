@@ -74,8 +74,8 @@ Bridge networking is automatically configured by Oz, but you will need to setup
 at minimum a few iptables masquerading rules and ebtables isolation rules as follows:
 
 ```
-sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-sudo iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o enx... -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o wlp2s0 -j MASQUERADE
 sudo ebtables -P FORWARD DROP
 sudo ebtables -F FORWARD
 sudo ebtables -A FORWARD -i oz0 -j ACCEPT
@@ -106,6 +106,11 @@ $ sudo mkdir -p /var/lib/oz/cells.d
 $ sudo cp $GOPATH/src/github.com/subgraph/oz/profiles/* /var/lib/oz/cells.d/
 $ sudo mkdir /etc/oz
 $ sudo cp $GOPATH/src/github.com/subgraph/oz/profiles/generic-blacklist.seccomp /etc/oz/blacklist-generic.seccomp
+$ sudo cp $GOPATH/src/github.com/subgraph/oz/sources/etc/network/if-up.d/* /etc/network/if-up.d/
+$ sudo chmod a+x /etc/network/if-up.d/oz
+$ sudo cp $GOPATH/src/github.com/subgraph/oz/sources/etc/network/if-post-down.d/* /etc/network/if-post-down.d/
+$ sudo cp $GOPATH/src/github.com/subgraph/oz/sources/lib/systemd/system/oz-daemon.service /lib/systemd/system/oz-daemon.service
+$ sudo systemctl enable oz-daemon.service
 ```
 
 ## Enabling a profile

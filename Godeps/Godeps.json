@@ -21,8 +21,8 @@
 		},
 		{
 			"ImportPath": "github.com/milosgajdos83/tenus",
-			"Comment": "0.0.2-4-gb23433b",
-			"Rev": "b23433b5c5000c0dc50cf1b7fa80a93258cde1d9"
+			"Comment": "0.0.2-5-g748886f",
+			"Rev": "748886f405c379345b8e3f388949ea688f52efe0"
 		},
 		{
 			"ImportPath": "github.com/op/go-logging",

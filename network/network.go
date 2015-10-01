@@ -14,7 +14,7 @@ import (
 const (
 	ozDefaultInterfaceBridgeBase = "oz"
 	ozDefaultInterfaceBridge     = ozDefaultInterfaceBridgeBase + "0"
-	ozDefaultInterfacePrefix     = "veth"
+	ozDefaultInterfacePrefix     = "voz"
 	ozDefaultInterfaceInternal   = "eth0"
 	ozMaxRandTries               = 3
 )
@@ -108,9 +108,9 @@ func NetPrint(log *logging.Logger) {
 	log.Info(strHeader)
 
 	for _, netif := range ifs {
-		if strings.HasPrefix(netif.Name, ozDefaultInterfacePrefix) {
-			continue
-		}
+		//if strings.HasPrefix(netif.Name, ozDefaultInterfacePrefix) {
+		//	continue
+		//}
 		addrs, _ := netif.Addrs()
 
 		strLine = fmt.Sprintf("%-15.14s", netif.Name)

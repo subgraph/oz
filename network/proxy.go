@@ -176,7 +176,6 @@ func newProxyServer(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 		config.Destination = "127.0.0.1"
 	}
 
-
 	var lAddr, rAddr string
 	if !strings.HasPrefix(string(config.Proto), "unix") {
 		lAddr = net.JoinHostPort(config.Destination, strconv.Itoa(config.Port))

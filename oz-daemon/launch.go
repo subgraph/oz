@@ -198,7 +198,9 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 	cmd.Process.Signal(syscall.SIGUSR1)
 
 	wgNet := new(sync.WaitGroup)
-	if p.Networking.Nettype != network.TYPE_HOST && len(p.Networking.Sockets) > 0 {
+	if p.Networking.Nettype != network.TYPE_HOST &&
+	  p.Networking.Nettype != network.TYPE_NONE &&
+	  len(p.Networking.Sockets) > 0 {
 		wgNet.Add(1)
 		go func() {
 			defer wgNet.Done()

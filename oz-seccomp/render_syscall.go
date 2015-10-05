@@ -13,6 +13,7 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_MMAP:     render_mmap,
 		syscall.SYS_MREMAP:   render_mremap,
 		syscall.SYS_FUTEX:    render_futex,
+		syscall.SYS_OPENAT:   render_openat,
 	}
 	return r
 }

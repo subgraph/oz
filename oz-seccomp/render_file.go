@@ -38,6 +38,7 @@ func render_openat(pid int, args RegisterArgs) (string, error) {
 
 	openflagstr := ""
 	fdstr := ""
+	callrep := ""
 
 	if (flagval & C.O_RDONLY) == C.O_RDONLY {
 		openflagstr += "O_RDONLY"
@@ -56,15 +57,14 @@ func render_openat(pid int, args RegisterArgs) (string, error) {
 	if fd == -100 {
 		fdstr = "AT_FDCWD"
 	} else {
-		fdstr = fmt.Sprintf("%d", fd)	
+		fdstr = fmt.Sprintf("%d", fd)
 	}
 
-	if (flagval & C.O_CREAT) == C.O_CREAT) || (flagval & C.O_TMPFILE) == C.O_TMPFILE) {
-		callrep := fmt.Sprintf("openat(%s, \"%s\", %s, %d)", fdstr, path, openflagstr, mode)
+	if ((flagval & C.O_CREAT) == C.O_CREAT) || ((flagval & C.O_TMPFILE) == C.O_TMPFILE) {
+		callrep = fmt.Sprintf("openat(%s, \"%s\", %s, %d)", fdstr, path, openflagstr, mode)
+	} else {
+		callrep = fmt.Sprintf("openat(%s, \"%s\", %s)", fdstr, path, openflagstr)
 	}
-	else {
-		                callrep := fmt.Sprintf("openat(%s, \"%s\", %s)", fdstr, path, openflagstr)
-			}
 
 	return callrep, nil
 }

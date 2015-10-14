@@ -61,10 +61,45 @@ func render_openat(pid int, args RegisterArgs) (string, error) {
 	}
 
 	if ((flagval & C.O_CREAT) == C.O_CREAT) || ((flagval & C.O_TMPFILE) == C.O_TMPFILE) {
-		callrep = fmt.Sprintf("openat(%s, \"%s\", %s, %d)", fdstr, path, openflagstr, mode)
+		callrep = fmt.Sprintf("openat(%s, \"%s\", %s, %#o)", fdstr, path, openflagstr, mode)
 	} else {
 		callrep = fmt.Sprintf("openat(%s, \"%s\", %s)", fdstr, path, openflagstr)
 	}
 
 	return callrep, nil
+}
+
+func render_open(pid int, args RegisterArgs) (string, error) {
+
+	path, err := readStringArg(pid, uintptr(args[0]))
+	if err != nil {
+		return "", err
+	}
+	flagval := int32(args[1])
+	mode := int32(args[2])
+	openflagstr := ""
+	callrep := ""
+
+	if (flagval & C.O_RDONLY) == C.O_RDONLY {
+		openflagstr += "O_RDONLY"
+	} else if (flagval & C.O_WRONLY) == C.O_WRONLY {
+		openflagstr += "O_WRONLY"
+	} else if (flagval & C.O_RDWR) == C.O_RDWR {
+		openflagstr += "O_RDWR"
+	}
+
+	tmp := renderFlags(creatflags, uint(flagval))
+	if tmp != "" {
+		openflagstr += "|"
+		openflagstr += tmp
+	}
+
+	if ((flagval & C.O_CREAT) == C.O_CREAT) || ((flagval & C.O_TMPFILE) == C.O_TMPFILE) {
+		callrep = fmt.Sprintf("open(\"%s\", %s, %#o)", path, openflagstr, mode)
+	} else {
+		callrep = fmt.Sprintf("open(\"%s\", %s)", path, openflagstr)
+	}
+
+	return callrep, nil
+
 }

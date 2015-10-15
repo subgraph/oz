@@ -96,6 +96,16 @@ func render_mremap(pid int, args RegisterArgs) (string, error) {
 
 }
 
+func render_munmap(pid int, args RegisterArgs) (string, error) {
+
+	addr := args[0]
+	size := args[1]
+
+	callrep := fmt.Sprintf("munmap(0x%X, %d)", addr, size)
+
+	return callrep, nil
+}
+
 func render_mprotect(pid int, args RegisterArgs) (string, error) {
 
 	mode := args[2]

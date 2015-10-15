@@ -12,6 +12,7 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_MPROTECT: render_mprotect,
 		syscall.SYS_MMAP:     render_mmap,
 		syscall.SYS_MREMAP:   render_mremap,
+		syscall.SYS_MUNMAP:   render_munmap,
 		syscall.SYS_FUTEX:    render_futex,
 		syscall.SYS_OPENAT:   render_openat,
 		syscall.SYS_OPEN:     render_open,

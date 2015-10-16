@@ -16,6 +16,7 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_FUTEX:    render_futex,
 		syscall.SYS_OPENAT:   render_openat,
 		syscall.SYS_OPEN:     render_open,
+		syscall.SYS_MADVISE:  render_madvise,
 	}
 	return r
 }

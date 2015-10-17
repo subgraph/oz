@@ -96,9 +96,27 @@ $ sudo chown user. $GOPATH
 2. To build Oz with the required external Golang dependencies, run the following
 commands:
 
+Firstly we build the [godep](https://github.com/tools/godep) tool:
+
 ```
 $ go get github.com/tools/godep
+```
+
+Now checkout the source using either:
+
+```
+$ git clone https://github.com/subgraph/oz.git src/github.com/subgraph/oz
+```
+
+Or alternatively if we want to create a development environment use:
+
+```
 $ go get -d github.com/subgraph/oz
+```
+
+We are ready to build and install:
+
+``` 
 $ cd $GOPATH/src/github.com/subgraph/oz/
 $ $GOPATH/bin/godep go install ./...
 $ sudo cp $GOPATH/bin/oz* /usr/local/bin
@@ -110,6 +128,9 @@ $ sudo cp $GOPATH/src/github.com/subgraph/oz/sources/etc/network/if-up.d/* /etc/
 $ sudo chmod a+x /etc/network/if-up.d/oz
 $ sudo cp $GOPATH/src/github.com/subgraph/oz/sources/etc/network/if-post-down.d/* /etc/network/if-post-down.d/
 $ sudo cp $GOPATH/src/github.com/subgraph/oz/sources/lib/systemd/system/oz-daemon.service /lib/systemd/system/oz-daemon.service
+$ sudo cp $GOPATH/src/github.com/subgraph/oz/sources/etc/NetworkManager/conf.d/oz.conf /etc/NetworkManager/conf.d/oz.conf
+$ sudo dpkg-divert --add --package oz --rename --divert /etc/xpra/xpra.conf.pkg-dist /etc/xpra/xpra.conf
+$ sudo cp $GOPATH/src/github.com/subgraph/oz/sources/etc/xpra/xpra.conf /etc/xpra/xpra.conf
 $ sudo systemctl enable oz-daemon.service
 ```
 

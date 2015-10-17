@@ -49,17 +49,18 @@ func render_futex(pid int, args RegisterArgs) (string, error) {
 
 	// TODO: lots
 
-	if op == FUTEX_WAIT {
+	switch op {
+	case FUTEX_WAIT:
+		callrep = fmt.Sprintf("futex(0x%X, %s, %d", uintptr(args[0]), opstr, int32(args[2]))
+	case FUTEX_WAKE:
 		callrep = fmt.Sprintf("futex(0x%X, %s, %d)", uintptr(args[0]), opstr, int32(args[2]))
-	} else if op == FUTEX_WAKE {
+	case FUTEX_FD:
 		callrep = fmt.Sprintf("futex(0x%X, %s, %d)", uintptr(args[0]), opstr, int32(args[2]))
-	} else if op == FUTEX_FD {
-		callrep = fmt.Sprintf("futex(0x%X, %s, %d)", uintptr(args[0]), opstr, int32(args[2]))
-	} else if op == FUTEX_WAKE_BITSET {
+	case FUTEX_WAKE_BITSET:
 		callrep = fmt.Sprintf("futex(0x%X, %s, %d, %d)", uintptr(args[0]), opstr, int32(args[2]), args[5])
-	} else if op == FUTEX_WAIT_BITSET {
+	case FUTEX_WAIT_BITSET:
 		callrep = fmt.Sprintf("futex(0x%X, %s, %d, %d, %d", uintptr(args[0]), opstr, int32(args[2]), args[3], args[5])
-	} else {
+	default:
 		callrep = fmt.Sprintf("futex(0x%X, %s, %d, 0x%X, 0x%x, %d)", uintptr(args[0]), opstr, int32(args[2]), uintptr(args[3]), args[4], args[5])
 	}
 	return callrep, nil

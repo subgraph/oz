@@ -5,6 +5,33 @@ import (
 	"syscall"
 )
 
+var protocols = map[uint]string{
+	syscall.IPPROTO_IP:   "IPPROTO_IP",
+	syscall.IPPROTO_ICMP: "IPPROTO_ICMP",
+	syscall.IPPROTO_IGMP: "IPPROTO_IGMP",
+	syscall.IPPROTO_IPIP: "IPPROTO_IPIP",
+	syscall.IPPROTO_TCP:  "IPPROTO_TCP",
+	syscall.IPPROTO_EGP:  "IPPROTO_EGP",
+	syscall.IPPROTO_PUP:  "IPPROTO_PUP",
+	syscall.IPPROTO_UDP:  "IPPROTO_UDP",
+	syscall.IPPROTO_IDP:  "IPPROTO_IDP",
+	syscall.IPPROTO_TP:   "IPPROTO_TP",
+	syscall.IPPROTO_DCCP: "IPPROTO_DCCP",
+	syscall.IPPROTO_IPV6: "IPPROTO_IPV6",
+	syscall.IPPROTO_RSVP: "IPPROTO_RSVP",
+	syscall.IPPROTO_GRE:  "IPPROTO_GRE",
+	syscall.IPPROTO_ESP:  "IPPROTO_ESP",
+	syscall.IPPROTO_AH:   "IPPROTO_AH",
+	syscall.IPPROTO_MTP:  "IPPROTO_MTP",
+	//syscall.IPPROTO_BEETPH: "IPPROTO_BEETPH",
+	syscall.IPPROTO_ENCAP:   "IPPROTO_ENCAP",
+	syscall.IPPROTO_PIM:     "IPPROTO_PIM",
+	syscall.IPPROTO_COMP:    "IPPROTO_COMP",
+	syscall.IPPROTO_SCTP:    "IPPROTO_SCTP",
+	syscall.IPPROTO_UDPLITE: "IPPROTO_UDPLITE",
+	syscall.IPPROTO_RAW:     "IPPROTO_RAW",
+}
+
 var domainflags = map[uint]string{
 	syscall.AF_UNIX:      "AF_UNIX",
 	syscall.AF_INET:      "AF_INET",
@@ -35,10 +62,25 @@ var socktypeflags = map[uint]string{
 
 func render_socket(pid int, args RegisterArgs) (string, error) {
 
-	domain := domainflags[uint(args[0])]
-	socktype := socktypes[uint(args[1]&0xFF)]
+	domain := ""
+	socktype := ""
 
+	prot := fmt.Sprintf("%d", uint(args[2]))
+
+	if uint(args[0]) == syscall.AF_INET || uint(args[0]) == syscall.AF_INET6 {
+		if _, y := protocols[uint(args[2])]; y {
+			prot = protocols[uint(args[2])]
+		}
+	}
+	if _, y := domainflags[uint(args[0])]; y {
+		domain = domainflags[uint(args[0])]
+	} else {
+		domain = fmt.Sprintf("%d", args[0])
+	}
+
+	socktype = socktypes[uint(args[1]&0xFF)]
 	socktypestr := socktype
+
 	tmp := renderFlags(socktypeflags, uint(args[1]))
 
 	if tmp != "" {
@@ -47,6 +89,8 @@ func render_socket(pid int, args RegisterArgs) (string, error) {
 
 	socktypestr += tmp
 
-	callrep := fmt.Sprintf("socket(%s, %s, %d)", domain, socktypestr, args[2])
+	callrep := fmt.Sprintf("socket(%s, %s, %s)", domain, socktypestr, prot)
 	return callrep, nil
 }
+
+	

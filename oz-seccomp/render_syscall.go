@@ -13,11 +13,13 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_MMAP:     render_mmap,
 		syscall.SYS_MREMAP:   render_mremap,
 		syscall.SYS_MUNMAP:   render_munmap,
+		syscall.SYS_MADVISE:  render_madvise,
 		syscall.SYS_FUTEX:    render_futex,
 		syscall.SYS_OPENAT:   render_openat,
 		syscall.SYS_OPEN:     render_open,
-		syscall.SYS_MADVISE:  render_madvise,
+		syscall.SYS_MKDIR:    render_mkdir,
 		syscall.SYS_SOCKET:   render_socket,
+		syscall.SYS_RECVMSG:  render_recvmsg,
 	}
 	return r
 }

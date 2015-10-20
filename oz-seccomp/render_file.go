@@ -103,3 +103,16 @@ func render_open(pid int, args RegisterArgs) (string, error) {
 	return callrep, nil
 
 }
+
+func render_mkdir(pid int, args RegisterArgs) (string, error) {
+
+	path, err := readStringArg(pid, uintptr(args[0]))
+	if err != nil {
+		return "", err
+	}
+	mode := int32(args[1])
+
+	callrep := fmt.Sprintf("mkdir(\"%s\", %#o)", path, mode)
+
+	return callrep, nil
+}

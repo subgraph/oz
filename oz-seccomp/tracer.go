@@ -12,6 +12,9 @@ import (
 	"syscall"
 )
 
+// #include "sys/ptrace.h"
+import "C"
+
 const (
 	STRINGARG = iota + 1
 	PTRARG
@@ -70,7 +73,7 @@ func Tracer() {
 		}
 		log.Info("Tracing child pid: %v\n", pid)
 		for done == false {
-			syscall.PtraceSetOptions(pid, unix.PTRACE_O_TRACESECCOMP|unix.PTRACE_O_TRACEFORK|unix.PTRACE_O_TRACEVFORK|unix.PTRACE_O_TRACECLONE)
+			syscall.PtraceSetOptions(pid, unix.PTRACE_O_TRACESECCOMP|unix.PTRACE_O_TRACEFORK|unix.PTRACE_O_TRACEVFORK|unix.PTRACE_O_TRACECLONE|C.PTRACE_O_EXITKILL)
 			syscall.PtraceCont(pid, 0)
 			pid, err = syscall.Wait4(-1, &s, syscall.WALL, nil)
 			if err != nil {

@@ -9,6 +9,10 @@
 #include <limits.h>
 #include <sched.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+
+int checkProcessName(pid_t, char *);
+int hasPrefix(const char *, const char *);
 
 int enter_mount_namespace(void) {
 	if (geteuid() != 0) {

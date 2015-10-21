@@ -93,4 +93,27 @@ func render_socket(pid int, args RegisterArgs) (string, error) {
 	return callrep, nil
 }
 
-	
+func render_connect(pid int, args RegisterArgs) (string, error) {
+
+	// TODO Watch the length supplied by the process
+
+	buf, err := readBytesArg(pid, int(args[2]), uintptr(args[1]))
+	if err != nil {
+		return "", err
+	}
+
+	fam := bytestoint16(buf[:2])
+	addrstruct := ""
+	addrstruct = render_inetaddr(buf)
+	switch fam {
+	case syscall.AF_INET:
+		addrstruct = render_inetaddr(buf)
+	case syscall.AF_UNIX:
+		addrstruct = render_unixaddr(buf)
+	}
+
+	callrep := fmt.Sprintf("connect(%d, %s, %d)", args[0], addrstruct, args[2])
+
+	return callrep, nil
+
+}

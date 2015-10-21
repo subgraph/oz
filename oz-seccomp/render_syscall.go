@@ -19,7 +19,9 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_OPEN:     render_open,
 		syscall.SYS_MKDIR:    render_mkdir,
 		syscall.SYS_SOCKET:   render_socket,
+		syscall.SYS_CONNECT:  render_connect,
 		syscall.SYS_RECVMSG:  render_recvmsg,
+		syscall.SYS_PIPE:     render_pipe,
 	}
 	return r
 }

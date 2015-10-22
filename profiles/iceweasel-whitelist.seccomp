@@ -1,3 +1,4 @@
+pread64: 1
 read: 1
 select: 1
 brk: 1
@@ -18,6 +19,7 @@ stat: 1
 readahead: 1
 arch_prctl: 1
 write: 1
+pwrite64: 1
 writev: 1
 poll: 1
 fdatasync: 1

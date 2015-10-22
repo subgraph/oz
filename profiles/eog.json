@@ -11,8 +11,7 @@
 	"type":"empty"
 }
 , "whitelist": [
-	{"path":"${HOME}/.config/gtk-3.0/gtk.css"}
-
+	{"path":"${HOME}/.config/gtk-3.0/gtk.css", "ignore":true}
 	, {"path":"/var/lib/oz/cells.d/eog-whitelist.seccomp"}
 ]
 , "blacklist": [

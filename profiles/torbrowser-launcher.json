@@ -15,11 +15,11 @@
 	]
 }
 , "whitelist": [
-	{"path":"${HOME}/.local/share/torbrowser"}
-	, {"_path":"${HOME}/.cache/torbrowser"}
-	, {"path":"${HOME}/.config/torbrowser"}
-	, {"path":"${HOME}/Downloads/TorBrowser"}
-	, {"path":"/var/run/tor/control.authcookie"}
+	{"path":"${HOME}/.local/share/torbrowser", "can_create":true}
+	, {"_path":"${HOME}/.cache/torbrowser", "can_create":true}
+	, {"path":"${HOME}/.config/torbrowser", "can_create":true}
+	, {"path":"${HOME}/Downloads/TorBrowser", "can_create":true}
+	, {"path":"/run/tor/control.authcookie", "ignore":true}
 ]
 , "blacklist": [
 ]
@@ -32,6 +32,7 @@
 	, {"name":"TOR_CONTROL_AUTHENTICATE"}
 	, {"name":"TOR_CONTROL_COOKIE_AUTH_FILE"}
 ]
+, "allowed_groups": ["debian-tor"]
 , "seccomp": {
 	"mode":"blacklist"
 	, "enforce": true

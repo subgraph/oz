@@ -14,7 +14,7 @@
 	]
 }
 , "whitelist": [
-	{"path":"${HOME}/.pond"}
+	{"path":"${HOME}/.pond", "can_create":true}
 	, {"path":"/opt/usr/share/gopkgs/pond"}
 ]
 , "blacklist": [

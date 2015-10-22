@@ -9,7 +9,7 @@
 	"type":"bridge"
 }
 , "whitelist": [
-	{"path":"${HOME}/.purple"}
+	{"path":"${HOME}/.purple", "can_create":true}
 ]
 , "blacklist": [
 ]

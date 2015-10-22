@@ -84,6 +84,7 @@ func (fs *Filesystem) BindTo(from string, to string, flags int, u *user.User) er
 const (
 	BindReadOnly = 1 << iota
 	BindCanCreate
+	BindIgnore
 )
 
 func (fs *Filesystem) bindResolve(from string, to string, flags int, u *user.User) error {
@@ -121,14 +122,27 @@ func (fs *Filesystem) bindSame(p string, flags int, u *user.User) error {
 }
 
 func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) error {
+	cc := flags&BindCanCreate != 0
+	ii := flags&BindIgnore != 0
 	src, err := filepath.EvalSymlinks(from)
-	if err != nil {
+	if err != nil && !cc {
 		return fmt.Errorf("error resolving symlinks for path (%s): %v", from, err)
 	}
-	cc := flags&BindCanCreate != 0
+	if src == "" {
+		src = from
+	}
 	sinfo, err := readSourceInfo(src, cc, u)
 	if err != nil {
-		return fmt.Errorf("failed to bind path (%s): %v", src, err)
+		if ii {
+			return fmt.Errorf("failed to bind path (%s): %v", src, err)
+		} else {
+			fs.log.Warning("bind target (%s) missing and ignored!", src)
+			return nil
+		}
+	}
+	if sinfo == nil {
+		fs.log.Warning("bind target (%s) does not exist and has been ignored!", src)
+		return nil
 	}
 
 	if to == "" {
@@ -136,9 +150,9 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	}
 	to = path.Join(fs.Root(), to)
 
-	_, err = os.Stat(to)
+	s, err := os.Stat(to)
 	if err == nil || !os.IsNotExist(err) {
-		fs.log.Warning("Target (%s > %s) already exists, ignoring", src, to)
+		fs.log.Warning("Target (%s > %s) already exists, ignoring: %v %v", src, to, err, s)
 		return nil
 	}
 

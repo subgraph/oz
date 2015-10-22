@@ -16,6 +16,9 @@
 	, "/usr/bin/loweb"
 	, "/usr/bin/lowriter"
 ]
+, "_unused": [
+	"/usr/share/libreoffice/bin/lo-xlate-lang"
+]
 , "allow_files": true
 , "xserver": {
 	"enabled": true

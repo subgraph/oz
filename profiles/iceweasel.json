@@ -15,11 +15,11 @@
 , "whitelist": [
 	{"path":"/run/resolvconf"}
 	, {"path":"${HOME}/.mozilla", "can_create": true}
-	, {"_path":"${HOME}/.cache/mozilla"}
-	, {"path":"${HOME}/Downloads/"}
+	, {"_path":"${HOME}/.cache/mozilla", "can_create":true}
+	, {"path":"${HOME}/Downloads/", "can_create":true}
 
-	, {"path":"${HOME}/.config/gtk-3.0"}
-	, {"path":"${HOME}/.config/gtk-2.0"}
+	, {"path":"${HOME}/.config/gtk-3.0", "ignore":true}
+	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
 ]
 , "blacklist": [
 ]

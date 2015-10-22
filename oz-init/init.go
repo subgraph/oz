@@ -672,7 +672,13 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		return nil
 	}
 	for _, wl := range wlist {
-		flags := fs.BindCanCreate
+		flags := 0
+		if wl.CanCreate {
+			flags |= fs.BindCanCreate
+		}
+		if wl.Ignore {
+			flags |= fs.BindIgnore
+		}
 		if wl.ReadOnly {
 			flags |= fs.BindReadOnly
 		}

@@ -19,10 +19,10 @@
 }
 , "whitelist": [
 	{"path":"/run/user/${UID}/keyring/control"}
-	, {"path":"${HOME}/.local/share/gajim"}
-	, {"path":"${HOME}/.cache/gajim"}
-	, {"path":"${HOME}/.config/gajim"}
-	, {"path":"${HOME}/.local/share/keyrings"}
+	, {"path":"${HOME}/.local/share/gajim", "can_create":true}
+	, {"path":"${HOME}/.cache/gajim", "can_create":true}
+	, {"path":"${HOME}/.config/gajim", "can_create":true}
+	, {"path":"${HOME}/.local/share/keyrings", "ignore":true}
 ]
 , "blacklist": [
 ]

@@ -1,6 +1,7 @@
 package seccomp
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -9,6 +10,43 @@ import (
 	"syscall"
 	"unsafe"
 )
+
+func readBytesArg(pid int, size int, addr uintptr) (blob []byte, err error) {
+	buf := make([]byte, unsafe.Sizeof(addr))
+	err = nil
+	i := 0
+	var x uint
+	x = 0
+	a := uint(addr)
+
+	for i < size {
+		_, err := syscall.PtracePeekText(pid, uintptr(a+(x*uint(unsafe.Sizeof(addr)))), buf)
+		if err != nil {
+			fmt.Printf("Error (ptrace): %v\n", err)
+		} else {
+			if (size - i) >= int(unsafe.Sizeof(addr)) {
+				blob = append(blob, buf...)
+			} else {
+				blob = append(blob, buf[:(size-i)]...)
+			}
+			i += len(buf)
+			x++
+		}
+	}
+	return blob, err
+}
+
+func bytestoint32(buf []byte) (r int32) {
+	b := bytes.NewBuffer(buf)
+	binary.Read(b, binary.LittleEndian, &r)
+	return
+}
+
+func bytestoint16(buf []byte) (r int16) {
+	b := bytes.NewBuffer(buf)
+	binary.Read(b, binary.LittleEndian, &r)
+	return
+}
 
 func readStringArg(pid int, addr uintptr) (s string, err error) {
 	buf := make([]byte, unsafe.Sizeof(addr))

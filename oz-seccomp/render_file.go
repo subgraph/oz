@@ -103,3 +103,30 @@ func render_open(pid int, args RegisterArgs) (string, error) {
 	return callrep, nil
 
 }
+
+func render_mkdir(pid int, args RegisterArgs) (string, error) {
+
+	path, err := readStringArg(pid, uintptr(args[0]))
+	if err != nil {
+		return "", err
+	}
+	mode := int32(args[1])
+
+	callrep := fmt.Sprintf("mkdir(\"%s\", %#o)", path, mode)
+
+	return callrep, nil
+}
+
+func render_pipe(pid int, args RegisterArgs) (string, error) {
+
+	buf, err := readBytesArg(pid, 8, uintptr(args[0]))
+	fd1 := bytestoint32(buf[0:3])
+	fd2 := bytestoint32(buf[4:7])
+
+	callrep := fmt.Sprintf("pipe([%d, %d])", fd1, fd2)
+
+	if err != nil {
+		return "", err
+	}
+	return callrep, nil
+}

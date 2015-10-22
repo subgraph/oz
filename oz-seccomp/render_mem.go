@@ -8,6 +8,7 @@ import (
 // #include "asm-generic/mman-common.h"
 // #include "linux/mman.h"
 import "C"
+
 /*
 const (
 	MREMAP_MAYMOVE = 1

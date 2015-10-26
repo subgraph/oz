@@ -454,7 +454,7 @@ var syscalls = []SystemCall{
 	SystemCall{
 		name: "symlink",
 		num:  88,
-		args: SystemCallArgs{1, 2, 0, 0, 0, 0},
+		args: SystemCallArgs{1, 1, 0, 0, 0, 0},
 	},
 	SystemCall{
 		name: "readlink",

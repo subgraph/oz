@@ -171,8 +171,16 @@ func (mc *MsgConn) processOneMessage() bool {
 			mc.Close()
 			return true
 		}
+		// Fix for bug in 1.5.1 wrapping EOF in OpError
+		switch t := err.(type) {
+			case *net.OpError:
+				if t.Err == io.EOF {
+					mc.Close()
+					return true
+				}
+		}
 		if !mc.isClosed {
-			mc.logger().Warning("error on MsgConn.readMessage(): %v", err)
+			mc.logger().Warning("error on MsgConn.readMessage(): %v, %s", err)
 		}
 		return true
 	}

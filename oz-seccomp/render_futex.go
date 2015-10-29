@@ -1,6 +1,8 @@
 package seccomp
 
 import (
+	"unsafe"
+	"syscall"
 	"bytes"
 	"encoding/binary"
 	"fmt"
@@ -85,20 +87,16 @@ func render_futex(pid int, args RegisterArgs) (string, error) {
 	case C.FUTEX_WAKE_BITSET:
 		callrep = fmt.Sprintf("futex(0x%X, %s, %d, %d)", uintptr(args[0]), opstr, int32(args[2]), args[5])
 	case C.FUTEX_WAIT_BITSET:
-		var tv_sec int = 0
-		var tv_nsec int = 0
+		var t syscall.Timespec
 		if (args[3]) != 0 {
-			buf, err := readBytesArg(pid, 16, uintptr(args[3]))
+			buf, err := readBytesArg(pid, int(unsafe.Sizeof(t)), uintptr(args[3]))
 			if err != nil {
 				return "", err
 			}
-
-			b := bytes.NewBuffer(buf[:8])
-			binary.Read(b, binary.LittleEndian, &tv_sec)
-			b = bytes.NewBuffer(buf[8:])
-			binary.Read(b, binary.LittleEndian, &tv_nsec)
+			b := bytes.NewBuffer(buf)
+			binary.Read(b, binary.LittleEndian, &t)
 		}
-		callrep = fmt.Sprintf("futex(0x%X, %s, %d, {%d, %d}, %x)", uintptr(args[0]), opstr, int32(args[2]), tv_sec, tv_nsec, uint32(args[5]))
+		callrep = fmt.Sprintf("futex(0x%X, %s, %d, {%d, %d}, %x)", uintptr(args[0]), opstr, int32(args[2]), t.Sec, t.Nsec, uint32(args[5]))
 	case C.FUTEX_WAKE_OP:
 		wakeopstr := "{"
 		wakeop := uint32(args[5])

@@ -61,12 +61,13 @@ func readStringArg(pid int, addr uintptr) (s string, err error) {
 				if buf[b] == 0 {
 					done = true
 					break
-				} else {
+				}  else {
 					s += string(buf[b])
-					if len(s) > 90 {
+					/*if len(s) > 90 {
 						s += "..."
 						break
 					}
+					*/
 				}
 			}
 		}

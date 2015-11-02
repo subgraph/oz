@@ -31,6 +31,6 @@
         "mode":"whitelist"
         , "enforce": true
         , "seccomp_whitelist":"/var/lib/oz/cells.d/iceweasel-whitelist.seccomp"
-        , "seccomp_blacklist":"/var/lib/oz/cells.d/evince-blacklist.seccomp"
+        , "seccomp_blacklist":"/var/lib/oz/cells.d/generic-blacklist.seccomp"
 }
 }

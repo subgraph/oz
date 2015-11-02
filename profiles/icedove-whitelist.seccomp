@@ -1,3 +1,4 @@
+mlock: 1
 fdatasync: 1
 capget: 1
 capset: 1

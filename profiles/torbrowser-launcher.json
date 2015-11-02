@@ -1,7 +1,6 @@
 {
 "path": "/usr/bin/torbrowser-launcher"
 , "watchdog": "start-tor-browser"
-, "allowed_groups": ["debian-tor"]
 , "xserver": {
 	"enabled": true
 	, "enable_tray": false

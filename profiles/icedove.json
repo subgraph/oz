@@ -2,8 +2,9 @@
 "path": "/usr/bin/icedove"
 , "xserver": {
 	"enabled": true
-	, "enable_tray": false
+	, "enable_tray": true
 	, "tray_icon": "/usr/share/icons/hicolor/scalable/apps/icedove.svg"
+	, "disable_audio": true
 }
 , "networking":{
 	"type":"bridge"
@@ -13,15 +14,18 @@
 }
 , "whitelist": [
 	{"path":"/run/resolvconf"}
-	, {"path":"/run/user/${UID}/keyring/control", "ignore":true}
-	, {"path":"${HOME}/.local/share/keyrings", "ignore":true}
-	, {"path":"/tmp/gpg-*/S.gpg-agent", "ignore":true}
-	, {"path":"${HOME}/.cache/icedove", "can_create":true}
-	, {"path":"${HOME}/.gnupg", "ignore":true}
-	, {"path":"${HOME}/.icedove", "can_create":true}
+	, {"path":"/run/user/${UID}/keyring"}
+	, {"path":"/tmp/gpg-*"}
+	, {"path":"${HOME}/.cache/icedove"}
+	, {"path":"${HOME}/.gnupg"}
+	, {"path":"${HOME}/.thunderbird"}
+	, {"path":"${HOME}/.icedove"}
 
-	, {"path":"${HOME}/.config/gtk-3.0", "ignore":true}
-	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
+	, {"path":"${HOME}/.config/gtk-3.0"}
+	, {"path":"${HOME}/.config/gtk-2.0"}
+	, {"path":"/var/lib/oz/cells.d/icedove-whitelist.seccomp"}
+	, {"path":"/var/lib/oz/cells.d/icedove.json"}
+
 ]
 , "_blacklist": [
 ]
@@ -31,7 +35,10 @@
 	, {"name":"GNOME_KEYRING_PID", "value":"1"}
 ]
 , "seccomp": {
-	"mode":"blacklist"
-	, "enforce": true
+        "mode":"whitelist"
+        , "enforce": true
+        , "seccomp_whitelist":"/var/lib/oz/cells.d/icedove-whitelist.seccomp"
+        , "seccomp_blacklist":"/var/lib/oz/cells.d/evince-blacklist.seccomp"
 }
+
 }

@@ -1,11 +1,11 @@
 package seccomp
 
 import (
-	"unsafe"
-	"syscall"
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"syscall"
+	"unsafe"
 )
 
 // #include "linux/futex.h"
@@ -75,7 +75,6 @@ func render_futex(pid int, args RegisterArgs) (string, error) {
 	}
 
 	// TODO: lots
-
 
 	switch op {
 	case C.FUTEX_WAIT:

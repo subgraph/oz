@@ -1,11 +1,49 @@
 package seccomp
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
+	"os"
+	"syscall"
+	"unsafe"
 )
 
 // #include "asm-generic/fcntl.h"
 import "C"
+
+var whences = map[int16]string{
+	int16(os.SEEK_SET): "SEEK_SET",
+	int16(os.SEEK_CUR): "SEEK_CUR",
+	int16(os.SEEK_END): "SEEK_END",
+}
+
+var fcntllock = map[int16]string{
+	C.F_RDLCK: "F_RDLCK",
+	C.F_WRLCK: "F_WRLCK",
+	C.F_UNLCK: "F_UNLCK",
+}
+
+var fcntlcmds = map[int32]string{
+	C.F_DUPFD:         "F_DUPFD",
+	C.F_GETFD:         "F_GETFD",
+	C.F_SETFD:         "F_SETFD",
+	C.F_GETFL:         "F_GETFL",
+	C.F_SETFL:         "F_SETFL",
+	C.F_GETLK:         "F_GETLK",
+	C.F_SETLK:         "F_SETLK",
+	C.F_SETLKW:        "F_SETLKW",
+	C.F_SETOWN:        "F_SETOWN",
+	C.F_GETOWN:        "F_GETOWN",
+	C.F_SETSIG:        "F_SETSIG",
+	C.F_GETSIG:        "F_GETSIG",
+	C.F_GETLK64:       "F_GETLK64",
+	C.F_SETLK64:       "F_SETLK64",
+	C.F_SETLKW64:      "F_SETLKW64",
+	C.F_SETOWN_EX:     "F_SETOWN_EX",
+	C.F_GETOWN_EX:     "F_GETOWN_EX",
+	C.F_GETOWNER_UIDS: "F_GETOWNER_UIDS",
+}
 
 var openflags = map[int32]string{
 	C.O_RDONLY: "O_RDONLY",
@@ -129,4 +167,41 @@ func render_pipe(pid int, args RegisterArgs) (string, error) {
 		return "", err
 	}
 	return callrep, nil
+}
+
+func render_fcntl(pid int, args RegisterArgs) (string, error) {
+
+	fd := int32(args[0])
+	cmd := int32(args[1])
+
+	cmdstr := fcntlcmds[cmd]
+
+	arg3 := ""
+
+	switch args[1] {
+
+	case C.F_SETLK, C.F_GETLK, C.F_SETLKW:
+		var flock syscall.Flock_t
+		buf, err := readBytesArg(pid, int(unsafe.Sizeof(flock)), uintptr(args[2]))
+		if err != nil {
+			return "", err
+		}
+		b := bytes.NewBuffer(buf)
+		binary.Read(b, binary.LittleEndian, &flock)
+		arg3 = render_Flock_t(flock)
+	default:
+		arg3 = fmt.Sprintf("%x", args[2])
+	}
+
+	callrep := fmt.Sprintf("fcntl(%d,%s,%s)", fd, cmdstr, arg3)
+
+	return callrep, nil
+
+}
+
+func render_Flock_t(flock syscall.Flock_t) string {
+	typestr := fcntllock[flock.Type]
+	whence := whences[flock.Whence]
+
+	return fmt.Sprintf("{type=%s, whence=%s, start=%v, len=%v}", typestr, whence, flock.Start, flock.Len)
 }

@@ -23,6 +23,7 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_RECVMSG:  render_recvmsg,
 		syscall.SYS_PIPE:     render_pipe,
 		syscall.SYS_CAPGET:   render_capget,
+		syscall.SYS_FCNTL:    render_fcntl,
 	}
 	return r
 }

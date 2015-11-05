@@ -24,7 +24,7 @@ Due to the alpha nature of this project there currently is no package for easy i
 Currently Oz only works and is only tested for Debian (>= jessie).
 As of this writing it does **not** work in Ubuntu. While it has been minimally tested under Fedora,
 there doesn't exist an RPM equivalent to `dpkg-divert` which allows to conveniantly wrap executables of existing program.
-For seccomp filters you need at least kernel version 3.5.
+For seccomp filters you need at least kernel version 3.17. We recommend using Debian stretch with a 4.0+ grsecurity patched kernel.
 
 It is highly recommend that you run it in conjunction with [grsecurity](https://grsecurity.net/).
 

@@ -51,6 +51,14 @@ var openflags = map[int32]string{
 	C.O_RDWR:   "O_RDWR",
 }
 
+var fcntlflags = map[uint]string{
+	C.O_APPEND:   "O_APPEND",
+	C.O_SYNC:     "O_ASYNC",
+	C.O_DIRECT:   "O_DIRECT",
+	C.O_NOATIME:  "O_NOATIME",
+	C.O_NONBLOCK: "O_NONBLOCK",
+}
+
 var creatflags = map[uint]string{
 	C.O_CLOEXEC:   "O_CLOEXEC",
 	C.O_CREAT:     "O_CREAT",
@@ -182,13 +190,44 @@ func render_fcntl(pid int, args RegisterArgs) (string, error) {
 
 	case C.F_SETLK, C.F_GETLK, C.F_SETLKW:
 		var flock syscall.Flock_t
-		buf, err := readBytesArg(pid, int(unsafe.Sizeof(flock)), uintptr(args[2]))
-		if err != nil {
-			return "", err
+		if args[2] == 0 {
+			arg3 = "NULL"
+		} else {
+
+			buf, err := readBytesArg(pid, int(unsafe.Sizeof(flock)), uintptr(args[2]))
+			if err != nil {
+				return "", err
+			}
+			b := bytes.NewBuffer(buf)
+			binary.Read(b, binary.LittleEndian, &flock)
+			arg3 = render_Flock_t(flock)
 		}
-		b := bytes.NewBuffer(buf)
-		binary.Read(b, binary.LittleEndian, &flock)
-		arg3 = render_Flock_t(flock)
+	case C.F_SETFL:
+		flagval := int32(args[2])
+		if (flagval & C.O_RDONLY) == C.O_RDONLY {
+			arg3 += "O_RDONLY"
+		} else if (flagval & C.O_WRONLY) == C.O_WRONLY {
+			arg3 += "O_WRONLY"
+		} else if (flagval & C.O_RDWR) == C.O_RDWR {
+			arg3 += "O_RDWR"
+		}
+
+		tmp := renderFlags(fcntlflags, uint(flagval))
+		if tmp != "" {
+			arg3 += "|"
+			arg3 += tmp
+		}
+		if flagval == 0 {
+			arg3 = "0"
+		}
+
+	case C.F_SETFD:
+		flagval := int32(args[2])
+		if flagval == 1 {
+			arg3 = "O_CLOEXEC"
+		} else {
+			arg3 = "0"
+		}
 	default:
 		arg3 = fmt.Sprintf("%x", args[2])
 	}

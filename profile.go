@@ -78,6 +78,7 @@ const (
 type SeccompConf struct {
 	Mode              SeccompMode
 	Enforce           bool
+	Debug		  bool
 	Seccomp_Whitelist string
 	Seccomp_Blacklist string
 }

@@ -128,6 +128,9 @@ func Tracer() {
 						log.Info("%v", err)
 						continue
 					}
+				if p.Seccomp.Debug == true {
+					call += "\n" + renderSyscallBasic(pid, systemcall, regs)
+				}
 				} else {
 					call = renderSyscallBasic(pid, systemcall, regs)
 				}

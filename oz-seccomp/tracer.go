@@ -100,10 +100,12 @@ func Tracer() {
 			switch uint32(s) >> 8 {
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8):
+				/*
 				if err != nil {
 					log.Error("Error (ptrace): %v", err)
 					continue
 				}
+				*/
 				var regs syscall.PtraceRegs
 				err = syscall.PtraceGetRegs(pid, &regs)
 
@@ -129,48 +131,71 @@ func Tracer() {
 						continue
 					}
 				if p.Seccomp.Debug == true {
-					call += "\n" + renderSyscallBasic(pid, systemcall, regs)
+					call += "\n  " + renderSyscallBasic(pid, systemcall, regs)
 				}
 				} else {
 					call = renderSyscallBasic(pid, systemcall, regs)
 				}
 
-				log.Info("==============================================\nseccomp hit on sandbox pid %v (%v) syscall %v (%v):\n\n%s\nI ==============================================\n\n", pid, getProcessCmdLine(pid), systemcall.name, systemcall.num, call)
+				log.Info("seccomp hit on sandbox pid %v (%v) syscall %v (%v):\n  %s", pid, getProcessCmdLine(pid), systemcall.name, systemcall.num, call)
 				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):
-				log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
+				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8):
-				log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_FORK << 8):
-				log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
-				log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
-				log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
-				log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_STOP << 8):
-				log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			case uint32(unix.SIGTRAP):
-				log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			case uint32(unix.SIGCHLD):
-				log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			case uint32(unix.SIGSTOP):
-				log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
 				continue
 			default:
 				y := s.StopSignal()
-				log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
+				if p.Seccomp.Debug == true {
+					log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
+				}
 				continue
 			}
 		}

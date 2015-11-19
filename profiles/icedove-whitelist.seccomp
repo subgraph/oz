@@ -58,7 +58,8 @@ fcntl: 1
 fstatfs: 1
 fsync: 1
 ftruncate: 1
-futex: 1
+# futex: FUTEX_CMP_REQUEUE_PRIVATE || FUTEX_WAIT || FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME || FUTEX_WAIT_PRIVATE || FUTEX_WAKE_OP_PRIVATE || FUTEX_WAKE_PRIVATE
+futex: arg1 == 0 || arg1 == 128 || arg1 == 129 || arg1 == 132 || arg1 == 133 || arg1 == 393
 getcwd: 1
 getdents: 1
 getgid: 1

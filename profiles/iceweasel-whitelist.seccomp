@@ -51,7 +51,7 @@ chmod: 1
 chdir: 1
 setsid: 1
 rmdir: 1
-futex: 1
+futex: arg1 == 0 || arg1 == 128 || arg1 == 129 || arg1 == 132 || arg1 == 133 || arg1 == 393 || arg1 == 134 || arg1 == 1 || arg1 == 135
 fcntl: 1
 restart_syscall: 1
 recvfrom: 1

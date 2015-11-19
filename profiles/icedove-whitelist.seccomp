@@ -73,7 +73,8 @@ getuid: 1
 inotify_add_watch: 1
 inotify_init1: 1
 inotify_rm_watch: 1
-ioctl: 1
+# ioctl: FIONREAD
+ioctl: arg1 == 0x541b
 link: 1
 lseek: 1
 openat: 1

@@ -69,7 +69,8 @@ link: 1
 rename: 1
 prctl: 1
 setpriority: 1
-ioctl: 1
+# ioctl: FIONREAD
+ioctl: arg1 == 0x541b
 tgkill: 1
 fadvise64: 1
 fallocate: 1

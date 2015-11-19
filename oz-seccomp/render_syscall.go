@@ -24,6 +24,7 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_PIPE:     render_pipe,
 		syscall.SYS_CAPGET:   render_capget,
 		syscall.SYS_FCNTL:    render_fcntl,
+		syscall.SYS_IOCTL:    render_ioctl,
 	}
 	return r
 }

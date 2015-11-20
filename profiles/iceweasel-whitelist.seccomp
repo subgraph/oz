@@ -1,3 +1,5 @@
+# prctl: PR_SET_NAME || PR_GET_NAME
+prctl: arg0 == 15 || arg0 == 16
 pread64: 1
 read: 1
 select: 1
@@ -68,7 +70,6 @@ clone: 1
 wait4: 1
 link: 1
 rename: 1
-prctl: 1
 setpriority: 1
 # ioctl: FIONREAD
 ioctl: arg1 == 0x541b

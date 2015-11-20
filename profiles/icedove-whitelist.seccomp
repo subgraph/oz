@@ -1,3 +1,5 @@
+# prctl: PR_SET_NAME || PR_GET_NAME || PR_GET_TIMERSLACK
+prctl: arg0 == 15 || arg0 == 16 || arg0 == 30
 mlock: 1
 fdatasync: 1
 capget: 1
@@ -81,7 +83,6 @@ lseek: 1
 openat: 1
 pipe2: 1
 poll: 1
-prctl: 1
 quotactl: 1
 readahead: 1
 recvfrom: 1

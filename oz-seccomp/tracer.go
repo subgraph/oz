@@ -101,10 +101,10 @@ func Tracer() {
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8):
 				/*
-				if err != nil {
-					log.Error("Error (ptrace): %v", err)
-					continue
-				}
+					if err != nil {
+						log.Error("Error (ptrace): %v", err)
+						continue
+					}
 				*/
 				var regs syscall.PtraceRegs
 				err = syscall.PtraceGetRegs(pid, &regs)
@@ -130,9 +130,9 @@ func Tracer() {
 						log.Info("%v", err)
 						continue
 					}
-				if p.Seccomp.Debug == true {
-					call += "\n  " + renderSyscallBasic(pid, systemcall, regs)
-				}
+					if p.Seccomp.Debug == true {
+						call += "\n  " + renderSyscallBasic(pid, systemcall, regs)
+					}
 				} else {
 					call = renderSyscallBasic(pid, systemcall, regs)
 				}

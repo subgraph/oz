@@ -38,7 +38,7 @@ func renderSyscallBasic(pid int, systemcall SystemCall, regs syscall.PtraceRegs)
 		case 2:
 			reg = regs.Rdx
 		case 3:
-			reg = regs.Rcx
+			reg = regs.R10
 		case 4:
 			reg = regs.R8
 		case 5:

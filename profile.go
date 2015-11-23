@@ -141,7 +141,6 @@ func (ps Profiles) GetProfileByName(name string) (*Profile, error) {
 		}
 		loadedProfiles = ps
 	}
-
 	for _, p := range loadedProfiles {
 		if p.Name == name {
 			return p, nil

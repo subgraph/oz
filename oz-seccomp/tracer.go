@@ -147,6 +147,11 @@ func Tracer() {
 				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8):
+				newpid, err := syscall.PtraceGetEventMsg(pid)
+				if err != nil {
+					log.Error("PTrace event message retrieval failed: %v", err)
+				}
+				children[int(newpid)] = true
 				if p.Seccomp.Debug == true {
 					log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
@@ -155,16 +160,32 @@ func Tracer() {
 				if p.Seccomp.Debug == true {
 					log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
+				newpid, err := syscall.PtraceGetEventMsg(pid)
+				if err != nil {
+					log.Error("PTrace event message retrieval failed: %v", err)
+				}
+				children[int(newpid)] = true
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
 				if p.Seccomp.Debug == true {
 					log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
+				newpid, err := syscall.PtraceGetEventMsg(pid)
+				if err != nil {
+					log.Error("PTrace event message retrieval failed: %v", err)
+				}
+				children[int(newpid)] = true
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
 				if p.Seccomp.Debug == true {
 					log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
+				newpid, err := syscall.PtraceGetEventMsg(pid)
+				if err != nil {
+					log.Error("PTrace event message retrieval failed: %v", err)
+				}
+				children[int(newpid)] = true
+
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
 				if p.Seccomp.Debug == true {

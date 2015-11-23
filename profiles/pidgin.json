@@ -9,14 +9,19 @@
 	"type":"bridge"
 }
 , "whitelist": [
-	{"path":"${HOME}/.purple", "can_create":true}
+	{"path":"${HOME}/.purple", "can_create":true} 
+	,{"path":"/var/lib/oz/cells.d/pidgin.json", "can_create":false}
+	,{"path":"/var/lib/oz/cells.d/pidgin-whitelist.seccomp", "can_create": false}
+	
 ]
 , "blacklist": [
 ]
 , "environment": [
 ]
 , "seccomp": {
-	"mode":"blacklist"
-	, "enforce": true
+	"mode":"whitelist"
+	, "enforce": false
+	, "debug": true
+	, "seccomp_whitelist": "/var/lib/oz/cells.d/pidgin-whitelist.seccomp"
 }
 }

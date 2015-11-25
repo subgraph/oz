@@ -1,6 +1,7 @@
 # prctl: PR_SET_NAME || PR_GET_NAME || PR_SET_SECCOMP || PR_GET_TIMERSLACK
 prctl: arg0 == 15 || arg0 == 16 || arg0 == 22 || arg0 == 30
 epoll_create1: 1
+readlinkat: 1
 getrandom: 1
 accept4: 1
 newfstatat: 1

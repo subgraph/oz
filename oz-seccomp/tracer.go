@@ -100,12 +100,6 @@ func Tracer() {
 			switch uint32(s) >> 8 {
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_SECCOMP << 8):
-				/*
-					if err != nil {
-						log.Error("Error (ptrace): %v", err)
-						continue
-					}
-				*/
 				var regs syscall.PtraceRegs
 				err = syscall.PtraceGetRegs(pid, &regs)
 

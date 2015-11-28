@@ -371,6 +371,13 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		cpath = path.Join(path.Dir(cpath) + "-oz", path.Base(cpath))
 	}
 
+	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
+		st.log.Notice("Enabling seccmp training mode for : %s", cpath)
+		spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+		cmdArgs = append([]string{spath, "-w", cpath}, cmdArgs...)
+		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
+	}
+
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {

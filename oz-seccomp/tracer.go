@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/subgraph/oz"
+	"github.com/subgraph/oz/fs"
 	"golang.org/x/sys/unix"
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
+	"path"
 	"syscall"
 )
 
@@ -25,45 +28,75 @@ type SystemCallArgs []int
 
 func Tracer() {
 
-	p := new(oz.Profile)
-	if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
-		log.Error("unable to decode profile data: %v", err)
-		os.Exit(1)
+	var train = false
+	var cmd string
+	var noprofile = false
+	var cmdArgs []string
+	var debug = false
+	var p *oz.Profile
+
+	if os.Args[1] == "-t" {
+		train = true
+		noprofile = true
+		cmd = "/usr/local/bin/oz-seccomp"
+		cmdArgs = append([]string{"-t"}, os.Args[2:]...)
+
+	} else {
+
+		p = new(oz.Profile)
+		if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
+			log.Error("unable to decode profile data: %v", err)
+			os.Exit(1)
+		}
+		if p.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
+			train = true
+		}
+		debug = p.Seccomp.Debug
+		cmd = os.Args[1]
+		cmdArgs = os.Args[2:]
+
 	}
 
 	var proc_attr syscall.ProcAttr
 	var sys_attr syscall.SysProcAttr
+	var cpid = 0
 
 	sys_attr.Ptrace = true
 	done := false
 	proc_attr.Sys = &sys_attr
 
-	cmd := os.Args[1]
-	cmdArgs := os.Args[2:]
 	log.Info("Tracer running command (%v) arguments (%v)\n", cmd, cmdArgs)
 	c := exec.Command(cmd)
 	c.SysProcAttr = &syscall.SysProcAttr{Ptrace: true}
 	c.Env = os.Environ()
 	c.Args = append(c.Args, cmdArgs...)
 
-	pi, err := c.StdinPipe()
-	if err != nil {
-		fmt.Errorf("error creating stdin pipe for tracer process: %v", err)
-		os.Exit(1)
-	}
-	jdata, err := json.Marshal(p)
-	if err != nil {
-		fmt.Errorf("Unable to marshal seccomp state: %+v", err)
-		os.Exit(1)
-	}
-	io.Copy(pi, bytes.NewBuffer(jdata))
-	log.Info(string(jdata))
-	pi.Close()
+	if noprofile == false {
 
+		pi, err := c.StdinPipe()
+		if err != nil {
+			fmt.Errorf("error creating stdin pipe for tracer process: %v", err)
+			os.Exit(1)
+		}
+		jdata, err := json.Marshal(p)
+		if err != nil {
+			fmt.Errorf("Unable to marshal seccomp state: %+v", err)
+			os.Exit(1)
+		}
+		io.Copy(pi, bytes.NewBuffer(jdata))
+		log.Info(string(jdata))
+		pi.Close()
+	}
 	children := make(map[int]bool)
 	renderFunctions := getRenderingFunctions()
 
+	trainingset := make(map[int]bool)
+	trainingargs := make(map[int]map[int][]uint)
+
+	log.Info("%s", cmd)
+
 	if err := c.Start(); err == nil {
+		cpid = c.Process.Pid
 		children[c.Process.Pid] = true
 		var s syscall.WaitStatus
 		pid, err := syscall.Wait4(-1, &s, syscall.WALL, nil)
@@ -118,13 +151,29 @@ func Tracer() {
 				r := getSyscallRegisterArgs(regs)
 				call := ""
 
+				if train == true {
+					trainingset[getSyscallNumber(regs)] = true
+					if systemcall.captureArgs != nil {
+						for c, i := range systemcall.captureArgs {
+							if i == 1 {
+								if trainingargs[getSyscallNumber(regs)] == nil {
+									trainingargs[getSyscallNumber(regs)] = make(map[int][]uint)
+								}
+								if contains(trainingargs[getSyscallNumber(regs)][c], uint(r[c])) == false {
+									trainingargs[getSyscallNumber(regs)][c] = append(trainingargs[getSyscallNumber(regs)][c], uint(r[c]))
+								}
+							}
+						}
+					}
+				}
+
 				if f, ok := renderFunctions[getSyscallNumber(regs)]; ok {
 					call, err = f(pid, r)
 					if err != nil {
 						log.Info("%v", err)
 						continue
 					}
-					if p.Seccomp.Debug == true {
+					if debug == true {
 						call += "\n  " + renderSyscallBasic(pid, systemcall, regs)
 					}
 				} else {
@@ -135,9 +184,10 @@ func Tracer() {
 				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
+				delete(children, pid)
 				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_CLONE << 8):
@@ -146,12 +196,12 @@ func Tracer() {
 					log.Error("PTrace event message retrieval failed: %v", err)
 				}
 				children[int(newpid)] = true
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_FORK << 8):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -161,7 +211,7 @@ func Tracer() {
 				children[int(newpid)] = true
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -171,7 +221,7 @@ func Tracer() {
 				children[int(newpid)] = true
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -182,38 +232,114 @@ func Tracer() {
 
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_STOP << 8):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGCHLD):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGSTOP):
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			default:
 				y := s.StopSignal()
-				if p.Seccomp.Debug == true {
+				if debug == true {
 					log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
 				}
 				continue
 			}
 		}
-	}
 
+		if train == true {
+			var u *user.User
+			var e error
+			u, e = user.Current()
+			var resolvedpath = ""
+
+			if e != nil {
+				log.Error("user.Current(): %v", e)
+			}
+
+			if noprofile == false {
+				resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.Train_Output, u)
+				if e != nil {
+					log.Error("resolveVars(): %v", e)
+				}
+				log.Info("RESOLVED PATH: %s", resolvedpath)
+			} else {
+				s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(os.Args[2]), cpid)
+				resolvedpath, e = fs.ResolvePathNoGlob(s, u)
+			}
+			policyout := "execve:1\n"
+			for call := range trainingset {
+				done := false
+				for c := range trainingargs {
+					if c == call {
+						for a, v := range trainingargs[c] {
+							sc, _ := syscallByNum(call)
+							policyout += fmt.Sprintf("%s:%s\n", sc.name, genArgs(uint(a), (v)))
+							done = true
+						}
+					}
+				}
+				if done == false {
+					sc, _ := syscallByNum(call)
+					policyout += fmt.Sprintf("%s:1\n", sc.name)
+				}
+			}
+			log.Info(policyout)
+			f, err := os.OpenFile(resolvedpath, os.O_CREATE|os.O_RDWR, 0600)
+			if err == nil {
+				_, err := f.WriteString(policyout)
+				if err != nil {
+					log.Error("Error writing policy file: %v", err)
+				}
+				err = f.Close()
+				if err != nil {
+					log.Error("Error closing policy file: %v", err)
+				}
+			} else {
+				log.Error("Error opening policy file \"%s\": %v", resolvedpath, err)
+			}
+		}
+	}
+}
+
+func genArgs(a uint, vals []uint) string {
+	s := ""
+	for idx, x := range vals {
+		s += fmt.Sprintf(" arg%d == %d ", a, x)
+		if idx < len(vals)-1 {
+			s += "||"
+		}
+	}
+	return s
+}
+
+func contains(slice []uint, val uint) bool {
+	for _, x := range slice {
+		if val == x {
+			return true
+		}
+	}
+	return false
+}
+func fname(p string) string {
+	_, fname := path.Split(p)
+	return fname
 }

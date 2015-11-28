@@ -34,6 +34,8 @@ func Main() {
 		os.Exit(1)
 	}
 
+	log.Info("%v",os.Args)
+
 	cmd := os.Args[2]
 	cmdArgs := os.Args[2:]
 
@@ -48,6 +50,26 @@ func Main() {
 		}
 	}
 
+	if os.Args[1] == "-t" {
+		fpath := path.Join(config.EtcPrefix, "training-generic.seccomp")
+		filter, err := seccomp.Compile(fpath, false)
+		if err != nil {
+			log.Error("Seccomp filter compile failed: %v", err)
+			os.Exit(1)
+		}
+		err = seccomp.Install(filter)
+		if err != nil {
+			log.Error("Error (seccomp): %v", err)
+			os.Exit(1)
+		}
+		err = syscall.Exec(cmd, cmdArgs, os.Environ())
+		if err != nil {
+			log.Error("Error (exec): %v %s", err, cmd)
+			os.Exit(1)
+		}
+
+	}
+
 	p := new(oz.Profile)
 	if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
 		log.Error("unable to decode profile data: %v", err)
@@ -60,7 +82,18 @@ func Main() {
 			log.Error("No seccomp policy file.")
 			os.Exit(1)
 		}
-		filter, err := seccomp.Compile(p.Seccomp.Seccomp_Whitelist, p.Seccomp.Enforce)
+
+		fpath := p.Seccomp.Seccomp_Whitelist
+		enforce := p.Seccomp.Enforce
+
+		if p.Seccomp.Train == true {
+			if enforce == true {
+				log.Error("Oz profile configured for seccomp enforcement while training. Enforce mode set to false.")
+				enforce = false
+			}
+			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
+		}
+		filter, err := seccomp.Compile(fpath, enforce)
 		if err != nil {
 			log.Error("Seccomp filter compile failed: %v", err)
 			os.Exit(1)

@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+func ResolvePathNoGlob(p string, u *user.User) (string, error) {
+	return resolveVars(p, u)
+}
+
 func resolvePath(p string, u *user.User) ([]string, error) {
 	p, err := resolveVars(p, u)
 	if err != nil {

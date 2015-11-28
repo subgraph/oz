@@ -62,7 +62,7 @@ func render_prctl(pid int, args RegisterArgs) (string, error) {
 	switch args[0] {
 	case syscall.PR_SET_NAME:
 		name, err := readStringArg(pid, uintptr(args[1]))
-		if (err != nil) {
+		if err != nil {
 			return "", err
 		}
 		callrep += fmt.Sprintf(",\"%s\"", name)
@@ -81,6 +81,6 @@ func render_prctl(pid int, args RegisterArgs) (string, error) {
 		callrep += fmt.Sprintf(", %x, %x, %x, %x", args[1], args[2], args[3], args[4])
 	}
 	callrep += ")"
-	
+
 	return callrep, nil
 }

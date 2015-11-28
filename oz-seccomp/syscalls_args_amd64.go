@@ -3,10 +3,10 @@
 package seccomp
 
 type SystemCall struct {
-	prefix string
-	name   string
-	num    int
-	args   SystemCallArgs
+	prefix      string
+	name        string
+	num         int
+	args        SystemCallArgs
 	captureArgs SystemCallArgs
 }
 
@@ -93,9 +93,9 @@ var syscalls = []SystemCall{
 		args: SystemCallArgs{0, 0, 0, 0, 0, 0},
 	},
 	SystemCall{
-		name: "ioctl",
-		num:  16,
-		args: SystemCallArgs{3, 3, 3, 0, 0, 0},
+		name:        "ioctl",
+		num:         16,
+		args:        SystemCallArgs{3, 3, 3, 0, 0, 0},
 		captureArgs: SystemCallArgs{0, 1, 0, 0, 0, 0},
 	},
 	SystemCall{
@@ -219,10 +219,10 @@ var syscalls = []SystemCall{
 		args: SystemCallArgs{3, 3, 2, 3, 0, 0},
 	},
 	SystemCall{
-		name: "socket",
-		num:  41,
-		args: SystemCallArgs{3, 3, 3, 0, 0, 0},
-                captureArgs: SystemCallArgs{1, 0, 0, 0, 0, 0},
+		name:        "socket",
+		num:         41,
+		args:        SystemCallArgs{3, 3, 3, 0, 0, 0},
+		captureArgs: SystemCallArgs{1, 0, 0, 0, 0, 0},
 	},
 	SystemCall{
 		name: "connect",
@@ -285,11 +285,10 @@ var syscalls = []SystemCall{
 		args: SystemCallArgs{3, 3, 3, 2, 0, 0},
 	},
 	SystemCall{
-		name: "setsockopt",
-		num:  54,
-		args: SystemCallArgs{3, 3, 3, 1, 3, 0},
+		name:        "setsockopt",
+		num:         54,
+		args:        SystemCallArgs{3, 3, 3, 1, 3, 0},
 		captureArgs: SystemCallArgs{0, 0, 1, 0, 0, 0},
-
 	},
 	SystemCall{
 		name: "getsockopt",
@@ -377,11 +376,10 @@ var syscalls = []SystemCall{
 		args: SystemCallArgs{3, 3, 2, 0, 0, 0},
 	},
 	SystemCall{
-		name: "fcntl",
-		num:  72,
-		args: SystemCallArgs{3, 3, 3, 0, 0, 0},
+		name:        "fcntl",
+		num:         72,
+		args:        SystemCallArgs{3, 3, 3, 0, 0, 0},
 		captureArgs: SystemCallArgs{0, 1, 0, 0, 0, 0},
-
 	},
 	SystemCall{
 		name: "flock",
@@ -804,9 +802,9 @@ var syscalls = []SystemCall{
 		args: SystemCallArgs{0, 0, 0, 0, 0, 0},
 	},
 	SystemCall{
-		name: "prctl",
-		num:  157,
-		args: SystemCallArgs{3, 3, 3, 3, 3, 0},
+		name:        "prctl",
+		num:         157,
+		args:        SystemCallArgs{3, 3, 3, 3, 3, 0},
 		captureArgs: SystemCallArgs{1, 0, 0, 0, 0},
 	},
 	SystemCall{

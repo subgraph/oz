@@ -34,7 +34,7 @@ func Main() {
 		os.Exit(1)
 	}
 
-	log.Info("%v",os.Args)
+	log.Info("%v", os.Args)
 
 	cmd := os.Args[2]
 	cmdArgs := os.Args[2:]

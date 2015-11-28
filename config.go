@@ -28,23 +28,23 @@ const DefaultConfigPath = "/etc/oz/oz.conf"
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		ProfileDir:      "/var/lib/oz/cells.d",
-		ShellPath:       "/bin/bash",
-		PrefixPath:      "/usr/local",
-		EtcPrefix:       "/etc/oz",
-		SandboxPath:     "/srv/oz",
-		DivertPath:      true,
-		NMIgnoreFile:    "/etc/NetworkManager/conf.d/oz.conf",
-		BridgeMACAddr:   "6A:A8:2E:56:E8:9C",
-		DivertSuffix:    "",
-		UseFullDev:      false,
-		AllowRootShell:  false,
-		LogXpra:         false,
+		ProfileDir:     "/var/lib/oz/cells.d",
+		ShellPath:      "/bin/bash",
+		PrefixPath:     "/usr/local",
+		EtcPrefix:      "/etc/oz",
+		SandboxPath:    "/srv/oz",
+		DivertPath:     true,
+		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",
+		BridgeMACAddr:  "6A:A8:2E:56:E8:9C",
+		DivertSuffix:   "",
+		UseFullDev:     false,
+		AllowRootShell: false,
+		LogXpra:        true,
 		EnvironmentVars: []string{
 			"USER", "USERNAME", "LOGNAME",
 			"LANG", "LANGUAGE", "_", "TZ=UTC",
 		},
-		DefaultGroups:   []string{
+		DefaultGroups: []string{
 			"audio", "video",
 		},
 	}

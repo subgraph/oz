@@ -70,7 +70,7 @@ type XServerConf struct {
 type SeccompMode string
 
 const (
-	PROFILE_SECCOMP_TRAIN	SeccompMode = "train"
+	PROFILE_SECCOMP_TRAIN     SeccompMode = "train"
 	PROFILE_SECCOMP_WHITELIST SeccompMode = "whitelist"
 	PROFILE_SECCOMP_BLACKLIST SeccompMode = "blacklist"
 	PROFILE_SECCOMP_DISABLED  SeccompMode = "disabled"
@@ -79,9 +79,9 @@ const (
 type SeccompConf struct {
 	Mode              SeccompMode
 	Enforce           bool
-	Debug		  bool
-	Train		  bool
-	Train_Output	  string
+	Debug             bool
+	Train             bool
+	Train_Output      string
 	Seccomp_Whitelist string
 	Seccomp_Blacklist string
 }

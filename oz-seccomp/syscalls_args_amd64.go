@@ -7,6 +7,7 @@ type SystemCall struct {
 	name   string
 	num    int
 	args   SystemCallArgs
+	captureArgs SystemCallArgs
 }
 
 var syscalls = []SystemCall{
@@ -95,6 +96,7 @@ var syscalls = []SystemCall{
 		name: "ioctl",
 		num:  16,
 		args: SystemCallArgs{3, 3, 3, 0, 0, 0},
+		captureArgs: SystemCallArgs{0, 1, 0, 0, 0, 0},
 	},
 	SystemCall{
 		name: "pread64",
@@ -220,6 +222,7 @@ var syscalls = []SystemCall{
 		name: "socket",
 		num:  41,
 		args: SystemCallArgs{3, 3, 3, 0, 0, 0},
+                captureArgs: SystemCallArgs{1, 0, 0, 0, 0, 0},
 	},
 	SystemCall{
 		name: "connect",
@@ -285,6 +288,8 @@ var syscalls = []SystemCall{
 		name: "setsockopt",
 		num:  54,
 		args: SystemCallArgs{3, 3, 3, 1, 3, 0},
+		captureArgs: SystemCallArgs{0, 0, 1, 0, 0, 0},
+
 	},
 	SystemCall{
 		name: "getsockopt",
@@ -375,6 +380,8 @@ var syscalls = []SystemCall{
 		name: "fcntl",
 		num:  72,
 		args: SystemCallArgs{3, 3, 3, 0, 0, 0},
+		captureArgs: SystemCallArgs{0, 1, 0, 0, 0, 0},
+
 	},
 	SystemCall{
 		name: "flock",
@@ -800,6 +807,7 @@ var syscalls = []SystemCall{
 		name: "prctl",
 		num:  157,
 		args: SystemCallArgs{3, 3, 3, 3, 3, 0},
+		captureArgs: SystemCallArgs{1, 0, 0, 0, 0},
 	},
 	SystemCall{
 		name: "arch_prctl",
@@ -1604,7 +1612,7 @@ var syscalls = []SystemCall{
 	SystemCall{
 		name: "getrandom",
 		num:  318,
-		args: SystemCallArgs{1, 3, 3, 0, 0, 0},
+		args: SystemCallArgs{2, 3, 3, 0, 0, 0},
 	},
 	SystemCall{
 		name: "memfd_create",

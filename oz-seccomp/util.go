@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"syscall"
+	"unicode"
 	"unsafe"
 )
 
@@ -106,7 +107,7 @@ func readPtrArg(pid int, addr uintptr) (uintptr, error) {
 }
 
 func syscallByNum(num int) (s SystemCall, err error) {
-	var q SystemCall = SystemCall{"", "", -1, []int{0, 0, 0, 0, 0, 0}}
+	var q SystemCall = SystemCall{"", "", -1, []int{0, 0, 0, 0, 0, 0}, []int{0, 0, 0, 0, 0, 0}}
 	for i := range syscalls {
 		if syscalls[i].num == num {
 			q = syscalls[i]
@@ -117,7 +118,7 @@ func syscallByNum(num int) (s SystemCall, err error) {
 }
 
 func syscallByName(name string) (s SystemCall, err error) {
-	var q SystemCall = SystemCall{"", "", -1, []int{0, 0, 0, 0, 0, 0}}
+	var q SystemCall = SystemCall{"", "", -1, []int{0, 0, 0, 0, 0, 0}, []int{0, 0, 0, 0, 0, 0}}
 	for i := range syscalls {
 		if syscalls[i].name == name {
 			q = syscalls[i]
@@ -129,7 +130,7 @@ func syscallByName(name string) (s SystemCall, err error) {
 
 func isPrintableASCII(s string) bool {
 	for _, x := range s {
-		if x > 127 {
+		if unicode.IsPrint(x) == false {
 			return false
 		}
 	}

@@ -2,6 +2,7 @@ package seccomp
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"path"
@@ -29,15 +30,23 @@ func init() {
 }
 
 func Main() {
-	if len(os.Args) < 3 {
-		log.Error("seccomp-wrapper: Not enough arguments.")
+
+	modeptr := flag.String("mode", "whitelist", "Mode: whitelist, blacklist, train")
+	policyptr := flag.String("policy", "", "Policy path")
+
+	flag.Parse()
+
+	args := flag.Args()
+	cmdArgs := []string{args[0]}
+
+	if len(args) < 1 {
+		log.Error("oz-seccomp: no command.")
 		os.Exit(1)
 	}
 
-	log.Info("%v", os.Args)
-
-	cmd := os.Args[2]
-	cmdArgs := os.Args[2:]
+	cmd := args[0]
+	cmdArgs = args
+	fpath := ""
 
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
@@ -50,8 +59,12 @@ func Main() {
 		}
 	}
 
-	if os.Args[1] == "-t" {
-		fpath := path.Join(config.EtcPrefix, "training-generic.seccomp")
+	if *modeptr == "train" {
+		if *policyptr == "" {
+			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
+		} else {
+			fpath = *policyptr
+		}
 		filter, err := seccomp.Compile(fpath, false)
 		if err != nil {
 			log.Error("Seccomp filter compile failed: %v", err)
@@ -67,7 +80,6 @@ func Main() {
 			log.Error("Error (exec): %v %s", err, cmd)
 			os.Exit(1)
 		}
-
 	}
 
 	p := new(oz.Profile)
@@ -76,22 +88,23 @@ func Main() {
 		os.Exit(1)
 	}
 
-	switch os.Args[1] {
-	case "-w":
-		if p.Seccomp.Seccomp_Whitelist == "" {
-			log.Error("No seccomp policy file.")
-			os.Exit(1)
-		}
-
-		fpath := p.Seccomp.Seccomp_Whitelist
-		enforce := p.Seccomp.Enforce
-
-		if p.Seccomp.Train == true {
-			if enforce == true {
-				log.Error("Oz profile configured for seccomp enforcement while training. Enforce mode set to false.")
-				enforce = false
+	switch *modeptr {
+	case "whitelist":
+		enforce := true
+		fpath := ""
+		if p.Seccomp.Mode == "whitelist" {
+			if p.Seccomp.Seccomp_Whitelist == "" {
+				log.Error("No seccomp policy file.")
+				os.Exit(1)
 			}
-			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
+			fpath = p.Seccomp.Seccomp_Whitelist
+			enforce = p.Seccomp.Enforce
+		} else if p.Seccomp.Mode == "train" {
+				if enforce == true {
+					log.Error("Oz profile configured for seccomp enforcement while training. Enforce mode set to false.")
+					enforce = false
+				}
+				fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
 		}
 		filter, err := seccomp.Compile(fpath, enforce)
 		if err != nil {
@@ -108,7 +121,7 @@ func Main() {
 			log.Error("Error (exec): %v %s", err, cmd)
 			os.Exit(1)
 		}
-	case "-b":
+	case "blacklist":
 		if p.Seccomp.Seccomp_Blacklist == "" {
 			p.Seccomp.Seccomp_Blacklist = path.Join(config.EtcPrefix, "blacklist-generic.seccomp")
 		}
@@ -122,6 +135,7 @@ func Main() {
 			log.Error("Error (seccomp): %v", err)
 			os.Exit(1)
 		}
+		log.Info("%s %v\n", cmd, cmdArgs)
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
 			log.Error("Error (exec): %v %s", err, cmd)

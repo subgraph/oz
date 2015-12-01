@@ -3,6 +3,7 @@ package seccomp
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
@@ -35,14 +36,24 @@ func Tracer() {
 	var debug = false
 	var p *oz.Profile
 
-	if os.Args[1] == "-t" {
+	var noprofileptr = flag.Bool("train", false, "Training mode")
+	var debugptr = flag.Bool("debug", false, "Debug")
+	var trainingoutput = flag.String("output", "", "Training policy output file")
+
+	flag.Parse()
+
+	var args = flag.Args()
+
+	if *debugptr == true {
+		debug = true
+	}
+
+	if *noprofileptr == true {
 		train = true
 		noprofile = true
 		cmd = "/usr/local/bin/oz-seccomp"
-		cmdArgs = append([]string{"-t"}, os.Args[2:]...)
-
+		cmdArgs = append([]string{"-mode=train"}, args...)
 	} else {
-
 		p = new(oz.Profile)
 		if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
 			log.Error("unable to decode profile data: %v", err)
@@ -52,8 +63,8 @@ func Tracer() {
 			train = true
 		}
 		debug = p.Seccomp.Debug
-		cmd = os.Args[1]
-		cmdArgs = os.Args[2:]
+		cmd = args[0]
+		cmdArgs = args[1:]
 
 	}
 
@@ -71,7 +82,7 @@ func Tracer() {
 	c.Env = os.Environ()
 	c.Args = append(c.Args, cmdArgs...)
 
-	if noprofile == false {
+	if *noprofileptr == false {
 
 		pi, err := c.StdinPipe()
 		if err != nil {
@@ -84,7 +95,6 @@ func Tracer() {
 			os.Exit(1)
 		}
 		io.Copy(pi, bytes.NewBuffer(jdata))
-		log.Info(string(jdata))
 		pi.Close()
 	}
 	children := make(map[int]bool)
@@ -102,7 +112,7 @@ func Tracer() {
 		pid, err := syscall.Wait4(-1, &s, syscall.WALL, nil)
 		children[pid] = true
 		if err != nil {
-			log.Error("Error (wait4) here first: %v %i", err, pid)
+			log.Error("Error (wait4) err:%v pid:%i", err, pid)
 		}
 		log.Info("Tracing child pid: %v\n", pid)
 		for done == false {
@@ -110,10 +120,8 @@ func Tracer() {
 			syscall.PtraceCont(pid, 0)
 			pid, err = syscall.Wait4(-1, &s, syscall.WALL, nil)
 			if err != nil {
-				log.Error("Error (wait4) here: %v %i %v\n", err, pid, children)
-				if len(children) == 0 {
-					done = true
-				}
+				log.Error("Error (wait4) err:%v pid:%i children:%v\n", err, pid, children)
+				done = true
 				continue
 			}
 			children[pid] = true
@@ -126,7 +134,7 @@ func Tracer() {
 				continue
 			}
 			if s.Signaled() == true {
-				log.Error("Other pid signalled %v %v", pid, s)
+				log.Error("Pid signaled, pid: %v signal: %v", pid, s)
 				delete(children, pid)
 				continue
 			}
@@ -256,6 +264,17 @@ func Tracer() {
 					log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
+			case uint32(unix.SIGSEGV):
+				if debug == true {
+					log.Error("SIGSEGV detected pid %v (%s)", pid, getProcessCmdLine(pid))
+				}
+				err = syscall.Kill(pid, 9)
+				if err != nil {
+					log.Error("kill: %v", err)
+					os.Exit(1)
+				}
+				delete(children, pid)
+				continue
 			default:
 				y := s.StopSignal()
 				if debug == true {
@@ -275,15 +294,19 @@ func Tracer() {
 				log.Error("user.Current(): %v", e)
 			}
 
-			if noprofile == false {
-				resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.Train_Output, u)
-				if e != nil {
-					log.Error("resolveVars(): %v", e)
-				}
-				log.Info("RESOLVED PATH: %s", resolvedpath)
+			if *trainingoutput != "" {
+				resolvedpath = *trainingoutput
 			} else {
-				s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(os.Args[2]), cpid)
-				resolvedpath, e = fs.ResolvePathNoGlob(s, u)
+
+				if noprofile == false {
+					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.Train_Output, u)
+					if e != nil {
+						log.Error("resolveVars(): %v", e)
+					}
+				} else {
+					s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(os.Args[2]), cpid)
+					resolvedpath, e = fs.ResolvePathNoGlob(s, u)
+				}
 			}
 			policyout := "execve:1\n"
 			for call := range trainingset {

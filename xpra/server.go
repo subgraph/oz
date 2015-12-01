@@ -21,7 +21,7 @@ func NewServer(config *oz.XServerConf, display uint64, spath, workdir string) *X
 	x.WorkDir = workdir
 	x.xpraArgs = prepareServerArgs(config, display, workdir)
 
-	x.xpraArgs = append([]string{"-b", "/usr/bin/xpra"}, x.xpraArgs...)
+	x.xpraArgs = append([]string{"-mode=blacklist", "/usr/bin/xpra"}, x.xpraArgs...)
 	x.Process = exec.Command(spath, x.xpraArgs...)
 	x.Process.Env = append(os.Environ(),
 		"TMPDIR="+workdir,

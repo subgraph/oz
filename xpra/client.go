@@ -28,7 +28,7 @@ func NewClient(config *oz.XServerConf, display uint64, cred *syscall.Credential,
 	x.WorkDir = workdir
 	x.xpraArgs = prepareClientArgs(config, display, workdir, log)
 
-	x.xpraArgs = append([]string{"-b", "/usr/bin/xpra"}, x.xpraArgs...)
+	x.xpraArgs = append([]string{"-mode=blacklist", "/usr/bin/xpra"}, x.xpraArgs...)
 
 	x.Process = exec.Command(spath, x.xpraArgs...)
 	x.Process.SysProcAttr = &syscall.SysProcAttr{

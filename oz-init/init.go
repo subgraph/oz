@@ -372,9 +372,9 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	}
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
-		st.log.Notice("Enabling seccmp training mode for : %s", cpath)
+		st.log.Notice("Enabling seccomp training mode for : %s", cpath)
 		spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
-		cmdArgs = append([]string{spath, "-w", cpath}, cmdArgs...)
+		cmdArgs = append([]string{spath, "-mode=whitelist", cpath}, cmdArgs...)
 		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
 	}
 
@@ -382,20 +382,20 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
 			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
-			cmdArgs = append([]string{spath, "-w", cpath}, cmdArgs...)
+			cmdArgs = append([]string{spath, "-mode=whitelist", cpath}, cmdArgs...)
 			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
 		} else {
-			cmdArgs = append([]string{"-w", cpath}, cmdArgs...)
+			cmdArgs = append([]string{"-mode=whitelist", cpath}, cmdArgs...)
 			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 		}
 	} else if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
 		st.log.Notice("Enabling seccomp blacklist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
 			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
-			cmdArgs = append([]string{spath, "-b", cpath}, cmdArgs...)
+			cmdArgs = append([]string{spath, "-mode=blacklist", cpath}, cmdArgs...)
 			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
 		} else {
-			cmdArgs = append([]string{"-b", cpath}, cmdArgs...)
+			cmdArgs = append([]string{"-mode=blacklist", cpath}, cmdArgs...)
 			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 		}
 	}
@@ -423,7 +423,7 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST ||
-	st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
+	st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST  || st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
 		pi, err := cmd.StdinPipe()
 		if err != nil {
 			return nil, fmt.Errorf("error creating stdin pipe for seccomp process: %v", err)

@@ -805,7 +805,7 @@ var syscalls = []SystemCall{
 		name:        "prctl",
 		num:         157,
 		args:        SystemCallArgs{3, 3, 3, 3, 3, 0},
-		captureArgs: SystemCallArgs{1, 0, 0, 0, 0},
+		captureArgs: SystemCallArgs{1, 0, 0, 0, 0, 0},
 	},
 	SystemCall{
 		name: "arch_prctl",
@@ -1028,9 +1028,10 @@ var syscalls = []SystemCall{
 		args: SystemCallArgs{2, 0, 0, 0, 0, 0},
 	},
 	SystemCall{
-		name: "futex",
-		num:  202,
-		args: SystemCallArgs{2, 3, 3, 2, 2, 3},
+		name:        "futex",
+		num:         202,
+		args:        SystemCallArgs{2, 3, 3, 2, 2, 3},
+		captureArgs: SystemCallArgs{0, 1, 0, 0, 0, 0},
 	},
 	SystemCall{
 		name: "sched_setaffinity",

@@ -68,13 +68,8 @@ func Tracer() {
 
 	}
 
-	var proc_attr syscall.ProcAttr
-	var sys_attr syscall.SysProcAttr
 	var cpid = 0
-
-	sys_attr.Ptrace = true
 	done := false
-	proc_attr.Sys = &sys_attr
 
 	log.Info("Tracer running command (%v) arguments (%v)\n", cmd, cmdArgs)
 	c := exec.Command(cmd)

@@ -1,3 +1,4 @@
+rt_sigreturn:1
 execve:1
 statfs:1
 uname:1

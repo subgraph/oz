@@ -31,26 +31,20 @@ func Tracer() {
 
 	var train = false
 	var cmd string
-	var noprofile = false
 	var cmdArgs []string
-	var debug = false
 	var p *oz.Profile
 
-	var noprofileptr = flag.Bool("train", false, "Training mode")
-	var debugptr = flag.Bool("debug", false, "Debug")
+	var noprofile = flag.Bool("train", false, "Training mode")
+	var debug = flag.Bool("debug", false, "Debug")
+	var appendpolicy = flag.Bool("append", false, "Append to existing policy if exists")
 	var trainingoutput = flag.String("output", "", "Training policy output file")
 
 	flag.Parse()
 
 	var args = flag.Args()
 
-	if *debugptr == true {
-		debug = true
-	}
-
-	if *noprofileptr == true {
+	if *noprofile == true {
 		train = true
-		noprofile = true
 		cmd = "/usr/local/bin/oz-seccomp"
 		cmdArgs = append([]string{"-mode=train"}, args...)
 	} else {
@@ -62,10 +56,9 @@ func Tracer() {
 		if p.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
 			train = true
 		}
-		debug = p.Seccomp.Debug
+		*debug = p.Seccomp.Debug
 		cmd = args[0]
 		cmdArgs = args[1:]
-
 	}
 
 	var cpid = 0
@@ -77,7 +70,7 @@ func Tracer() {
 	c.Env = os.Environ()
 	c.Args = append(c.Args, cmdArgs...)
 
-	if *noprofileptr == false {
+	if *noprofile == false {
 
 		pi, err := c.StdinPipe()
 		if err != nil {
@@ -176,7 +169,7 @@ func Tracer() {
 						log.Info("%v", err)
 						continue
 					}
-					if debug == true {
+					if *debug == true {
 						call += "\n  " + renderSyscallBasic(pid, systemcall, regs)
 					}
 				} else {
@@ -187,7 +180,7 @@ func Tracer() {
 				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):
-				if debug == true {
+				if *debug == true {
 					log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				delete(children, pid)
@@ -199,12 +192,12 @@ func Tracer() {
 					log.Error("PTrace event message retrieval failed: %v", err)
 				}
 				children[int(newpid)] = true
-				if debug == true {
+				if *debug == true {
 					log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_FORK << 8):
-				if debug == true {
+				if *debug == true {
 					log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -214,7 +207,7 @@ func Tracer() {
 				children[int(newpid)] = true
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
-				if debug == true {
+				if *debug == true {
 					log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -224,7 +217,7 @@ func Tracer() {
 				children[int(newpid)] = true
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
-				if debug == true {
+				if *debug == true {
 					log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -235,32 +228,32 @@ func Tracer() {
 
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
-				if debug == true {
+				if *debug == true {
 					log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_STOP << 8):
-				if debug == true {
+				if *debug == true {
 					log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP):
-				if debug == true {
+				if *debug == true {
 					log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGCHLD):
-				if debug == true {
+				if *debug == true {
 					log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGSTOP):
-				if debug == true {
+				if *debug == true {
 					log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGSEGV):
-				if debug == true {
+				if *debug == true {
 					log.Error("SIGSEGV detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				err = syscall.Kill(pid, 9)
@@ -272,7 +265,7 @@ func Tracer() {
 				continue
 			default:
 				y := s.StopSignal()
-				if debug == true {
+				if *debug == true {
 					log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
 				}
 				continue
@@ -292,8 +285,7 @@ func Tracer() {
 			if *trainingoutput != "" {
 				resolvedpath = *trainingoutput
 			} else {
-
-				if noprofile == false {
+				if *noprofile == false {
 					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.Train_Output, u)
 					if e != nil {
 						log.Error("resolveVars(): %v", e)
@@ -320,7 +312,9 @@ func Tracer() {
 					policyout += fmt.Sprintf("%s:1\n", sc.name)
 				}
 			}
-			log.Info(policyout)
+			if *appendpolicy == true {
+				log.Error("Not yet implemented.")
+			}
 			f, err := os.OpenFile(resolvedpath, os.O_CREATE|os.O_RDWR, 0600)
 			if err == nil {
 				_, err := f.WriteString(policyout)

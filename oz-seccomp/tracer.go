@@ -91,8 +91,6 @@ func Tracer() {
 	trainingset := make(map[int]bool)
 	trainingargs := make(map[int]map[int][]uint)
 
-	log.Info("%s", cmd)
-
 	if err := c.Start(); err == nil {
 		cpid = c.Process.Pid
 		children[c.Process.Pid] = true

@@ -4,7 +4,7 @@ Wants=network.target filesystem.target
 After=network.target filesystem.target
 
 [Service]
-ExecStart=/usr/local/bin/oz-daemon
+ExecStart=/usr/sbin/oz-daemon
 ExecReload=/bin/kill -HUP ${MAINPID}
 ExecStop=/bin/kill -INT ${MAINPID}
 #Restart=on-failure

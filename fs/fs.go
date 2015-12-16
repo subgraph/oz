@@ -125,7 +125,7 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	cc := flags&BindCanCreate != 0
 	ii := flags&BindIgnore != 0
 	src, err := filepath.EvalSymlinks(from)
-	if err != nil && !cc  && !ii {
+	if err != nil && !cc && !ii {
 		return fmt.Errorf("error resolving symlinks for path (%s): %v", from, err)
 	}
 	if src == "" {

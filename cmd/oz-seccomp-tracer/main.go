@@ -1,8 +1,8 @@
 package main
 
 import (
-	"runtime"
 	ozseccomp "github.com/subgraph/oz/oz-seccomp"
+	"runtime"
 )
 
 func init() { runtime.LockOSThread() }

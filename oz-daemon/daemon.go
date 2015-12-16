@@ -176,8 +176,8 @@ func (d *daemonState) cacheSystemGroups() error {
 			continue
 		}
 		newGroups[gd[0]] = groupEntry{
-			Name: gd[0],
-			Gid: uint32(gid),
+			Name:    gd[0],
+			Gid:     uint32(gid),
 			Members: strings.Split(gd[3], ","),
 		}
 	}
@@ -188,7 +188,6 @@ func (d *daemonState) cacheSystemGroups() error {
 	d.systemGroups = newGroups
 	return nil
 }
-
 
 func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	d.Debug("Child process pid=%d exited from daemon with status %d", pid, wstatus.ExitStatus())

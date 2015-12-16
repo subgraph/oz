@@ -81,7 +81,7 @@ type SeccompConf struct {
 	Enforce      bool
 	Debug        bool
 	Train        bool
-	Train_Output string
+	Train_Output string `json:"train_output"`
 	Whitelist    string
 	Blacklist    string
 }
@@ -215,6 +215,9 @@ func loadProfileFile(file string) (*Profile, error) {
 	}
 	if p.XServer.AudioMode == "" {
 		p.XServer.AudioMode = PROFILE_AUDIO_NONE
+	}
+	if p.Seccomp.Mode == "" {
+		p.Seccomp.Mode = PROFILE_SECCOMP_DISABLED
 	}
 	p.ProfilePath = file
 	return p, nil

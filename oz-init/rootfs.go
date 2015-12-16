@@ -158,4 +158,3 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool) error {
 	}
 	return nil
 }
-

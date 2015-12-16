@@ -234,8 +234,8 @@ func (st *initState) runInit() {
 
 func (st *initState) needsDbus() bool {
 	return (st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_FULL ||
-			st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_SPEAKER ||
-			st.profile.XServer.EnableNotifications == true)
+		st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_SPEAKER ||
+		st.profile.XServer.EnableNotifications == true)
 }
 
 func (st *initState) setupDbus() error {
@@ -261,8 +261,8 @@ func (st *initState) getDbusSession() error {
 	//st.log.Debug("%s /usr/bin/dbus-launch %s", strings.Join(dcmd.Env, " "), strings.Join(args, " "))
 	dcmd.SysProcAttr = &syscall.SysProcAttr{}
 	dcmd.SysProcAttr.Credential = &syscall.Credential{
-		Uid:    st.uid,
-		Gid:    st.gid,
+		Uid: st.uid,
+		Gid: st.gid,
 	}
 
 	benvs, err := dcmd.Output()
@@ -278,7 +278,7 @@ func (st *initState) getDbusSession() error {
 	for _, line := range strings.Split(senvs, "\n") {
 		if dbusValidVar.MatchString(line) {
 			dbusenv = line
-			break;
+			break
 		}
 	}
 	if dbusenv != "" {
@@ -317,12 +317,12 @@ func (st *initState) startXpraServer() {
 	if gid, gexists := st.gids["video"]; gexists {
 		groups = append(groups, gid)
 	}
-	if st.profile.XServer.AudioMode != "" && st.profile.XServer.AudioMode != oz.PROFILE_AUDIO_NONE {
+	if st.profile.XServer.AudioMode != oz.PROFILE_AUDIO_NONE {
 		if gid, gexists := st.gids["audio"]; gexists {
 			groups = append(groups, gid)
 		}
 	}
-	
+
 	xpra.Process.SysProcAttr = &syscall.SysProcAttr{}
 	xpra.Process.SysProcAttr.Credential = &syscall.Credential{
 		Uid:    st.uid,
@@ -368,17 +368,16 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		cpath += "." + st.config.DivertSuffix
 	}
 	if st.config.DivertPath {
-		cpath = path.Join(path.Dir(cpath) + "-oz", path.Base(cpath))
+		cpath = path.Join(path.Dir(cpath)+"-oz", path.Base(cpath))
 	}
 
-	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
+	switch st.profile.Seccomp.Mode {
+	case oz.PROFILE_SECCOMP_TRAIN:
 		st.log.Notice("Enabling seccomp training mode for : %s", cpath)
 		spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 		cmdArgs = append([]string{spath, "-mode=whitelist", cpath}, cmdArgs...)
 		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
-	}
-
-	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
+	case oz.PROFILE_SECCOMP_WHITELIST:
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
 			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
@@ -388,7 +387,7 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 			cmdArgs = append([]string{"-mode=whitelist", cpath}, cmdArgs...)
 			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 		}
-	} else if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST {
+	case oz.PROFILE_SECCOMP_BLACKLIST:
 		st.log.Notice("Enabling seccomp blacklist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
 			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
@@ -399,6 +398,7 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 		}
 	}
+
 	cmd := exec.Command(cpath)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -423,7 +423,7 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST ||
-	st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST  || st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
+		st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST || st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
 		pi, err := cmd.StdinPipe()
 		if err != nil {
 			return nil, fmt.Errorf("error creating stdin pipe for seccomp process: %v", err)
@@ -502,7 +502,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 		return msg.Respond(&ErrorMsg{"Cannot open shell because allowRootShell is disabled"})
 	}
 	groups := append([]uint32{}, st.gid)
-	if (msg.Ucred.Uid != 0 && msg.Ucred.Gid != 0) {
+	if msg.Ucred.Uid != 0 && msg.Ucred.Gid != 0 {
 		for _, gid := range st.gids {
 			groups = append(groups, gid)
 		}
@@ -667,7 +667,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 	if st.config.UseFullDev {
 		mo.add(fs.MountFullDev)
 	}
-	mo.add(fs.MountShm, /*fs.MountTmp, */fs.MountPts)
+	mo.add(fs.MountShm /*fs.MountTmp, */, fs.MountPts)
 	if !st.profile.NoSysProc {
 		mo.add(fs.MountProc, fs.MountSys)
 	}

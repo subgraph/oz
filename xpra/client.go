@@ -64,7 +64,7 @@ func prepareClientArgs(config *oz.XServerConf, display uint64, workdir string, l
 	if config.Border {
 		h := md5.New()
 		io.WriteString(h, workdir)
-		args = append(args, "--border=#" + fmt.Sprintf("%x", h.Sum(nil)[0:3]))
+		args = append(args, "--border=#"+fmt.Sprintf("%x", h.Sum(nil)[0:3]))
 	}
 	args = append(args,
 		fmt.Sprintf("--socket-dir=%s", workdir),

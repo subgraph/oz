@@ -102,7 +102,13 @@ func Tracer() {
 		}
 		log.Info("Tracing child pid: %v\n", pid)
 		for done == false {
-			syscall.PtraceSetOptions(pid, unix.PTRACE_O_TRACESECCOMP|unix.PTRACE_O_TRACEFORK|unix.PTRACE_O_TRACEVFORK|unix.PTRACE_O_TRACECLONE|C.PTRACE_O_EXITKILL)
+			pflags := unix.PTRACE_O_TRACESECCOMP
+			pflags |= unix.PTRACE_O_TRACEFORK
+			pflags |= unix.PTRACE_O_TRACEVFORK
+			pflags |= unix.PTRACE_O_TRACECLONE
+			pflags |= C.PTRACE_O_EXITKILL
+
+			syscall.PtraceSetOptions(pid, pflags)
 			syscall.PtraceCont(pid, 0)
 			pid, err = syscall.Wait4(-1, &s, syscall.WALL, nil)
 			if err != nil {

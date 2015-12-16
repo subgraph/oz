@@ -59,7 +59,16 @@ func Main() {
 		}
 	}
 
-	if *modeptr == "train" {
+	p := new(oz.Profile)
+	if *modeptr != "train" {
+		if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
+			log.Error("unable to decode profile data: %v", err)
+			os.Exit(1)
+		}
+	}
+
+	switch *modeptr {
+	case "train":
 		if *policyptr == "" {
 			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
 		} else {
@@ -80,31 +89,22 @@ func Main() {
 			log.Error("Error (exec): %v %s", err, cmd)
 			os.Exit(1)
 		}
-	}
-
-	p := new(oz.Profile)
-	if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
-		log.Error("unable to decode profile data: %v", err)
-		os.Exit(1)
-	}
-
-	switch *modeptr {
 	case "whitelist":
 		enforce := true
 		fpath := ""
-		if p.Seccomp.Mode == "whitelist" {
+		if p.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
 			if p.Seccomp.Whitelist == "" {
 				log.Error("No seccomp policy file.")
 				os.Exit(1)
 			}
 			fpath = p.Seccomp.Whitelist
 			enforce = p.Seccomp.Enforce
-		} else if p.Seccomp.Mode == "train" {
-				if enforce == true {
-					log.Error("Oz profile configured for seccomp enforcement while training. Enforce mode set to false.")
-					enforce = false
-				}
-				fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
+		} else if p.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
+			if enforce == true {
+				log.Error("Oz profile configured for seccomp enforcement while training. Enforce mode set to false.")
+				enforce = false
+			}
+			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
 		}
 		filter, err := seccomp.Compile(fpath, enforce)
 		if err != nil {

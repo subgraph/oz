@@ -75,7 +75,7 @@ func createInitCommand(initPath string, cloneNet bool) *exec.Cmd {
 	}
 
 	cmd.Env = []string{}
-	
+
 	return cmd
 }
 
@@ -138,12 +138,12 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 	}
 
 	jdata, err := json.Marshal(ozinit.InitData{
-		Display:   display,
-		User:      *u,
-		Uid:       uid,
-		Gid:       gid,
-		Gids:      groups,
-		Network:   network.SandboxNetwork{
+		Display: display,
+		User:    *u,
+		Uid:     uid,
+		Gid:     gid,
+		Gids:    groups,
+		Network: network.SandboxNetwork{
 			Interface: stn.Interface,
 			VethHost:  stn.VethHost,
 			VethGuest: stn.VethGuest,
@@ -199,8 +199,8 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 
 	wgNet := new(sync.WaitGroup)
 	if p.Networking.Nettype != network.TYPE_HOST &&
-	  p.Networking.Nettype != network.TYPE_NONE &&
-	  len(p.Networking.Sockets) > 0 {
+		p.Networking.Nettype != network.TYPE_NONE &&
+		len(p.Networking.Sockets) > 0 {
 		wgNet.Add(1)
 		go func() {
 			defer wgNet.Done()

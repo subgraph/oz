@@ -9,10 +9,7 @@
 , "networking":{
 	"type":"empty"
 	, "sockets": [
-		{"type":"client", "destination": "10.10.0.90", "proto":"tcp", "port":57000}
-                , {"type":"client", "proto":"tcp", "port":9050}
-
-
+		{"type":"client", "proto":"tcp", "port":9050}
 	]
 }
 , "whitelist": [
@@ -28,6 +25,6 @@
 , "seccomp": {
 	"mode":"whitelist"
 	, "enforce": true
-	, "seccomp_whitelist": "/var/lib/oz/cells.d/xchat-whitelist.seccomp"
+	, "whitelist": "/var/lib/oz/cells.d/xchat-whitelist.seccomp"
 }
 }

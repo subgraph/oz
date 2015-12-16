@@ -77,13 +77,13 @@ const (
 )
 
 type SeccompConf struct {
-	Mode              SeccompMode
-	Enforce           bool
-	Debug             bool
-	Train             bool
-	Train_Output      string
-	Seccomp_Whitelist string
-	Seccomp_Blacklist string
+	Mode         SeccompMode
+	Enforce      bool
+	Debug        bool
+	Train        bool
+	Train_Output string
+	Whitelist    string
+	Blacklist    string
 }
 
 type WhitelistItem struct {

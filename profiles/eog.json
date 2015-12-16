@@ -23,6 +23,6 @@
 , "seccomp": {
 	"mode":"whitelist"
 	, "enforce": true
-	, "seccomp_whitelist":"/var/lib/oz/cells.d/eog-whitelist.seccomp"
+	, "whitelist":"/var/lib/oz/cells.d/eog-whitelist.seccomp"
 }
 }

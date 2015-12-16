@@ -16,7 +16,6 @@
 }
 , "whitelist": [
 	{"path":"${HOME}/.config/gtk-3.0/gtk.css", "ignore":true}
-
 	, {"path":"/var/lib/oz/cells.d/evince-whitelist.seccomp"}
 	, {"path":"/var/lib/oz/cells.d/evince-blacklist.seccomp"}
 ]
@@ -27,7 +26,7 @@
 , "seccomp": {
 	"mode":"whitelist"
 	, "enforce": true
-	, "seccomp_whitelist":"/var/lib/oz/cells.d/evince-whitelist.seccomp"
-	, "seccomp_blacklist":"/var/lib/oz/cells.d/evince-blacklist.seccomp"
-	}
+	, "whitelist":"/var/lib/oz/cells.d/evince-whitelist.seccomp"
+	, "blacklist":"/var/lib/oz/cells.d/evince-blacklist.seccomp"
+}
 }

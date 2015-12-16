@@ -93,11 +93,11 @@ func Main() {
 		enforce := true
 		fpath := ""
 		if p.Seccomp.Mode == "whitelist" {
-			if p.Seccomp.Seccomp_Whitelist == "" {
+			if p.Seccomp.Whitelist == "" {
 				log.Error("No seccomp policy file.")
 				os.Exit(1)
 			}
-			fpath = p.Seccomp.Seccomp_Whitelist
+			fpath = p.Seccomp.Whitelist
 			enforce = p.Seccomp.Enforce
 		} else if p.Seccomp.Mode == "train" {
 				if enforce == true {
@@ -122,10 +122,10 @@ func Main() {
 			os.Exit(1)
 		}
 	case "blacklist":
-		if p.Seccomp.Seccomp_Blacklist == "" {
-			p.Seccomp.Seccomp_Blacklist = path.Join(config.EtcPrefix, "blacklist-generic.seccomp")
+		if p.Seccomp.Blacklist == "" {
+			p.Seccomp.Blacklist = path.Join(config.EtcPrefix, "blacklist-generic.seccomp")
 		}
-		filter, err := seccomp.CompileBlacklist(p.Seccomp.Seccomp_Blacklist, p.Seccomp.Enforce)
+		filter, err := seccomp.CompileBlacklist(p.Seccomp.Blacklist, p.Seccomp.Enforce)
 		if err != nil {
 			log.Error("Seccomp blacklist filter compile failed: %v", err)
 			os.Exit(1)

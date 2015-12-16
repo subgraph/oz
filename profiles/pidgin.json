@@ -20,8 +20,7 @@
 ]
 , "seccomp": {
 	"mode":"whitelist"
-	, "enforce": false
-	, "debug": true
-	, "seccomp_whitelist": "/var/lib/oz/cells.d/pidgin-whitelist.seccomp"
+	, "enforce": true
+	, "whitelist": "/var/lib/oz/cells.d/pidgin-whitelist.seccomp"
 }
 }

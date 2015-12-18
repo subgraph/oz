@@ -290,7 +290,7 @@ func Tracer() {
 				resolvedpath = *trainingoutput
 			} else {
 				if *noprofile == false {
-					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.Train_Output, u)
+					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.TrainOutput, u)
 					if e != nil {
 						log.Error("resolveVars(): %v", e)
 					}

@@ -81,7 +81,7 @@ type SeccompConf struct {
 	Enforce      bool
 	Debug        bool
 	Train        bool
-	Train_Output string `json:"train_output"`
+	TrainOutput  string `json:"train_output"`
 	Whitelist    string
 	Blacklist    string
 }

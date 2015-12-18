@@ -15,12 +15,12 @@
 , "whitelist": [
 	{"path":"/run/resolvconf"}
 
-	, {"path":"${HOME}/.local/share/liferea"}
-	, {"path":"${HOME}/.cache/liferea"}
-	, {"path":"${HOME}/.config/liferea"}
+	, {"path":"${HOME}/.local/share/liferea", "can_create":true}
+	, {"path":"${HOME}/.cache/liferea", "can_create":true}
+	, {"path":"${HOME}/.config/liferea", "can_create":true}
 
-	, {"path":"${HOME}/.config/gtk-3.0"}
-	, {"path":"${HOME}/.config/gtk-2.0"}
+	, {"path":"${HOME}/.config/gtk-3.0", "ignore":true}
+	, {"_path":"${HOME}/.config/gtk-2.0", "ignore":true}
 
 	, {"path":"${HOME}/.config/dconf"}
 	, {"path":"${HOME}/.cache/dconf"}

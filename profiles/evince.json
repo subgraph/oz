@@ -15,7 +15,7 @@
 	"type":"empty"
 }
 , "whitelist": [
-	{"path":"${HOME}/.config/gtk-3.0/gtk.css", "ignore":true}
+	{"_path":"${HOME}/.config/gtk-3.0/gtk.css", "ignore":true}
 	, {"path":"/var/lib/oz/cells.d/evince-whitelist.seccomp"}
 	, {"path":"/var/lib/oz/cells.d/evince-blacklist.seccomp"}
 ]

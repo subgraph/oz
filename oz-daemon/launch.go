@@ -111,7 +111,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 	stn := new(network.SandboxNetwork)
 	stn.Nettype = p.Networking.Nettype
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
-		stn, err = network.PrepareSandboxNetwork(nil, d.network, log)
+		stn, err = network.PrepareSandboxNetwork(nil, d.network, p.Networking.IpByte, log)
 		if err != nil {
 			return nil, fmt.Errorf("Unable to prepare veth network: %+v", err)
 		}

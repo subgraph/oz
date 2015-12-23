@@ -99,7 +99,7 @@ func (htn *HostNetwork) BridgeReconfigure(log *logging.Logger) (*HostNetwork, er
 	return newhtn, nil
 }
 
-func PrepareSandboxNetwork(stn *SandboxNetwork, htn *HostNetwork, log *logging.Logger) (*SandboxNetwork, error) {
+func PrepareSandboxNetwork(stn *SandboxNetwork, htn *HostNetwork, staticByte uint, log *logging.Logger) (*SandboxNetwork, error) {
 	if stn == nil {
 		stn = new(SandboxNetwork)
 		stn.VethHost = tenus.MakeNetInterfaceName(ozDefaultInterfacePrefix)
@@ -109,10 +109,14 @@ func PrepareSandboxNetwork(stn *SandboxNetwork, htn *HostNetwork, log *logging.L
 	stn.Gateway = htn.Gateway
 	stn.Class = htn.Class
 
-	// Allocate a new IP address
-	stn.Ip = getFreshIP(htn.Min, htn.Max, log)
-	if stn.Ip == "" {
-		return nil, errors.New("Unable to acquire random IP")
+	if staticByte > 1 {
+		stn.Ip = inet_ntoa(htn.Min - 2 + uint64(staticByte)).String()
+	} else {
+		// Allocate a new IP address
+		stn.Ip = getFreshIP(htn.Min, htn.Max, htn.IpBytes, log)
+		if stn.Ip == "" {
+			return nil, errors.New("Unable to acquire random IP")
+		}
 	}
 
 	return stn, nil
@@ -363,11 +367,11 @@ func findEmptyRange() (net.IP, *net.IPNet, error) {
 
 // Try to find an unassigned IP address
 // Do this by first trying ozMaxRandTries random IPs or, if that fails, sequentially
-func getFreshIP(min, max uint64, log *logging.Logger) string {
+func getFreshIP(min, max uint64, reservedBytes []uint, log *logging.Logger) string {
 	var newIP string
 
 	for i := 0; i < ozMaxRandTries; i++ {
-		newIP = getRandIP(min, max)
+		newIP = getRandIP(min, max, reservedBytes)
 		if newIP != "" {
 			break
 		}
@@ -376,7 +380,7 @@ func getFreshIP(min, max uint64, log *logging.Logger) string {
 	if newIP == "" {
 		log.Notice("Random IP lookup failed %d times, reverting to sequential select", ozMaxRandTries)
 
-		newIP = getScanIP(min, max)
+		newIP = getScanIP(min, max, reservedBytes)
 	}
 
 	return newIP
@@ -385,12 +389,27 @@ func getFreshIP(min, max uint64, log *logging.Logger) string {
 
 // Generate a random ip and arping it to see if it is available
 // Returns the ip on success or an ip string is the ip is already taken
-func getRandIP(min, max uint64) string {
+func getRandIP(min, max uint64, reservedBytes []uint) string {
 	if min > max {
 		return ""
 	}
 
-	dstIP := inet_ntoa(uint64(rand.Int63n(int64(max-min))) + min)
+	randVal := uint64(0)
+	for {
+		randVal = uint64(rand.Int63n(int64(max - min)))
+		reserved := false
+		for _, ipbyte := range reservedBytes {
+			if ipbyte == uint(byte(randVal)&0xFF) {
+				reserved = true
+				break
+			}
+		}
+		if !reserved {
+			break
+		}
+	}
+
+	dstIP := inet_ntoa(randVal + min)
 
 	arping.SetTimeout(time.Millisecond * 150)
 
@@ -408,12 +427,22 @@ func getRandIP(min, max uint64) string {
 
 // Go through all possible ips between min and max
 // and arping each one until a free one is found
-func getScanIP(min, max uint64) string {
+func getScanIP(min, max uint64, reservedBytes []uint) string {
 	if min > max {
 		return ""
 	}
 
 	for i := min; i < max; i++ {
+		reserved := false
+		for _, ipbyte := range reservedBytes {
+			if ipbyte == uint(i&0xFF) {
+				reserved = true
+				break
+			}
+		}
+		if reserved {
+			continue
+		}
 		dstIP := inet_ntoa(i)
 
 		arping.SetTimeout(time.Millisecond * 150)

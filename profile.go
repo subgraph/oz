@@ -77,13 +77,13 @@ const (
 )
 
 type SeccompConf struct {
-	Mode         SeccompMode
-	Enforce      bool
-	Debug        bool
-	Train        bool
-	TrainOutput  string `json:"train_output"`
-	Whitelist    string
-	Blacklist    string
+	Mode        SeccompMode
+	Enforce     bool
+	Debug       bool
+	Train       bool
+	TrainOutput string `json:"train_output"`
+	Whitelist   string
+	Blacklist   string
 }
 
 type WhitelistItem struct {
@@ -102,6 +102,14 @@ type EnvVar struct {
 	Value string
 }
 
+type DNSMode string
+
+const (
+	PROFILE_NETWORK_DNS_NONE DNSMode = "none"
+	PROFILE_NETWORK_DNS_PASS DNSMode = "pass"
+	PROFILE_NETWORK_DNS_DHCP DNSMode = "dhcp"
+)
+
 // Sandbox network definition
 type NetworkProfile struct {
 	// One of empty, host, bridge
@@ -113,6 +121,14 @@ type NetworkProfile struct {
 	// List of Sockets we want to attach to the jail
 	//  Applies to Nettype: bridge and empty only
 	Sockets []network.ProxyConfig
+
+	// Hardcoded least significant byte of the IP address
+	//  Applies to Nettype: bridge only
+	IpByte uint `json:"ip_byte"`
+
+	// DNS Mode one of: pass, none, dhcp
+	//  Applies to Nettype: bridge only
+	DNSMode DNSMode `json:"dns_mode"`
 }
 
 const defaultProfileDirectory = "/var/lib/oz/cells.d"
@@ -218,6 +234,9 @@ func loadProfileFile(file string) (*Profile, error) {
 	}
 	if p.Seccomp.Mode == "" {
 		p.Seccomp.Mode = PROFILE_SECCOMP_DISABLED
+	}
+	if p.Networking.IpByte <= 1 || p.Networking.IpByte > 254 {
+		p.Networking.IpByte = 0
 	}
 	p.ProfilePath = file
 	return p, nil

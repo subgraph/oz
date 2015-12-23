@@ -49,6 +49,8 @@ type HostNetwork struct {
 	BridgeMAC string
 	// The type of network configuration
 	Nettype NetType
+	//
+	IpBytes []uint
 }
 
 type SandboxNetwork struct {
@@ -68,6 +70,8 @@ type SandboxNetwork struct {
 	Nettype NetType
 	// Host side virtual interface
 	Veth tenus.Vether
+	//
+	IpByte uint
 }
 
 var privateNetworkRanges []string

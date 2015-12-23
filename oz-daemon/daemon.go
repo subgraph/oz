@@ -83,10 +83,13 @@ func initialize() *daemonState {
 	d.nextDisplay = 100
 
 	bridgeNeeded := false
+	staticBytes := []uint{}
 	for _, pp := range d.profiles {
 		if pp.Networking.Nettype == network.TYPE_BRIDGE {
 			bridgeNeeded = true
-			break
+			if pp.Networking.IpByte > 0 {
+				staticBytes = append(staticBytes, pp.Networking.IpByte)
+			}
 		}
 	}
 
@@ -99,6 +102,7 @@ func initialize() *daemonState {
 		}
 
 		d.network = htn
+		d.network.IpBytes = staticBytes
 		//network.NetPrint(d.log)
 	}
 
@@ -443,7 +447,7 @@ func (d *daemonState) handleNetworkReconfigure() {
 	for _, sbox := range d.sandboxes {
 		if sbox.profile.Networking.Nettype == network.TYPE_BRIDGE {
 			d.log.Debug("Reconfiguring network for sandbox `%s` (%d).", sbox.profile.Name, sbox.init.Process.Pid)
-			sbox.network, err = network.PrepareSandboxNetwork(sbox.network, d.network, d.log)
+			sbox.network, err = network.PrepareSandboxNetwork(sbox.network, d.network, sbox.profile.Networking.IpByte, d.log)
 			if err != nil {
 				d.log.Error("Unable to prepare reconfigure of sandbox `%s` networking: %v", sbox.profile.Name, err)
 				continue

@@ -133,7 +133,7 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	}
 	sinfo, err := readSourceInfo(src, cc, u)
 	if err != nil {
-		if ii {
+		if !ii {
 			return fmt.Errorf("failed to bind path (%s): %v", src, err)
 		} else {
 			fs.log.Warning("bind target (%s) missing and ignored!", src)

@@ -28,9 +28,7 @@
 , "environment": [
 ]
 , "seccomp": {
-	"mode":"whitelist"
+	"mode":"blacklist"
 	, "enforce": true
-	, "whitelist":"/var/lib/oz/cells.d/iceweasel-whitelist.seccomp"
-	, "blacklist":"/var/lib/oz/cells.d/generic-blacklist.seccomp"
 }
 }

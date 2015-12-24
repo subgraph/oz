@@ -35,9 +35,7 @@
 	, {"name":"GNOME_KEYRING_PID", "value":"1"}
 ]
 , "seccomp": {
-	"mode":"whitelist"
+	"mode":"blacklist"
 	, "enforce": true
-	, "whitelist":"/var/lib/oz/cells.d/icedove-whitelist.seccomp"
-	, "blacklist":"/var/lib/oz/cells.d/evince-blacklist.seccomp"
 }
 }

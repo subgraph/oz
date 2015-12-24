@@ -23,8 +23,7 @@
 , "blacklist": [
 ]
 , "seccomp": {
-	"mode":"whitelist"
+	"mode":"blacklist"
 	, "enforce": true
-	, "whitelist": "/var/lib/oz/cells.d/xchat-whitelist.seccomp"
 }
 }

@@ -21,8 +21,7 @@
 	, {"name":"GTK2_RC_FILES", "value":"/usr/share/themes/Darklooks/gtk-2.0/gtkrc"}
 ]
 , "seccomp": {
-	"mode":"whitelist"
+	"mode":"blacklist"
 	, "enforce": true
-	, "whitelist":"/var/lib/oz/cells.d/eog-whitelist.seccomp"
 }
 }

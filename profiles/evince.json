@@ -22,6 +22,8 @@
 , "blacklist": [
 ]
 , "environment": [
+        {"name":"GTK_THEME", "value":"Adwaita:dark"}
+        , {"name":"GTK2_RC_FILES", "value":"/usr/share/themes/Darklooks/gtk-2.0/gtkrc"}
 ]
 , "seccomp": {
 	"mode":"whitelist"

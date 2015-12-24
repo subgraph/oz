@@ -45,7 +45,7 @@ func Tracer() {
 
 	if *noprofile == true {
 		train = true
-		cmd = "/usr/local/bin/oz-seccomp"
+		cmd = "/usr/bin/oz-seccomp"
 		cmdArgs = append([]string{"-mode=train"}, args...)
 	} else {
 		p = new(oz.Profile)

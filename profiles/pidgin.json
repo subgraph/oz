@@ -19,8 +19,7 @@
 , "environment": [
 ]
 , "seccomp": {
-	"mode":"whitelist"
+	"mode":"blacklist"
 	, "enforce": true
-	, "whitelist": "/var/lib/oz/cells.d/pidgin-whitelist.seccomp"
 }
 }

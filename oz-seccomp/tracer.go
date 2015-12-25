@@ -45,6 +45,9 @@ func Tracer() {
 
 	if *noprofile == true {
 		train = true
+
+		// TODO: remove hardcoded path and read prefix from /etc/oz.conf
+
 		cmd = "/usr/bin/oz-seccomp"
 		cmdArgs = append([]string{"-mode=train"}, args...)
 	} else {

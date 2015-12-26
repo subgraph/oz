@@ -1,3 +1,6 @@
+alarm: 1
+fadvise64: 1
+nanosleep: 1
 rt_sigreturn:1
 execve:1
 capget:1
@@ -86,7 +89,6 @@ mkdir:1
 geteuid:1
 setresuid:1
 set_robust_list:1
-nanosleep:1
 sched_setscheduler:1
 chdir:1
 prctl: arg0 == 15 || arg0 == 30 || arg0 == 16 

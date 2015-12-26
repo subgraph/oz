@@ -1,3 +1,17 @@
+prctl: arg0 == 15 || arg0 == 1 
+kill: 1
+setsid: 1
+listen: 1
+gettid: 1
+capget: 1
+accept4: 1
+getsockopt: 1
+setrlimit: 1
+restart_syscall: 1
+newfstatat: 1
+epoll_ctl: 1
+epoll_wait: 1
+epoll_create1: 1
 access: 1
 arch_prctl: 1
 bind: 1
@@ -57,7 +71,6 @@ openat: 1
 pipe: 1
 pipe2: 1
 poll: 1
-prctl: 1
 pread64: 1
 pwrite64: 1
 read: 1
@@ -82,6 +95,7 @@ shmget: 1
 shutdown: 1
 sigaltstack: 1
 socket: arg0 == 0x1
+socketpair: 1
 splice: 1
 stat: 1
 statfs: 1

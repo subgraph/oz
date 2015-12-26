@@ -1,5 +1,11 @@
-# prctl: PR_SET_NAME || PR_GET_NAME || PR_GET_TIMERSLACK
-prctl: arg0 == 15 || arg0 == 16 || arg0 == 30
+fadvise64: 1
+accept4: 1
+newfstatat: 1
+readlinkat: 1
+rt_sigreturn: 1
+getrandom: 1
+# prctl: PR_SET_NAME || PR_GET_NAME || PR_GET_TIMERSLACK || PR_SET_SECCOMP
+prctl: arg0 == 15 || arg0 == 16 || arg0 == 30 || arg0 == 22
 mlock: 1
 fdatasync: 1
 capget: 1
@@ -51,6 +57,7 @@ clock_getres: 1
 clone: 1
 connect: 1
 epoll_create: 1
+epoll_create1: 1
 epoll_ctl: 1
 epoll_wait: 1
 eventfd2: 1
@@ -77,7 +84,7 @@ inotify_add_watch: 1
 inotify_init1: 1
 inotify_rm_watch: 1
 # ioctl: FIONREAD
-ioctl: arg1 == 0x541b
+ioctl: arg1 == 0x541b || arg1 == 0x5401
 link: 1
 lseek: 1
 openat: 1

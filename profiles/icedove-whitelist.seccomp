@@ -1,3 +1,4 @@
+fadvise64: 1
 accept4: 1
 newfstatat: 1
 readlinkat: 1

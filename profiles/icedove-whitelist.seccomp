@@ -1,3 +1,4 @@
+mincore: 1
 alarm: 1
 nanosleep: 1
 fadvise64: 1

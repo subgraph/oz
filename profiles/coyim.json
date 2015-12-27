@@ -1,0 +1,25 @@
+{
+"path": "/usr/bin/coyim"
+, "xserver": {
+	"enabled": true
+	, "enable_tray": false
+}
+, "networking":{
+        "type":"empty"
+        ,"sockets": [
+                {"type":"client", "proto":"tcp", "port":9050}
+	]
+}
+, "whitelist": [
+	{"path":"${HOME}/.config/coyim", "can_create":true}
+	
+]
+, "blacklist": [
+]
+, "environment": [
+]
+, "seccomp": {
+	"mode":"blacklist"
+	, "enforce": true
+}
+}

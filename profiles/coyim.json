@@ -2,6 +2,7 @@
 "path": "/usr/bin/coyim"
 , "xserver": {
 	"enabled": true
+        , "tray_icon":"/usr/share/icons/Faenza-Darker/actions/scalable/im-message-new.svg"
 	, "enable_tray": false
 }
 , "networking":{

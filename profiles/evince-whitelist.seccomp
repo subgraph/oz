@@ -1,3 +1,4 @@
+rt_sigreturn: 1
 prctl: arg0 == 15 || arg0 == 1 
 kill: 1
 setsid: 1

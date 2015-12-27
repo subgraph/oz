@@ -1,0 +1,96 @@
+getpid: 1
+lstat: 1
+execve:1
+mmap:1
+mprotect:1
+munmap:1
+recvmsg:1
+getuid:1
+prctl: arg0 == 15 || arg0 == 1 
+getdents:1
+bind:1
+pwrite64:1
+unlink:1
+rename:1
+getrlimit:1
+clone:1
+stat:1
+epoll_create1:1
+exit_group:1
+mremap:1
+sched_yield:1
+shmat:1
+shmdt:1
+poll:1
+listen:1
+epoll_ctl:1
+getsockopt:1
+restart_syscall:1
+set_tid_address:1
+mincore:1
+ioctl: arg1 == 21505 
+pipe2:1
+eventfd2:1
+fstatfs:1
+setsockopt: arg2 == 6 || arg2 == 1 
+open:1
+close:1
+pipe:1
+epoll_wait:1
+shmget:1
+brk:1
+fstat:1
+rt_sigaction:1
+rt_sigprocmask:1
+statfs:1
+sched_getaffinity:1
+getresgid:1
+inotify_init1:1
+link:1
+getrandom:1
+access:1
+socket: arg0 == 2 || arg0 == 10 || arg0 == 1 
+uname:1
+socketpair:1
+setrlimit:1
+chmod:1
+unlinkat:1
+sigaltstack:1
+select:1
+getcwd:1
+shutdown:1
+sendmsg:1
+shmctl:1
+renameat:1
+arch_prctl:1
+fcntl: arg1 == 3 || arg1 == 4 || arg1 == 2 || arg1 == 1 
+newfstatat:1
+futex: arg1 == 129 || arg1 == 0 || arg1 == 1 || arg1 == 128 
+writev:1
+lseek:1
+inotify_add_watch:1
+kill:1
+set_robust_list:1
+getpeername:1
+getsockname:1
+geteuid:1
+capget:1
+madvise:1
+read:1
+gettid:1
+getresuid:1
+connect:1
+recvfrom:1
+write:1
+chdir:1
+setsid:1
+accept4:1
+getrusage:1
+dup2:1
+wait4:1
+getegid:1
+openat:1
+clock_getres:1
+mkdir:1
+sendto:1
+exit:1

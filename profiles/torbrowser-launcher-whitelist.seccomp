@@ -1,3 +1,6 @@
+mincore: 1
+alarm: 1
+nanosleep: 1
 vfork: 1
 mlock: 1
 clock_gettime: 1
@@ -6,8 +9,8 @@ getppid: 1
 getpid: 1
 #getgrp: 1
 fchown: 1
-# prctl: PR_SET_NAME || PR_GET_NAME || PR_SET_SECCOMP || PR_GET_TIMERSLACK
-prctl: arg0 == 15 || arg0 == 16 || arg0 == 22 || arg0 == 30
+# prctl: PR_SET_NAME || PR_GET_NAME || PR_GET_TIMERSLACK || PR_SET_SECCOMP
+prctl: arg0 == 15 || arg0 == 16 || arg0 == 30 || arg0 == 22
 epoll_create1: 1
 readlinkat: 1
 getrandom: 1

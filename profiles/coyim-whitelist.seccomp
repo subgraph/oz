@@ -40,6 +40,7 @@ epoll_wait:1
 shmget:1
 brk:1
 fstat:1
+rt_sigreturn:1
 rt_sigaction:1
 rt_sigprocmask:1
 statfs:1

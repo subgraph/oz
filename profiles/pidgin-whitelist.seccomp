@@ -1,3 +1,4 @@
+tgkill: 1
 alarm: 1
 fadvise64: 1
 nanosleep: 1

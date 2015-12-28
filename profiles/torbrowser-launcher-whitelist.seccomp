@@ -1,3 +1,4 @@
+sched_yield:1
 mincore: 1
 alarm: 1
 nanosleep: 1

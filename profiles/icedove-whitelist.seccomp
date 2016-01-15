@@ -1,3 +1,6 @@
+clock_gettime:1
+getpid:1
+pwrite64:1
 mincore: 1
 alarm: 1
 nanosleep: 1

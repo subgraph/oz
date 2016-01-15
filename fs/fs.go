@@ -3,14 +3,15 @@ package fs
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 
 	"github.com/op/go-logging"
+
 	"github.com/subgraph/oz"
-	"os/user"
-	"path/filepath"
 )
 
 type Filesystem struct {
@@ -73,11 +74,11 @@ func (fs *Filesystem) CreateSymlink(oldpath, newpath string) error {
 	return nil
 }
 
-func (fs *Filesystem) BindPath(target string, flags int, u *user.User) error {
-	return fs.bindResolve(target, "", flags, u)
+func (fs *Filesystem) BindPath(from string, flags int, u *user.User) error {
+	return fs.bindResolve(from, "", flags, u)
 }
 
-func (fs *Filesystem) BindTo(from string, to string, flags int, u *user.User) error {
+func (fs *Filesystem) BindTo(from, to string, flags int, u *user.User) error {
 	return fs.bindResolve(from, to, flags, u)
 }
 
@@ -85,6 +86,8 @@ const (
 	BindReadOnly = 1 << iota
 	BindCanCreate
 	BindIgnore
+	BindForce
+	BindNoFollow
 )
 
 func (fs *Filesystem) bindResolve(from string, to string, flags int, u *user.User) error {
@@ -124,9 +127,15 @@ func (fs *Filesystem) bindSame(p string, flags int, u *user.User) error {
 func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) error {
 	cc := flags&BindCanCreate != 0
 	ii := flags&BindIgnore != 0
-	src, err := filepath.EvalSymlinks(from)
-	if err != nil && !cc && !ii {
-		return fmt.Errorf("error resolving symlinks for path (%s): %v", from, err)
+	ff := flags&BindForce != 0
+	nf := flags&BindNoFollow != 0
+	var src string
+	var err error
+	if !nf {
+		src, err = filepath.EvalSymlinks(from)
+		if err != nil && !cc && !ii {
+			return fmt.Errorf("error resolving symlinks for path (%s): %v", from, err)
+		}
 	}
 	if src == "" {
 		src = from
@@ -151,7 +160,7 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	to = path.Join(fs.Root(), to)
 
 	s, err := os.Stat(to)
-	if err == nil || !os.IsNotExist(err) {
+	if !ff && (err == nil || !os.IsNotExist(err)) {
 		fs.log.Warning("Target (%s > %s) already exists, ignoring: %v %v", src, to, err, s)
 		return nil
 	}
@@ -264,6 +273,8 @@ func (fs *Filesystem) blacklist(target string) error {
 
 	if err := syscall.Mount(fs.absPath(src), fs.absPath(t), "", syscall.MS_BIND, "mode=400,gid=0"); err != nil {
 		return fmt.Errorf("failed to bind %s -> %s for blacklist: %v", src, t, err)
+	} else {
+		fs.log.Info("Blacklisted path: %s -> %s", src, t)
 	}
 	return nil
 }

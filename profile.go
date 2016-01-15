@@ -88,13 +88,17 @@ type SeccompConf struct {
 
 type WhitelistItem struct {
 	Path      string
+	Target    string
 	ReadOnly  bool `json:"read_only"`
 	CanCreate bool `json:"can_create"`
 	Ignore    bool `json:"ignore"`
+	Force     bool
+	NoFollow  bool `json:"no_follow"`
 }
 
 type BlacklistItem struct {
-	Path string
+	Path     string
+	NoFollow bool `json:"no_follow"`
 }
 
 type EnvVar struct {

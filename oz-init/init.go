@@ -633,7 +633,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 
 	fs := fs.NewFilesystem(st.config, st.log)
 
-	if err := setupRootfs(fs, st.uid, st.gid, st.config.UseFullDev); err != nil {
+	if err := setupRootfs(fs, st.uid, st.gid, st.config.UseFullDev, st.log); err != nil {
 		return err
 	}
 
@@ -689,10 +689,16 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		if wl.ReadOnly {
 			flags |= fs.BindReadOnly
 		}
+		if wl.Force {
+			flags |= fs.BindForce
+		}
+		if wl.NoFollow {
+			flags |= fs.BindNoFollow
+		}
 		if wl.Path == "" {
 			continue
 		}
-		if err := fsys.BindPath(wl.Path, flags, st.user); err != nil {
+		if err := fsys.BindTo(wl.Path, wl.Target, flags, st.user); err != nil {
 			return err
 		}
 	}

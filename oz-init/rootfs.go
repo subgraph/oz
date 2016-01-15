@@ -2,11 +2,12 @@ package ozinit
 
 import (
 	"fmt"
-
 	"os"
 	"path"
 	"strconv"
 	"syscall"
+
+	"github.com/op/go-logging"
 
 	"github.com/subgraph/oz/fs"
 )
@@ -19,7 +20,11 @@ var basicEmptyDirs = []string{
 	"/boot", "/dev", "/home", "/media", "/mnt",
 	"/opt", "/proc", "/root", "/run", "/run/lock", "/run/user",
 	"/sbin", "/srv", "/sys", "/tmp", "/var", "/var/lib", "/var/lib/dbus",
-	"/var/cache", "/var/crash",
+	"/var/cache", "/var/crash", "/run/resolvconf",
+}
+
+var basicEmptyUserDirs = []string{
+	"/run/dbus",
 }
 
 var basicSymlinks = [][2]string{
@@ -85,7 +90,7 @@ func _makedev(x, y int) int {
 	return (((x) << 8) | (y))
 }
 
-func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool) error {
+func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool, log *logging.Logger) error {
 	if err := os.MkdirAll(fsys.Root(), 0755); err != nil {
 		return fmt.Errorf("could not create rootfs path '%s': %v", fsys.Root(), err)
 	}
@@ -115,12 +120,22 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool) error {
 		}
 	}
 
+	for _, p := range basicEmptyUserDirs {
+		if err := fsys.CreateEmptyDir(p); err != nil {
+			return fmt.Errorf("failed to create empty user directory '%s': %v", p, err)
+		}
+		log.Info("CHOWNING DIRECTORY: %s to %d:%d", p, uid, gid)
+		if err := os.Chown(path.Join(fsys.Root(), p), int(uid), int(gid)); err != nil {
+			return fmt.Errorf("failed to chown user dir: %v", err)
+		}
+	}
+
 	rup := path.Join(fsys.Root(), "/run/user", strconv.FormatUint(uint64(uid), 10))
 	if err := os.MkdirAll(rup, 0700); err != nil {
 		return fmt.Errorf("failed to create user rundir: %v", err)
 	}
 	if err := os.Chown(rup, int(uid), int(gid)); err != nil {
-		return fmt.Errorf("failed to chiwn user rundir: %v", err)
+		return fmt.Errorf("failed to chown user rundir: %v", err)
 	}
 
 	dp := path.Join(fsys.Root(), "dev")

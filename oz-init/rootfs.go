@@ -124,7 +124,6 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool, log *log
 		if err := fsys.CreateEmptyDir(p); err != nil {
 			return fmt.Errorf("failed to create empty user directory '%s': %v", p, err)
 		}
-		log.Info("CHOWNING DIRECTORY: %s to %d:%d", p, uid, gid)
 		if err := os.Chown(path.Join(fsys.Root(), p), int(uid), int(gid)); err != nil {
 			return fmt.Errorf("failed to chown user dir: %v", err)
 		}

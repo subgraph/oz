@@ -53,6 +53,8 @@ func getDefaultArgs(config *oz.XServerConf) []string {
 		args = append(args, "--clipboard")
 	}
 
+	// Temporarily disabled
+	config.AudioMode = oz.PROFILE_AUDIO_NONE
 	switch config.AudioMode {
 	case oz.PROFILE_AUDIO_NONE, "":
 		args = append(args, "--no-microphone", "--no-speaker")

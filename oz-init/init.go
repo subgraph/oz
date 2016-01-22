@@ -167,7 +167,14 @@ func (st *initState) runInit() {
 		st.log.Warning("Failed to chown oz-init control socket: %v", err)
 	}
 
-	if err := st.setupFilesystem(nil); err != nil {
+	wlExtras := []oz.WhitelistItem{}
+	if st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_PULSE {
+		wlExtras = append(wlExtras, oz.WhitelistItem{Path:"/run/user/${UID}/pulse/native", Ignore:true})
+		wlExtras = append(wlExtras, oz.WhitelistItem{Path:"${HOME}/.config/pulse/cookie", Ignore:true})
+		wlExtras = append(wlExtras, oz.WhitelistItem{Path:"/dev/shm/pulse-shm-*", Ignore:true})
+	}
+
+	if err := st.setupFilesystem(wlExtras); err != nil {
 		st.log.Error("Failed to setup filesytem: %v", err)
 		os.Exit(1)
 	}
@@ -637,6 +644,8 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 		return err
 	}
 
+	fs.PreMountShm()
+
 	if err := st.bindWhitelist(fs, st.profile.Whitelist); err != nil {
 		return err
 	}
@@ -667,7 +676,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 	if st.config.UseFullDev {
 		mo.add(fs.MountFullDev)
 	}
-	mo.add(fs.MountShm /*fs.MountTmp, */, fs.MountPts)
+	mo.add(/*fs.MountShm,*/ /*fs.MountTmp, */ fs.MountPts)
 	if !st.profile.NoSysProc {
 		mo.add(fs.MountProc, fs.MountSys)
 	}

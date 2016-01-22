@@ -54,6 +54,7 @@ const (
 	PROFILE_AUDIO_NONE    AudioMode = "none"
 	PROFILE_AUDIO_SPEAKER AudioMode = "speaker"
 	PROFILE_AUDIO_FULL    AudioMode = "full"
+	PROFILE_AUDIO_PULSE   AudioMode = "pulseaudio"
 )
 
 type XServerConf struct {
@@ -64,6 +65,7 @@ type XServerConf struct {
 	EnableNotifications bool      `json:"enable_notifications"`
 	DisableClipboard    bool      `json:"disable_clipboard"`
 	AudioMode           AudioMode `json:"audio_mode"`
+	PulseAudio          bool      `json:"pulseaudio"`
 	Border              bool      `json:"border"`
 }
 

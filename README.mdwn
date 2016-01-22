@@ -252,7 +252,7 @@ Possible options are:
 * `enable_tray`: whether or not to enable the Xpra tray diagnostic menu/tray (This requires the [`Top Icons`](https://extensions.gnome.org/extension/495/topicons/) gnome-shell extension!)
 * `tray_icon`: the path to an icon file to use for the to tray menu
 * `window_icon`: the path to an icon file to use for windows
-* `audio_mode`: one of [none|speaker|full] selects the audio passthrough mode (defaults: none)
+* `audio_mode`: one of [none|pulseaudio~~|speaker|full~~] selects the audio passthrough mode (defaults: none) (Only pulseaudio mode supported at this time)
 * `disable_clipboard`: optionally disable clipboard sharing
 * `enable_notifications`: enable passing of dbus notifications
 

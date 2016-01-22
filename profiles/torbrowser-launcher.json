@@ -5,6 +5,7 @@
 	"enabled": true
 	, "enable_tray": false
 	, "tray_icon":"/usr/share/pixmaps/torbrowser80.xpm"
+	, "audio_mode": "pulseaudio"
 }
 , "networking":{
 	"type":"empty"

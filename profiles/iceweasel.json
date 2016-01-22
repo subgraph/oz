@@ -2,7 +2,7 @@
 "path": "/usr/bin/iceweasel"
 , "xserver": {
 	"enabled": true
-	, "audio_mode": "none"
+	, "audio_mode": "pulseaudio"
 	, "enable_tray": false
 	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/iceweasel.svg"
 }

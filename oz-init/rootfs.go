@@ -49,12 +49,17 @@ var basicBlacklist = []string{
 	"/usr/sbin", "/sbin",
 
 	"/etc/machine-id",
-	"/etc/X11",
 	"${PATH}/sudo", "${PATH}/su",
 	"${PATH}/xinput", "${PATH}/strace",
 	"${PATH}/mount", "${PATH}/umount",
 	"${PATH}/fusermount",
 }
+
+var basicWhiteList = []string{
+	"${HOME}/.config/mimeapps.list",
+}
+
+/*	"/etc/X11",*/
 
 type fsDeviceDefinition struct {
 	path string

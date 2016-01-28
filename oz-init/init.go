@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,6 +29,11 @@ import (
 	"github.com/op/go-logging"
 )
 
+type procState struct {
+	cmd   *exec.Cmd
+	track bool
+}
+
 type initState struct {
 	log       *logging.Logger
 	profile   *oz.Profile
@@ -35,7 +41,7 @@ type initState struct {
 	sockaddr  string
 	launchEnv []string
 	lock      sync.Mutex
-	children  map[int]*exec.Cmd
+	children  map[int]procState
 	uid       uint32
 	gid       uint32
 	gids      map[string]uint32
@@ -123,7 +129,7 @@ func parseArgs() *initState {
 		sockaddr:  initData.Sockaddr,
 		launchEnv: env,
 		profile:   &initData.Profile,
-		children:  make(map[int]*exec.Cmd),
+		children:  make(map[int]procState),
 		uid:       initData.Uid,
 		gid:       initData.Gid,
 		gids:      initData.Gids,
@@ -456,7 +462,7 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		st.log.Warning("Failed to start application (%s): %v", st.profile.Path, err)
 		return nil, err
 	}
-	st.addChildProcess(cmd)
+	st.addChildProcess(cmd, true)
 
 	go st.readApplicationOutput(stdout, "stdout")
 	go st.readApplicationOutput(stderr, "stderr")
@@ -538,7 +544,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	if err != nil {
 		return msg.Respond(&ErrorMsg{err.Error()})
 	}
-	st.addChildProcess(cmd)
+	st.addChildProcess(cmd, false)
 	err = msg.Respond(&OkMsg{}, int(f.Fd()))
 	return err
 }
@@ -564,10 +570,10 @@ func ptyStart(c *exec.Cmd) (ptty *os.File, err error) {
 	return ptty, nil
 }
 
-func (st *initState) addChildProcess(cmd *exec.Cmd) {
+func (st *initState) addChildProcess(cmd *exec.Cmd, track bool) {
 	st.lock.Lock()
 	defer st.lock.Unlock()
-	st.children[cmd.Process.Pid] = cmd
+	st.children[cmd.Process.Pid] = procState{cmd: cmd, track: track}
 }
 
 func (st *initState) removeChildProcess(pid int) bool {
@@ -582,7 +588,46 @@ func (st *initState) removeChildProcess(pid int) bool {
 
 func (st *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	st.log.Debug("Child process pid=%d exited from init with status %d", pid, wstatus.ExitStatus())
+	track := st.children[pid].track
+	if len(st.profile.Watchdog) > 0 {
+		if track == true {
+			track = false
+		} else {
+			track = !st.getProcessExists(st.profile.Watchdog)
+		}
+	}
 	st.removeChildProcess(pid)
+	if track == true && st.profile.AutoShutdown == oz.PROFILE_SHUTDOWN_YES {
+		st.log.Info("Shutting down sandbox after child exit.")
+		st.shutdown()
+	}
+}
+
+func (st *initState) getProcessExists(pnames []string) bool {
+	paths, _ := filepath.Glob("/proc/[0-9]*/cmdline")
+	for _, path := range paths {
+		pr, err := ioutil.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		prs := []byte{}
+		for _, prb := range pr {
+			if prb == 0x00 {
+				break;
+			}
+			prs = append(prs, prb)
+		}
+		cmdb := filepath.Base(string(prs))
+		if cmdb == "." {
+			continue
+		}
+		for _, pname := range pnames {
+			if pname == cmdb {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (st *initState) processSignals(c <-chan os.Signal, s *ipc.MsgServer) {
@@ -595,7 +640,7 @@ func (st *initState) processSignals(c <-chan os.Signal, s *ipc.MsgServer) {
 
 func (st *initState) shutdown() {
 	for _, c := range st.childrenVector() {
-		c.Process.Signal(os.Interrupt)
+		c.cmd.Process.Signal(os.Interrupt)
 	}
 
 	st.shutdownXpra()
@@ -626,10 +671,10 @@ func (st *initState) shutdownXpra() {
 	}
 }
 
-func (st *initState) childrenVector() []*exec.Cmd {
+func (st *initState) childrenVector() []procState {
 	st.lock.Lock()
 	defer st.lock.Unlock()
-	cs := make([]*exec.Cmd, 0, len(st.children))
+	cs := make([]procState, 0, len(st.children))
 	for _, v := range st.children {
 		cs = append(cs, v)
 	}

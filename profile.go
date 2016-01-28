@@ -19,8 +19,10 @@ type Profile struct {
 	Paths []string
 	// Path of the config file
 	ProfilePath string `json:"-"`
-	// Optional path of binary to watch for watchdog purposes if different than Path
-	Watchdog string
+	// Autoshutdown the sandbox when the process exits. One of (no, yes, soft), defaults to yes
+	AutoShutdown ShutdownMode `json:"auto_shutdown"`
+	// Optional list of executable names to watch for exit in case initial command spawns and exit
+	Watchdog []string
 	// Optional wrapper binary to use when launching command (ex: tsocks)
 	Wrapper string
 	// If true launch one sandbox per instance, otherwise run all instances in same sandbox
@@ -47,6 +49,14 @@ type Profile struct {
 	// Seccomp
 	Seccomp SeccompConf
 }
+
+type ShutdownMode string
+
+const (
+	PROFILE_SHUTDOWN_NO       ShutdownMode = "no"
+	PROFILE_SHUTDOWN_YES      ShutdownMode = "yes"
+	//PROFILE_SHUTDOWN_SOFT     ShutdownMode = "soft" // Unimplemented
+)
 
 type AudioMode string
 
@@ -234,6 +244,9 @@ func loadProfileFile(file string) (*Profile, error) {
 	}
 	if p.Name == "" {
 		p.Name = path.Base(p.Path)
+	}
+	if p.AutoShutdown == "" {
+		p.AutoShutdown = PROFILE_SHUTDOWN_YES
 	}
 	if p.XServer.AudioMode == "" {
 		p.XServer.AudioMode = PROFILE_AUDIO_NONE

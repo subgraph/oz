@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -331,6 +332,10 @@ func (sbox *Sandbox) UnmountFile(file, binpath string, log *logging.Logger) erro
 func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, log *logging.Logger) {
 	var files []string
 	for _, fpath := range args {
+		if strings.HasPrefix(fpath, "file://") {
+			fpath = strings.Replace(fpath, "file://", "", 1)
+			fpath, _ = url.QueryUnescape(fpath)
+		}
 		if filepath.IsAbs(fpath) == false {
 			fpath = path.Join(pwd, fpath)
 		}

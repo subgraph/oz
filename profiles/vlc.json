@@ -1,4 +1,3 @@
-$ cat /var/lib/oz/cells.d/vlc.json 
 {
 "path": "/usr/bin/vlc"
 , "allow_files": true

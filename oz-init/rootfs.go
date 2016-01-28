@@ -162,7 +162,6 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool, log *log
 			return err
 		}
 		if err := syscall.Mount("", smp, "tmpfs", smflags, "mode=755"); err != nil {
-			log.Debug("FAILED TO MOUNT SHM @ %s: %+v", smp, err)
 			return err
 		}
 	}

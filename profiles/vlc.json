@@ -1,0 +1,25 @@
+$ cat /var/lib/oz/cells.d/vlc.json 
+{
+"path": "/usr/bin/vlc"
+, "allow_files": true
+, "xserver": {
+	"enabled": true
+	, "enable_tray": false
+	, "tray_icon":"/usr/share/icons/hicolor/128x128/apps/vlc.png"
+	, "audio_mode": "pulseaudio"
+}
+, "networking":{
+	"type":"empty"
+}
+, "whitelist": [
+	{"path":"${HOME}/.config/gtk-3.0", "ignore":true}
+	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
+	, {"path":"${HOME}/.config/vlc", "can_create":true}
+]
+, "blacklist": [
+]
+, "seccomp": {
+	"mode":"blacklist"
+	, "enforce": true
+}
+}

@@ -644,13 +644,11 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 		return err
 	}
 
-	fs.PreMountShm()
-
-	if err := st.bindWhitelist(fs, st.profile.Whitelist); err != nil {
+	if err := st.bindWhitelist(fs, extra); err != nil {
 		return err
 	}
 
-	if err := st.bindWhitelist(fs, extra); err != nil {
+	if err := st.bindWhitelist(fs, st.profile.Whitelist); err != nil {
 		return err
 	}
 
@@ -674,9 +672,9 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 
 	mo := &mountOps{}
 	if st.config.UseFullDev {
-		mo.add(fs.MountFullDev)
+		mo.add(fs.MountFullDev, fs.MountShm)
 	}
-	mo.add(/*fs.MountShm,*/ /*fs.MountTmp, */ fs.MountPts)
+	mo.add(/*fs.MountTmp, */ fs.MountPts)
 	if !st.profile.NoSysProc {
 		mo.add(fs.MountProc, fs.MountSys)
 	}

@@ -331,11 +331,6 @@ func (fs *Filesystem) MountPts() error {
 	return fs.mountSpecial("/dev/pts", "devpts", 0, "newinstance,mode=620,gid=5,ptmxmode=0600")
 }
 
-func (fs *Filesystem) PreMountShm() error {
-	p := path.Join(fs.Root(), "/dev/shm")
-	return fs.mountSpecial(p, "tmpfs", syscall.MS_NODEV, "")
-}
-
 func (fs *Filesystem) MountShm() error {
 	return fs.mountSpecial("/dev/shm", "tmpfs", syscall.MS_NODEV, "")
 }

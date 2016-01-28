@@ -120,12 +120,14 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool, log *log
 	}
 
 	for _, p := range basicEmptyDirs {
+		//log.Debug("Creating empty dir: %s", p)
 		if err := fsys.CreateEmptyDir(p); err != nil {
 			return fmt.Errorf("failed to create empty directory '%s': %v", p, err)
 		}
 	}
 
 	for _, p := range basicEmptyUserDirs {
+		//log.Debug("Creating empty user dir: %s", p)
 		if err := fsys.CreateEmptyDir(p); err != nil {
 			return fmt.Errorf("failed to create empty user directory '%s': %v", p, err)
 		}
@@ -145,13 +147,23 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool, log *log
 	dp := path.Join(fsys.Root(), "dev")
 	if err := syscall.Mount("", dp, "tmpfs", syscall.MS_NOSUID|syscall.MS_NOEXEC, "mode=755"); err != nil {
 		return err
-
 	}
+
 	if !useFullDev {
 		for _, d := range basicDevices {
 			if err := fsys.CreateDevice(d.path, d.dev, d.mode, d.gid); err != nil {
 				return err
 			}
+		}
+
+		smp := path.Join(fsys.Root(), "/dev", "/shm")
+		smflags := uintptr(syscall.MS_NOSUID | syscall.MS_NOEXEC | syscall.MS_REC)
+		if err := os.MkdirAll(smp, 0755); err != nil {
+			return err
+		}
+		if err := syscall.Mount("", smp, "tmpfs", smflags, "mode=755"); err != nil {
+			log.Debug("FAILED TO MOUNT SHM @ %s: %+v", smp, err)
+			return err
 		}
 	}
 

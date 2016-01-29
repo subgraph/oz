@@ -1,50 +1,54 @@
 {
 	"ImportPath": "github.com/subgraph/oz",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.3",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-107-g942282e",
-			"Rev": "942282e931e8286aa802a30b01fa7e16befb50f3"
+			"ImportPath": "github.com/docker/libcontainer/netlink",
+			"Comment": "v2.2.1-23-g83a102c",
+			"Rev": "83a102cc68a09d890cce3b6c2e5c14c49e6373a0"
+		},
+		{
+			"ImportPath": "github.com/docker/libcontainer/system",
+			"Comment": "v2.2.1-23-g83a102c",
+			"Rev": "83a102cc68a09d890cce3b6c2e5c14c49e6373a0"
 		},
 		{
 			"ImportPath": "github.com/j-keck/arping",
-			"Rev": "7aa611681473b9c5af382b96b6aa1df0b89f5c97"
-		},
-		{
-			"ImportPath": "github.com/kr/pty",
-			"Comment": "release.r56-28-g5cf931e",
-			"Rev": "5cf931ef8f76dccd0910001d74a58a7fca84a83d"
+			"Rev": "aa3681d07d8596764629576fddd9b489b211150b"
 		},
 		{
 			"ImportPath": "github.com/milosgajdos83/tenus",
-			"Comment": "0.0.2-5-g748886f",
-			"Rev": "748886f405c379345b8e3f388949ea688f52efe0"
+			"Comment": "0.0.2-10-g432ad4c",
+			"Rev": "432ad4c24866c6da98135c98cda9bb100192a94a"
 		},
 		{
 			"ImportPath": "github.com/op/go-logging",
-			"Rev": "e8d5414f0947014548c2334044a0fac13187dfee"
-		},
-		{
-			"ImportPath": "github.com/opencontainers/runc/libcontainer/netlink",
-			"Comment": "v0.0.3-53-ge7663a6",
-			"Rev": "e7663a673efe0da696ea87eaa7695ec2e604dd76"
-		},
-		{
-			"ImportPath": "github.com/opencontainers/runc/libcontainer/system",
-			"Comment": "v0.0.3-53-ge7663a6",
-			"Rev": "e7663a673efe0da696ea87eaa7695ec2e604dd76"
-		},
-		{
-			"ImportPath": "github.com/subgraph/go-seccomp",
-			"Rev": "1d770c19b1d343aa6e0685f2c283deaa55febc89"
+			"Rev": "dfaf3dff9b631bc4236201d90d41ee0de9202889"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "09d970dc3f831160f89dcb0c0cd04eab70dcd7e8"
+			"Rev": "eb2c74142fd19a79b3f237334c7384d5167b1b46"
+		},
+		{
+			"ImportPath": "github.com/subgraph/go-seccomp",
+			"Rev": "93f4f357204b56af6737c2cbb6352e39ebedbe48"
+		},
+		{
+			"ImportPath": "github.com/kr/pty",
+			"Comment": "release.r56-29-gf7ee69f",
+			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
+		},
+		{
+			"ImportPath": "github.com/j-keck/arping",
+			"Rev": "aa3681d07d8596764629576fddd9b489b211150b"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-195-g114097b",
+			"Rev": "114097b8166ebf59ed86bd8aa6d739ff154de4e7"
 		}
 	]
 }

@@ -1,7 +1,5 @@
 # Linux networking in Golang
 
-**UPDATE: this package no longer uses original [libcontainer](https://github.com/docker/libcontainer) repo to source netlink package. It now uses [runc](https://github.com/opencontainers/runc) packages where the original libcontainer repo has been moved!!!**
-
 **tenus** is a [Golang](http://golang.org/) package which allows you to configure and manage Linux network devices programmatically. It communicates with Linux Kernel via [netlink](http://man7.org/linux/man-pages/man7/netlink.7.html) to facilitate creation and configuration of network devices on the Linux host. The package also allows for more advanced network setups with Linux containers including [Docker](https://github.com/dotcloud/docker/).
 
 **tenus** uses [runc](https://github.com/opencontainers/runc)'s implementation of **netlink** protocol. The package only works with newer Linux Kernels (3.10+) which are shipping reasonably new `netlink` protocol implementation, so **if you are running older kernel this package won't be of much use to you** I'm afraid. I have developed this package on Ubuntu [Trusty Tahr](http://releases.ubuntu.com/14.04/) which ships with 3.13+ and verified its functionality on [Precise Pangolin](http://releases.ubuntu.com/12.04/) with upgraded kernel to version 3.10. I could worked around the `netlink` issues by using `ioctl` syscalls, but I decided to prefer "pure netlink" implementation, so suck it old Kernels.
@@ -181,6 +179,51 @@ func main() {
 	if err := veth.SetPeerLinkNetInNs(pid, vethGuestIp, vethGuestIpNet, nil); err != nil {
 		log.Fatal(err)
 	}
+}
+```
+
+### Working with existing bridges and interfaces
+
+The following examples show how to retrieve exisiting interfaces as a tenus link and bridge
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net"
+
+	"github.com/milosgajdos83/tenus"
+)
+
+func main() {
+	// RETRIEVE EXISTING BRIDGE
+	br, err := tenus.BridgeFromName("bridge0")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// REMOVING AN IP FROM A BRIDGE INTERFACE (BEFORE RECONFIGURATION)
+	brIp, brIpNet, err := net.ParseCIDR("10.0.41.1/16")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := br.UnsetLinkIp(brIp, brIpNet); err != nil {
+		log.Fatal(err)
+	}
+
+	// RETRIEVE EXISTING INTERFACE
+	dl, err := tenus.NewLinkFrom("eth0")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// RENAMING AN INTERFACE BY NAME
+	if err := tenus.RenameInterfaceByName("vethPSQSEl", "vethNEWNAME"); err != nil {
+		log.Fatal(err)
+	}
+
 }
 ```
 

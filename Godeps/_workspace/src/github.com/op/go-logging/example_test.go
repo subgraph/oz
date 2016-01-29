@@ -19,7 +19,7 @@ func Example() {
 	// information to the output, including the used log level and the name of
 	// the function.
 	var format = MustStringFormatter(
-		"%{time:15:04:05.000} %{shortfunc} %{level:.1s} %{message}",
+		`%{time:15:04:05.000} %{shortfunc} %{level:.1s} %{message}`,
 	)
 	backend2Formatter := NewBackendFormatter(backend2, format)
 
@@ -30,7 +30,7 @@ func Example() {
 	// Set the backends to be used and the default level.
 	SetBackend(backend1, backend2Leveled)
 
-	log.Debug("debug %s", "arg")
+	log.Debugf("debug %s", "arg")
 	log.Error("error")
 
 	// Output:

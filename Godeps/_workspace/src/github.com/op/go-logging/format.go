@@ -28,7 +28,7 @@ type fmtVerb int
 const (
 	fmtVerbTime fmtVerb = iota
 	fmtVerbLevel
-	fmtVerbId
+	fmtVerbID
 	fmtVerbPid
 	fmtVerbProgram
 	fmtVerbModule
@@ -115,10 +115,10 @@ func getFormatter() Formatter {
 
 var (
 	// DefaultFormatter is the default formatter used and is only the message.
-	DefaultFormatter Formatter = MustStringFormatter("%{message}")
+	DefaultFormatter = MustStringFormatter("%{message}")
 
-	// Glog format
-	GlogFormatter Formatter = MustStringFormatter("%{level:.1s}%{time:0102 15:04:05.999999} %{pid} %{shortfile}] %{message}")
+	// GlogFormatter mimics the glog format
+	GlogFormatter = MustStringFormatter("%{level:.1s}%{time:0102 15:04:05.999999} %{pid} %{shortfile}] %{message}")
 )
 
 // SetFormatter sets the default formatter for all new backends. A backend will
@@ -131,7 +131,7 @@ func SetFormatter(f Formatter) {
 	formatter.def = f
 }
 
-var formatRe *regexp.Regexp = regexp.MustCompile(`%{([a-z]+)(?::(.*?[^\\]))?}`)
+var formatRe = regexp.MustCompile(`%{([a-z]+)(?::(.*?[^\\]))?}`)
 
 type part struct {
 	verb   fmtVerb
@@ -175,6 +175,9 @@ type stringFormatter struct {
 // "%{color:bold}%{time:15:04:05} %{level:-8s}%{color:reset} %{message}" will
 // just colorize the time and level, leaving the message uncolored.
 //
+// Colors on Windows is unfortunately not supported right now and is currently
+// a no-op.
+//
 // There's also a couple of experimental 'verbs'. These are exposed to get
 // feedback and needs a bit of tinkering. Hence, they might change in the
 // future.
@@ -184,7 +187,7 @@ type stringFormatter struct {
 //     %{shortpkg}  Base package path, eg. go-logging
 //     %{longfunc}  Full function name, eg. littleEndian.PutUint32
 //     %{shortfunc} Base function name, eg. PutUint32
-func NewStringFormatter(format string) (*stringFormatter, error) {
+func NewStringFormatter(format string) (Formatter, error) {
 	var fmter = &stringFormatter{}
 
 	// Find the boundaries of all %{vars}
@@ -246,7 +249,7 @@ func NewStringFormatter(format string) (*stringFormatter, error) {
 
 // MustStringFormatter is equivalent to NewStringFormatter with a call to panic
 // on error.
-func MustStringFormatter(format string) *stringFormatter {
+func MustStringFormatter(format string) Formatter {
 	f, err := NewStringFormatter(format)
 	if err != nil {
 		panic("Failed to initialized string formatter: " + err.Error())
@@ -265,20 +268,14 @@ func (f *stringFormatter) Format(calldepth int, r *Record, output io.Writer) err
 		} else if part.verb == fmtVerbTime {
 			output.Write([]byte(r.Time.Format(part.layout)))
 		} else if part.verb == fmtVerbLevelColor {
-			if part.layout == "bold" {
-				output.Write([]byte(boldcolors[r.Level]))
-			} else if part.layout == "reset" {
-				output.Write([]byte("\033[0m"))
-			} else {
-				output.Write([]byte(colors[r.Level]))
-			}
+			doFmtVerbLevelColor(part.layout, r.Level, output)
 		} else {
 			var v interface{}
 			switch part.verb {
 			case fmtVerbLevel:
 				v = r.Level
 				break
-			case fmtVerbId:
+			case fmtVerbID:
 				v = r.Id
 				break
 			case fmtVerbPid:
@@ -355,7 +352,7 @@ type backendFormatter struct {
 
 // NewBackendFormatter creates a new backend which makes all records that
 // passes through it beeing formatted by the specific formatter.
-func NewBackendFormatter(b Backend, f Formatter) *backendFormatter {
+func NewBackendFormatter(b Backend, f Formatter) Backend {
 	return &backendFormatter{b, f}
 }
 

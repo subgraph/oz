@@ -6,8 +6,8 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/opencontainers/runc/libcontainer/netlink"
-	"github.com/opencontainers/runc/libcontainer/system"
+	"github.com/docker/libcontainer/netlink"
+	"github.com/docker/libcontainer/system"
 )
 
 // LinkOptions allows you to specify network link options.
@@ -82,12 +82,7 @@ func NewLink(ifcName string) (Linker, error) {
 	}, nil
 }
 
-// NewLink creates new network link on Linux host.
-//
-// It is equivalent of running: ip link add name ${ifcName} type dummy
-// NewLink returns Linker which is initialized to a pointer of type Link if the
-// link was created successfully on the Linux host.
-// It returns error if the network link could not be created on Linux host.
+// NewLinkFrom creates new tenus link on Linux host from an existing interface of given name
 func NewLinkFrom(ifcName string) (Linker, error) {
 	if ok, err := NetInterfaceNameValid(ifcName); !ok {
 		return nil, err
@@ -102,7 +97,6 @@ func NewLinkFrom(ifcName string) (Linker, error) {
 		ifc: newIfc,
 	}, nil
 }
-
 
 // NewLinkWithOptions creates new network link on Linux host and sets some of its network
 // parameters passed in as LinkOptions
@@ -198,8 +192,8 @@ func (l *Link) SetLinkIp(ip net.IP, network *net.IPNet) error {
 	return netlink.NetworkLinkAddIp(l.NetInterface(), ip, network)
 }
 
-// SetLinkIp configures the link's IP address.
-// It is equivalent of running: ip address add ${address}/${mask} dev ${interface name}
+// UnsetLinkIp configures the link's IP address.
+// It is equivalent of running: ip address del ${address}/${mask} dev ${interface name}
 func (l *Link) UnsetLinkIp(ip net.IP, network *net.IPNet) error {
 	return netlink.NetworkLinkDelIp(l.NetInterface(), ip, network)
 }
@@ -262,6 +256,7 @@ func (l *Link) SetLinkNsToDocker(name string, dockerHost string) error {
 	return l.SetLinkNetNsPid(pid)
 }
 
+// RenameInterfaceByName renames an interface of given name.
 func RenameInterfaceByName(old string, newName string) error {
 	iface, err := net.InterfaceByName(old)
 	if err != nil {

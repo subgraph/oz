@@ -218,9 +218,9 @@ func (st *initState) runInit() {
 	if st.profile.XServer.Enabled {
 		st.xpraReady.Add(1)
 		st.startXpraServer()
+		st.xpraReady.Wait()
+		st.log.Info("XPRA started")
 	}
-	st.xpraReady.Wait()
-	st.log.Info("XPRA started")
 
 	if st.needsDbus() {
 		if err := st.getDbusSession(); err != nil {
@@ -685,7 +685,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 
 	fs := fs.NewFilesystem(st.config, st.log)
 
-	if err := setupRootfs(fs, st.uid, st.gid, st.config.UseFullDev, st.log); err != nil {
+	if err := setupRootfs(fs, st.user.HomeDir, st.uid, st.gid, st.config.UseFullDev, st.log); err != nil {
 		return err
 	}
 

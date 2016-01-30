@@ -95,7 +95,7 @@ func _makedev(x, y int) int {
 	return (((x) << 8) | (y))
 }
 
-func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool, log *logging.Logger) error {
+func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, useFullDev bool, log *logging.Logger) error {
 	if err := os.MkdirAll(fsys.Root(), 0755); err != nil {
 		return fmt.Errorf("could not create rootfs path '%s': %v", fsys.Root(), err)
 	}
@@ -126,6 +126,7 @@ func setupRootfs(fsys *fs.Filesystem, uid, gid uint32, useFullDev bool, log *log
 		}
 	}
 
+	basicEmptyUserDirs = append(basicEmptyUserDirs, homeDir)
 	for _, p := range basicEmptyUserDirs {
 		//log.Debug("Creating empty user dir: %s", p)
 		if err := fsys.CreateEmptyDir(p); err != nil {

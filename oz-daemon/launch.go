@@ -271,7 +271,7 @@ func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, lo
 	}
 	err := ozinit.RunProgram(sbox.addr, cpath, pwd, args)
 	if err != nil {
-		log.Error("start shell command failed: %v", err)
+		log.Error("run program command failed: %v", err)
 	}
 }
 

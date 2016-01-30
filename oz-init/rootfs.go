@@ -95,7 +95,7 @@ func _makedev(x, y int) int {
 	return (((x) << 8) | (y))
 }
 
-func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, useFullDev bool, log *logging.Logger) error {
+func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, display int, useFullDev bool, log *logging.Logger) error {
 	if err := os.MkdirAll(fsys.Root(), 0755); err != nil {
 		return fmt.Errorf("could not create rootfs path '%s': %v", fsys.Root(), err)
 	}
@@ -114,7 +114,7 @@ func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, useFullDe
 	}
 
 	for _, p := range basicBindDirs {
-		if err := fsys.BindPath(p, fs.BindReadOnly, nil); err != nil {
+		if err := fsys.BindPath(p, fs.BindReadOnly, display, nil); err != nil {
 			return fmt.Errorf("failed to bind directory '%s': %v", p, err)
 		}
 	}
@@ -184,7 +184,7 @@ func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, useFullDe
 	}
 
 	for _, bl := range basicBlacklist {
-		if err := fsys.BlacklistPath(bl, nil); err != nil {
+		if err := fsys.BlacklistPath(bl, display, nil); err != nil {
 			return err
 		}
 	}

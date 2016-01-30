@@ -293,13 +293,13 @@ func Tracer() {
 				resolvedpath = *trainingoutput
 			} else {
 				if *noprofile == false {
-					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.TrainOutput, u)
+					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.TrainOutput, -1, u)
 					if e != nil {
 						log.Error("resolveVars(): %v", e)
 					}
 				} else {
 					s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(os.Args[2]), cpid)
-					resolvedpath, e = fs.ResolvePathNoGlob(s, u)
+					resolvedpath, e = fs.ResolvePathNoGlob(s, -1, u)
 				}
 			}
 			policyout := "execve:1\n"

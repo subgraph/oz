@@ -74,12 +74,12 @@ func (fs *Filesystem) CreateSymlink(oldpath, newpath string) error {
 	return nil
 }
 
-func (fs *Filesystem) BindPath(from string, flags int, u *user.User) error {
-	return fs.bindResolve(from, "", flags, u)
+func (fs *Filesystem) BindPath(from string, flags int, display int, u *user.User) error {
+	return fs.bindResolve(from, "", flags, display, u)
 }
 
-func (fs *Filesystem) BindTo(from, to string, flags int, u *user.User) error {
-	return fs.bindResolve(from, to, flags, u)
+func (fs *Filesystem) BindTo(from, to string, flags int, display int, u *user.User) error {
+	return fs.bindResolve(from, to, flags, display, u)
 }
 
 const (
@@ -90,29 +90,29 @@ const (
 	BindNoFollow
 )
 
-func (fs *Filesystem) bindResolve(from string, to string, flags int, u *user.User) error {
+func (fs *Filesystem) bindResolve(from string, to string, flags int, display int, u *user.User) error {
 	if (to == "") || (from == to) {
-		return fs.bindSame(from, flags, u)
+		return fs.bindSame(from, flags, display, u)
 	}
 	if isGlobbed(to) {
 		return fmt.Errorf("bind target (%s) cannot have globbed path", to)
 	}
-	t, err := resolveVars(to, u)
+	t, err := resolveVars(to, display, u)
 	if err != nil {
 		return err
 	}
 	if isGlobbed(from) {
 		return fmt.Errorf("bind src (%s) cannot have globbed path with separate target path (%s)", from, to)
 	}
-	f, err := resolveVars(from, u)
+	f, err := resolveVars(from, display, u)
 	if err != nil {
 		return err
 	}
 	return fs.bind(f, t, flags, u)
 }
 
-func (fs *Filesystem) bindSame(p string, flags int, u *user.User) error {
-	ps, err := resolvePath(p, u)
+func (fs *Filesystem) bindSame(p string, flags int, display int, u *user.User) error {
+	ps, err := resolvePath(p, display, u)
 	if err != nil {
 		return err
 	}
@@ -240,8 +240,8 @@ func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, erro
 	return os.Stat(src)
 }
 
-func (fs *Filesystem) BlacklistPath(target string, u *user.User) error {
-	ps, err := resolvePath(target, u)
+func (fs *Filesystem) BlacklistPath(target string, display int, u *user.User) error {
+	ps, err := resolvePath(target, display, u)
 	if err != nil {
 		return nil
 	}

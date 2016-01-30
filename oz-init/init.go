@@ -683,9 +683,9 @@ func (st *initState) childrenVector() []procState {
 
 func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 
-	fs := fs.NewFilesystem(st.config, st.log)
+	fs := fs.NewFilesystem(st.config, st.profile.ProcWritable, st.log)
 
-	if err := setupRootfs(fs, st.user.HomeDir, st.uid, st.gid, st.config.UseFullDev, st.log); err != nil {
+	if err := setupRootfs(fs, st.user.HomeDir, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
 		return err
 	}
 
@@ -706,7 +706,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 		if err != nil {
 			return err
 		}
-		if err := fs.BindPath(xprapath, 0, nil); err != nil {
+		if err := fs.BindPath(xprapath, 0, st.display, nil); err != nil {
 			return err
 		}
 	}
@@ -750,7 +750,7 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		if wl.Path == "" {
 			continue
 		}
-		if err := fsys.BindTo(wl.Path, wl.Target, flags, st.user); err != nil {
+		if err := fsys.BindTo(wl.Path, wl.Target, flags, st.display, st.user); err != nil {
 			return err
 		}
 	}
@@ -765,7 +765,7 @@ func (st *initState) applyBlacklist(fsys *fs.Filesystem, blist []oz.BlacklistIte
 		if bl.Path == "" {
 			continue
 		}
-		if err := fsys.BlacklistPath(bl.Path, st.user); err != nil {
+		if err := fsys.BlacklistPath(bl.Path, st.display, st.user); err != nil {
 			return err
 		}
 	}

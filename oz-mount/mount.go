@@ -101,7 +101,7 @@ func mount(fpath string, readonly bool, fsys *fs.Filesystem, log *logging.Logger
 	if readonly {
 		flags |= fs.BindReadOnly
 	}
-	if err := fsys.BindPath(fpath, flags, nil); err != nil {
+	if err := fsys.BindPath(fpath, flags, -1, nil); err != nil {
 		log.Error("%v", err)
 		os.Exit(1)
 	}

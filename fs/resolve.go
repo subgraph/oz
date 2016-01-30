@@ -8,25 +8,27 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"strconv"
 )
 
-func ResolvePathNoGlob(p string, u *user.User) (string, error) {
-	return resolveVars(p, u)
+func ResolvePathNoGlob(p string, d int, u *user.User) (string, error) {
+	return resolveVars(p, d, u)
 }
 
-func resolvePath(p string, u *user.User) ([]string, error) {
-	p, err := resolveVars(p, u)
+func resolvePath(p string, d int, u *user.User) ([]string, error) {
+	p, err := resolveVars(p, d, u)
 	if err != nil {
 		return nil, err
 	}
 	return resolveGlob(p)
 }
 
-func resolveVars(p string, u *user.User) (string, error) {
+func resolveVars(p string, d int, u *user.User) (string, error) {
 	const pathVar = "${PATH}/"
 	const homeVar = "${HOME}"
 	const uidVar = "${UID}"
 	const userVar = "${USER}"
+	const displayVar = "${DISPLAY}"
 
 	switch {
 	case strings.HasPrefix(p, pathVar):
@@ -49,6 +51,12 @@ func resolveVars(p string, u *user.User) (string, error) {
 			return p, nil
 		}
 		return path.Join(u.HomeDir, p[len(homeVar):]), nil
+
+	case strings.Contains(p, displayVar):
+		if d < 0 {
+			return p, nil
+		}
+		return strings.Replace(p, displayVar, strconv.Itoa(d), -1), nil
 
 	case strings.Contains(p, uidVar):
 		if u == nil {

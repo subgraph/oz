@@ -2,7 +2,7 @@
 "path": "/usr/bin/icedove"
 , "xserver": {
 	"enabled": true
-	, "enable_tray": true
+	, "enable_tray": false
 	, "tray_icon": "/usr/share/icons/hicolor/scalable/apps/icedove.svg"
 	, "disable_audio": true
 }

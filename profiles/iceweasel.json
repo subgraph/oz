@@ -7,7 +7,7 @@
 	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/iceweasel.svg"
 }
 , "networking":{
-	"type":"bridge"
+	"type":"empty"
 	, "sockets": [
 		{"type":"client", "proto":"tcp", "port":9050}
 	]

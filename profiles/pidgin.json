@@ -6,13 +6,16 @@
 	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/pidgin-menu.svg"
 }
 , "networking":{
-	"type":"bridge"
+	"type":"empty"
+	, "sockets": [
+		{"type":"client", "proto":"tcp", "port":9050}
+	]
 }
 , "whitelist": [
 	{"path":"${HOME}/.purple", "can_create":true} 
 	, {"path":"${HOME}/Downloads/Pidgin", "target":"${HOME}/Downloads", "can_create":true, "force":true}
-	,{"path":"/var/lib/oz/cells.d/pidgin.json", "can_create":false}
-	,{"path":"/var/lib/oz/cells.d/pidgin-whitelist.seccomp", "can_create": false}
+	, {"path":"/var/lib/oz/cells.d/pidgin.json", "can_create":false}
+	, {"path":"/var/lib/oz/cells.d/pidgin-whitelist.seccomp", "can_create": false}
 ]
 , "blacklist": [
 ]

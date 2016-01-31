@@ -7,7 +7,7 @@
 	, "disable_audio": true
 }
 , "networking":{
-	"type":"bridge"
+	"type":"empty"
 	, "sockets": [
 		{"type":"client", "proto":"tcp", "port":9050}
 	]

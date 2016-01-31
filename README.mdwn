@@ -284,6 +284,8 @@ Each socket configuration contains the following keys:
 There exists two types of *bindlists*: a whitelist and a blacklist.
 The whitelist allows you to bring files from the host into the sandbox; while the blacklist allows you to remove access to specific files or directories.
 
+The `path` key specifies the path of the directory or file to bind. 
+
 Both of these types support a few ways of resolving files:
 
 * In the path by using the `${PATH}` prefix.
@@ -293,13 +295,18 @@ Both of these types support a few ways of resolving files:
 * By path globbing using the `*` wildcard.
 
 
+The whitelist carries some extra properties:
+
+* An optional `target` key can be specified to bind the file to a different path inside the sandbox.
+* If the original file does not exist and is inside the home, an empty directory will be created in its place if the `can_create` key is set.
+* If the target already exists the whitelist will fail to bind unless the `force` key is set.
+* A profile will fail to launch if a whitelist item is missing unless the `ignore` key is set.
+* An item can be marked as read only with the `read_only` boolean key.
+* Files passed as arguments to the command while launching are automatically added to the whitelist (if the `allow_files` boolean key is set).
+
 The whitelist carries some extra caveats:
 
-* If the original file does not exist and is inside the home, an empty directory will be created in its place if "can_create" is set.
 * If the original file is a symlink it is resolved, but the target remains the same.
-* An item can be marked as read only with the `readonly` boolean key.
-* Files that are passed as arguments to the command are automatically added to the whitelist.
-
 
 ### Environment
 

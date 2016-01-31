@@ -25,6 +25,7 @@
 	, {"_path":"${HOME}/.config/gtk-2.0"}
 	, {"path":"/var/lib/oz/cells.d/icedove-whitelist.seccomp"}
 	, {"path":"/var/lib/oz/cells.d/icedove.json"}
+	, {"path":"${HOME}/Downloads/Icedove", "target":"${HOME}/Downloads", "can_create":true, "force":true}
 
 ]
 , "_blacklist": [

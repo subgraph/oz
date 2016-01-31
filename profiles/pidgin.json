@@ -10,9 +10,9 @@
 }
 , "whitelist": [
 	{"path":"${HOME}/.purple", "can_create":true} 
+	, {"path":"${HOME}/Downloads/Pidgin", "target":"${HOME}/Downloads", "can_create":true, "force":true}
 	,{"path":"/var/lib/oz/cells.d/pidgin.json", "can_create":false}
 	,{"path":"/var/lib/oz/cells.d/pidgin-whitelist.seccomp", "can_create": false}
-	
 ]
 , "blacklist": [
 ]

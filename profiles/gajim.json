@@ -23,6 +23,7 @@
 	, {"path":"${HOME}/.cache/gajim", "can_create":true}
 	, {"path":"${HOME}/.config/gajim", "can_create":true}
 	, {"path":"${HOME}/.local/share/keyrings", "ignore":true}
+	, {"path":"${HOME}/Downloads/Gajim", "target":"${HOME}/Downloads", "can_create":true, "force":true}
 ]
 , "blacklist": [
 ]

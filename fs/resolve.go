@@ -7,8 +7,8 @@ import (
 	"os/user"
 	"path"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 func ResolvePathNoGlob(p string, d int, u *user.User) (string, error) {

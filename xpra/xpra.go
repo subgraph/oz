@@ -54,18 +54,18 @@ func getDefaultArgs(config *oz.XServerConf) []string {
 	}
 
 	// Temporarily disabled
-/*
-	switch config.AudioMode {
-	case oz.PROFILE_AUDIO_NONE, "":
-*/
-		args = append(args, "--no-microphone", "--no-speaker")
-/*
-	case oz.PROFILE_AUDIO_SPEAKER:
-		args = append(args, "--no-microphone", "--speaker")
-	case oz.PROFILE_AUDIO_FULL:
-		args = append(args, "--microphone", "--speaker")
-	}
-*/
+	/*
+		switch config.AudioMode {
+		case oz.PROFILE_AUDIO_NONE, "":
+	*/
+	args = append(args, "--no-microphone", "--no-speaker")
+	/*
+		case oz.PROFILE_AUDIO_SPEAKER:
+			args = append(args, "--no-microphone", "--speaker")
+		case oz.PROFILE_AUDIO_FULL:
+			args = append(args, "--microphone", "--speaker")
+		}
+	*/
 	if config.EnableNotifications {
 		args = append(args, "--notifications")
 	} else {

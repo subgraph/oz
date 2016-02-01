@@ -53,8 +53,8 @@ type Profile struct {
 type ShutdownMode string
 
 const (
-	PROFILE_SHUTDOWN_NO       ShutdownMode = "no"
-	PROFILE_SHUTDOWN_YES      ShutdownMode = "yes"
+	PROFILE_SHUTDOWN_NO  ShutdownMode = "no"
+	PROFILE_SHUTDOWN_YES ShutdownMode = "yes"
 	//PROFILE_SHUTDOWN_SOFT     ShutdownMode = "soft" // Unimplemented
 )
 

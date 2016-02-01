@@ -16,11 +16,12 @@
 }
 , "whitelist": [
 	{"path":"${HOME}/.local/share/torbrowser", "can_create":true}
-	, {"_path":"${HOME}/.cache/torbrowser", "can_create":true}
+#	, {"path":"${HOME}/.cache/torbrowser", "can_create":true}
 	, {"path":"${HOME}/.config/torbrowser", "can_create":true}
-	, {"path":"${HOME}/Downloads/TorBrowser",
-		"target":"${HOME}/.local/share/torbrowser/tbb/x86_64/tor-browser_en-US/Browser/Downloads",
-		"can_create":true, "force":true}
+	, {"path":"${HOME}/Downloads/TorBrowser", "can_create":true}
+#	, {"path":"${HOME}/Downloads/TorBrowser",
+#		"target":"${HOME}/.local/share/torbrowser/tbb/x86_64/tor-browser_en-US/Browser/Downloads",
+#		"can_create":true, "force":true}
 	, {"path":"/run/tor/control.authcookie", "ignore":true}
 ]
 , "blacklist": [

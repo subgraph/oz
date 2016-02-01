@@ -250,7 +250,7 @@ func loadProfileFile(fpath string) (*Profile, error) {
 		if !commentRegexp.MatchString(line) {
 			bs += line + "\n"
 		}
-	} 
+	}
 	p := new(Profile)
 	if err := json.Unmarshal([]byte(bs), p); err != nil {
 		return nil, err

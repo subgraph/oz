@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	//"time"
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
@@ -35,24 +36,25 @@ type procState struct {
 }
 
 type initState struct {
-	log       *logging.Logger
-	profile   *oz.Profile
-	config    *oz.Config
-	sockaddr  string
-	launchEnv []string
-	lock      sync.Mutex
-	children  map[int]procState
-	uid       uint32
-	gid       uint32
-	gids      map[string]uint32
-	user      *user.User
-	display   int
-	fs        *fs.Filesystem
-	ipcServer *ipc.MsgServer
-	xpra      *xpra.Xpra
-	xpraReady sync.WaitGroup
-	network   *network.SandboxNetwork
-	dbusUuid  string
+	log               *logging.Logger
+	profile           *oz.Profile
+	config            *oz.Config
+	sockaddr          string
+	launchEnv         []string
+	lock              sync.Mutex
+	children          map[int]procState
+	uid               uint32
+	gid               uint32
+	gids              map[string]uint32
+	user              *user.User
+	display           int
+	fs                *fs.Filesystem
+	ipcServer         *ipc.MsgServer
+	xpra              *xpra.Xpra
+	xpraReady         sync.WaitGroup
+	network           *network.SandboxNetwork
+	dbusUuid          string
+	shutdownRequested bool
 }
 
 type InitData struct {
@@ -175,9 +177,9 @@ func (st *initState) runInit() {
 
 	wlExtras := []oz.WhitelistItem{}
 	if st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_PULSE {
-		wlExtras = append(wlExtras, oz.WhitelistItem{Path:"/run/user/${UID}/pulse/native", Ignore:true})
-		wlExtras = append(wlExtras, oz.WhitelistItem{Path:"${HOME}/.config/pulse/cookie", Ignore:true})
-		wlExtras = append(wlExtras, oz.WhitelistItem{Path:"/dev/shm/pulse-shm-*", Ignore:true})
+		wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/run/user/${UID}/pulse/native", Ignore: true})
+		wlExtras = append(wlExtras, oz.WhitelistItem{Path: "${HOME}/.config/pulse/cookie", Ignore: true})
+		wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/dev/shm/pulse-shm-*", Ignore: true})
 	}
 
 	if err := st.setupFilesystem(wlExtras); err != nil {
@@ -589,14 +591,28 @@ func (st *initState) removeChildProcess(pid int) bool {
 func (st *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	st.log.Debug("Child process pid=%d exited from init with status %d", pid, wstatus.ExitStatus())
 	track := st.children[pid].track
-	if len(st.profile.Watchdog) > 0 {
-		if track == true {
-			track = false
-		} else {
-			track = !st.getProcessExists(st.profile.Watchdog)
+	st.removeChildProcess(pid)
+
+	for _, proc := range st.children {
+		if proc.track {
+			return
 		}
 	}
-	st.removeChildProcess(pid)
+
+	if len(st.profile.Watchdog) > 0 {
+		//if st.getProcessExists(st.profile.Watchdog) {
+		//	return
+		//} else {
+		//	var ww sync.WaitGroup
+		//	ww.Add(1)
+		//	time.AfterFunc(time.Second*5, func() {
+		//		ww.Done()
+		//		st.log.Info("Watchdog timeout expired")
+		//	})
+		//	ww.Wait()
+		track = !st.getProcessExists(st.profile.Watchdog)
+		//}
+	}
 	if track == true && st.profile.AutoShutdown == oz.PROFILE_SHUTDOWN_YES {
 		st.log.Info("Shutting down sandbox after child exit.")
 		st.shutdown()
@@ -613,7 +629,7 @@ func (st *initState) getProcessExists(pnames []string) bool {
 		prs := []byte{}
 		for _, prb := range pr {
 			if prb == 0x00 {
-				break;
+				break
 			}
 			prs = append(prs, prb)
 		}
@@ -639,6 +655,10 @@ func (st *initState) processSignals(c <-chan os.Signal, s *ipc.MsgServer) {
 }
 
 func (st *initState) shutdown() {
+	if st.shutdownRequested {
+		return
+	}
+	st.shutdownRequested = true
 	for _, c := range st.childrenVector() {
 		c.cmd.Process.Signal(os.Interrupt)
 	}
@@ -719,7 +739,7 @@ func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 	if st.config.UseFullDev {
 		mo.add(fs.MountFullDev, fs.MountShm)
 	}
-	mo.add(/*fs.MountTmp, */ fs.MountPts)
+	mo.add( /*fs.MountTmp, */ fs.MountPts)
 	if !st.profile.NoSysProc {
 		mo.add(fs.MountProc, fs.MountSys)
 	}

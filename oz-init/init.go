@@ -683,7 +683,7 @@ func (st *initState) childrenVector() []procState {
 
 func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
 
-	fs := fs.NewFilesystem(st.config, st.profile.ProcWritable, st.log)
+	fs := fs.NewFilesystem(st.config, st.log)
 
 	if err := setupRootfs(fs, st.user.HomeDir, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
 		return err

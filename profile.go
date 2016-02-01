@@ -1,10 +1,13 @@
 package oz
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/subgraph/oz/network"
@@ -229,17 +232,27 @@ func LoadProfiles(dir string) (Profiles, error) {
 	return ps, nil
 }
 
-func loadProfileFile(file string) (*Profile, error) {
-	if err := checkConfigPermissions(file); err != nil {
+var commentRegexp = regexp.MustCompile("^[ \t]*#")
+
+func loadProfileFile(fpath string) (*Profile, error) {
+	if err := checkConfigPermissions(fpath); err != nil {
 		return nil, err
 	}
 
-	bs, err := ioutil.ReadFile(file)
+	file, err := os.Open(fpath)
 	if err != nil {
 		return nil, err
 	}
+	scanner := bufio.NewScanner(file)
+	bs := ""
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !commentRegexp.MatchString(line) {
+			bs += line + "\n"
+		}
+	} 
 	p := new(Profile)
-	if err := json.Unmarshal(bs, p); err != nil {
+	if err := json.Unmarshal([]byte(bs), p); err != nil {
 		return nil, err
 	}
 	if p.Name == "" {
@@ -257,6 +270,6 @@ func loadProfileFile(file string) (*Profile, error) {
 	if p.Networking.IpByte <= 1 || p.Networking.IpByte > 254 {
 		p.Networking.IpByte = 0
 	}
-	p.ProfilePath = file
+	p.ProfilePath = fpath
 	return p, nil
 }

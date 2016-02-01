@@ -84,8 +84,8 @@ func cleanPath(spath, homedir string) (string, error) {
 	if !path.IsAbs(spath) {
 		spath = path.Join(homedir, spath)
 	}
-	if !strings.HasPrefix(spath, homedir) {
-		return "", fmt.Errorf("only files inside of the user home are permitted")
+	if !strings.HasPrefix(spath, homedir) && !strings.HasPrefix(spath, "/media/user") {
+		return "", fmt.Errorf("only files inside of the user home and mounts are permitted")
 	}
 	return spath, nil
 }

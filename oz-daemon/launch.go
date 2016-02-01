@@ -339,7 +339,7 @@ func (sbox *Sandbox) whitelistArgumentFiles(binpath, pwd string, args []string, 
 		if filepath.IsAbs(fpath) == false {
 			fpath = path.Join(pwd, fpath)
 		}
-		if !strings.HasPrefix(fpath, "/home/") {
+		if !strings.HasPrefix(fpath, sbox.user.HomeDir) && !strings.HasPrefix(fpath, "/media/user") {
 			continue
 		}
 		if _, err := os.Stat(fpath); err == nil {

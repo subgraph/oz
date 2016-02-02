@@ -25,16 +25,17 @@ type groupEntry struct {
 }
 
 type daemonState struct {
-	log          *logging.Logger
-	config       *oz.Config
-	profiles     oz.Profiles
-	sandboxes    []*Sandbox
-	nextSboxId   int
-	nextDisplay  int
-	memBackend   *logging.ChannelMemoryBackend
-	backends     []logging.Backend
-	network      *network.HostNetwork
-	systemGroups map[string]groupEntry
+	log           *logging.Logger
+	config        *oz.Config
+	profiles      oz.Profiles
+	sandboxes     []*Sandbox
+	nextSboxId    int
+	nextDisplay   int
+	memBackend    *logging.ChannelMemoryBackend
+	backends      []logging.Backend
+	network       *network.HostNetwork
+	systemGroups  map[string]groupEntry
+	bridgeEnabled bool
 }
 
 func Main() {
@@ -94,6 +95,7 @@ func initialize() *daemonState {
 	}
 
 	if bridgeNeeded {
+		d.bridgeEnabled = true
 		d.log.Info("Initializing bridge networking")
 		htn, err := network.BridgeInit(d.config.BridgeMACAddr, d.config.NMIgnoreFile, d.log)
 		if err != nil {
@@ -428,6 +430,11 @@ func (d *daemonState) handleLogs(logs *LogsMsg, msg *ipc.Message) error {
 }
 
 func (d *daemonState) handleNetworkReconfigure() {
+	if !d.bridgeEnabled {
+		d.log.Info("No bridge available not reconfiguring.")
+		return
+	}
+
 	brIP, brNet, err := network.FindEmptyRange()
 	if err != nil {
 		d.log.Error("Unable to find new network range: %v", err)

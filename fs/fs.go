@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/op/go-logging"
+	"github.com/naegelejd/go-acl"
 
 	"github.com/subgraph/oz"
 )
@@ -49,7 +50,8 @@ func (fs *Filesystem) CreateEmptyDir(target string) error {
 	if err := os.MkdirAll(fs.absPath(target), fi.Mode().Perm()); err != nil {
 		return err
 	}
-	return copyFileInfo(fi, target)
+
+	return copyFileInfo(fi, nil, target)
 }
 
 func (fs *Filesystem) CreateDevice(devpath string, dev int, mode uint32, gid int) error {
@@ -233,7 +235,13 @@ func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, erro
 		return nil, err
 	}
 
-	if err := copyFileInfo(pinfo, src); err != nil {
+	acls, err := acl.GetFileAccess(path.Dir(src))
+	if err != nil {
+		return nil, err
+	}
+	defer acls.Free()
+
+	if err := copyFileInfo(pinfo, acls, src); err != nil {
 		return nil, err
 	}
 
@@ -460,12 +468,23 @@ func copyFilePermissions(src, target string) error {
 	if err != nil {
 		return err
 	}
-	return copyFileInfo(fi, target)
+	acls, err := acl.GetFileAccess(src)
+	if err != nil {
+		return err
+	}
+	defer acls.Free()
+
+	return copyFileInfo(fi, acls, target)
 }
 
-func copyFileInfo(info os.FileInfo, target string) error {
+func copyFileInfo(info os.FileInfo, acls *acl.ACL, target string) error {
 	st := info.Sys().(*syscall.Stat_t)
 	os.Chown(target, int(st.Uid), int(st.Gid))
 	os.Chmod(target, info.Mode().Perm())
+	if acls != nil {
+		if err := acls.SetFileAccess(target); err != nil {
+			return err
+		}
+	}
 	return nil
 }

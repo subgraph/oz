@@ -242,6 +242,8 @@ default_groups  : [audio video]                                  # List of defau
 Profiles files are simple JSON files located, by default, in `/var/lib/oz/cells.d`. They must include at minimum the path to the executable to be sandboxed using the `path` key. It may also define more executables to run under the same sandbox under the `paths` array; in which case a `name` key must also be specified. Some other base options are also available:
 
 * `allow_files`: whether to allow binding of files passed as arguments inside the sandbox (does not affect files added manually)
+* `auto_shutdown`: whether the sandbox should be terminated right away after the process exits, one of [yes|no] (defaults to `yes`)
+* `watchdog`: an array of strings containing the names of process the auto-shutdown feature should look for in case the main process spawns a detached process.
 
 ### Xserver
 

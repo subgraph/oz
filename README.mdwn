@@ -241,9 +241,11 @@ default_groups  : [audio video]                                  # List of defau
 
 Profiles files are simple JSON files located, by default, in `/var/lib/oz/cells.d`. They must include at minimum the path to the executable to be sandboxed using the `path` key. It may also define more executables to run under the same sandbox under the `paths` array; in which case a `name` key must also be specified. Some other base options are also available:
 
+* `path`: if multiple executables are to be sandboxed under the same profile
 * `allow_files`: whether to allow binding of files passed as arguments inside the sandbox (does not affect files added manually)
 * `auto_shutdown`: whether the sandbox should be terminated right away after the process exits, one of [yes|no] (defaults to `yes`)
 * `watchdog`: an array of strings containing the names of process the auto-shutdown feature should look for in case the main process spawns a detached process.
+* `allowed_groups`: an array of user groups assigned to the user inside the sandbox
 
 ### Xserver
 
@@ -320,6 +322,7 @@ It is also possible to define static variables by also defining a `value` attrib
 Oz supports both whitelist and blacklist seccomp policies for sandboxed applications. Seccomp allows for See the [Oz Seccomp documentation page](https://github.com/subgraph/oz/wiki/Oz-Seccomp) for more details.
 
 Oz can also run sandboxed applications with whitelist and blacklist seccomp policies loaded, but in non-enforced (audit only) mode. More information is available on the [Oz seccomp non-enforcement mode documentation](https://github.com/subgraph/oz/wiki/Oz-Seccomp-Non-Enforcement-Mode) page.
+
 ### Example
 
 You can find a list of existing profiles in the repository. Here is the porfile for running the `torbrowser-launcher`:
@@ -327,10 +330,12 @@ You can find a list of existing profiles in the repository. Here is the porfile 
 ```
 {
 "path": "/usr/bin/torbrowser-launcher"
+, "watchdog": ["start-tor-browser", "firefox"]
 , "xserver": {
 	"enabled": true
-	, "enable_tray": true
+	, "enable_tray": false
 	, "tray_icon":"/usr/share/pixmaps/torbrowser80.xpm"
+	, "audio_mode": "pulseaudio"
 }
 , "networking":{
 	"type":"empty"
@@ -340,11 +345,10 @@ You can find a list of existing profiles in the repository. Here is the porfile 
 	]
 }
 , "whitelist": [
-	{"path":"${HOME}/.local/share/torbrowser"}
-	, {"path":"${HOME}/.cache/torbrowser"}
-	, {"path":"${HOME}/.config/torbrowser"}
-	, {"path":"${HOME}/Downloads/TorBrowser"}
-	, {"path":"/run/tor/control.authcookie"}
+	{"path":"${HOME}/.local/share/torbrowser", "can_create":true}
+	, {"path":"${HOME}/.config/torbrowser", "can_create":true}
+	, {"path":"${HOME}/Downloads/TorBrowser", "can_create":true}
+	, {"path":"/run/tor/control.authcookie", "ignore":true}
 ]
 , "blacklist": [
 ]
@@ -353,8 +357,15 @@ You can find a list of existing profiles in the repository. Here is the porfile 
 	, {"name":"TOR_SOCKS_HOST"}
 	, {"name":"TOR_SOCKS_PORT"}
 	, {"name":"TOR_CONTROL_PORT"}
+	, {"name":"TOR_CONTROL_PASSWD"}
 	, {"name":"TOR_CONTROL_AUTHENTICATE"}
+	, {"name":"TOR_CONTROL_COOKIE_AUTH_FILE"}
 ]
+, "allowed_groups": ["debian-tor"]
+, "seccomp": {
+	"mode":"blacklist"
+	, "enforce": true
+}
 }
 ```
 

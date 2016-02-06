@@ -243,7 +243,7 @@ Profiles files are simple JSON files located, by default, in `/var/lib/oz/cells.
 
 * `path`: if multiple executables are to be sandboxed under the same profile
 * `allow_files`: whether to allow binding of files passed as arguments inside the sandbox (does not affect files added manually)
-* `auto_shutdown`: whether the sandbox should be terminated right away after the process exits, one of [yes|no] (defaults to `yes`)
+* `auto_shutdown`: whether the sandbox should be terminated right away after the process exits, one of [yes|no], (defaults to `yes`)
 * `watchdog`: an array of strings containing the names of process the auto-shutdown feature should look for in case the main process spawns a detached process.
 * `allowed_groups`: an array of user groups assigned to the user inside the sandbox
 

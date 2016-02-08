@@ -64,3 +64,4 @@ unlink:1
 kill:1
 openat:1
 sendmsg:1
+dup:1

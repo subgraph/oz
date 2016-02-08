@@ -1,5 +1,5 @@
 {
-"path": "/usr/local/bin/pond"
+"path": "/usr/bin/pond"
 , "xserver": {
 	"enabled": true
 	, "enable_tray": false
@@ -15,13 +15,11 @@
 }
 , "whitelist": [
 	{"path":"${HOME}/.pond", "can_create":true}
-	, {"path":"/opt/usr/share/gopkgs/pond"}
 ]
 , "blacklist": [
 ]
 , "environment": [
-	{"name":"GOPATH", "value":"/opt/usr/share/gopkgs/pond"}
-	, {"name":"TOR_SKIP_LAUNCH"}
+	{"name":"TOR_SKIP_LAUNCH"}
 	, {"name":"TOR_SOCKS_HOST"}
 	, {"name":"TOR_SOCKS_PORT"}
 ]

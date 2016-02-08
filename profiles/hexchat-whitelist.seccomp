@@ -66,3 +66,11 @@ openat:1
 sendmsg:1
 dup:1
 readlink:1
+exit:1
+# Following for about/contents modal
+dup2:1
+inotify_init1:1
+inotify_rm_watch:1
+inotify_add_watch:1
+pipe2:1
+madvise:1

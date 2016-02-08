@@ -385,6 +385,9 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	if st.config.DivertPath {
 		cpath = path.Join(path.Dir(cpath)+"-oz", path.Base(cpath))
 	}
+	if len(st.profile.DefaultParams) > 0 {
+		cmdArgs = append(st.profile.DefaultParams, cmdArgs...)
+	}
 
 	switch st.profile.Seccomp.Mode {
 	case oz.PROFILE_SECCOMP_TRAIN:

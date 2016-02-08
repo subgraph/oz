@@ -1,5 +1,6 @@
 {
 "path": "/usr/bin/hexchat"
+, "default_params": ["--no-plugins"]
 , "xserver": {
 	"enabled": true
 	, "enable_tray": false

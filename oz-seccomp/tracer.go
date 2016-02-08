@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/subgraph/oz"
-	"github.com/subgraph/oz/fs"
-	"golang.org/x/sys/unix"
 	"io"
 	"os"
 	"os/exec"
 	"os/user"
 	"path"
 	"syscall"
+	
+	"golang.org/x/sys/unix"
+	
+	"github.com/subgraph/oz"
+	"github.com/subgraph/oz/fs"
 )
 
 // #include "sys/ptrace.h"
@@ -28,7 +30,7 @@ const (
 type SystemCallArgs []int
 
 func Tracer() {
-
+	
 	var train = false
 	var cmd string
 	var cmdArgs []string
@@ -43,12 +45,18 @@ func Tracer() {
 
 	var args = flag.Args()
 
+	OzConfig, err := oz.LoadConfig(oz.DefaultConfigPath)
+	if err != nil {
+		log.Error("unable to load oz config")
+		os.Exit(1)
+	}
+
 	if *noprofile == true {
 		train = true
 
 		// TODO: remove hardcoded path and read prefix from /etc/oz.conf
 
-		cmd = "/usr/bin/oz-seccomp"
+		cmd = path.Join(OzConfig.PrefixPath, "bin", "oz-seccomp")
 		cmdArgs = append([]string{"-mode=train"}, args...)
 	} else {
 		p = new(oz.Profile)

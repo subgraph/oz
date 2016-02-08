@@ -9,8 +9,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/op/go-logging"
 	"github.com/naegelejd/go-acl"
+	"github.com/op/go-logging"
 
 	"github.com/subgraph/oz"
 )

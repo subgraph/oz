@@ -11,9 +11,9 @@ import (
 	"os/user"
 	"path"
 	"syscall"
-	
+
 	"golang.org/x/sys/unix"
-	
+
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
 )
@@ -30,7 +30,6 @@ const (
 type SystemCallArgs []int
 
 func Tracer() {
-	
 	var train = false
 	var cmd string
 	var cmdArgs []string

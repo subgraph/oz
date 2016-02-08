@@ -1,6 +1,7 @@
 {
 "path": "/usr/bin/torbrowser-launcher"
 , "watchdog": ["start-tor-browser", "firefox"]
+, "allowed_groups": ["debian-tor"]
 , "xserver": {
 	"enabled": true
 	, "enable_tray": false
@@ -35,7 +36,6 @@
 	, {"name":"TOR_CONTROL_AUTHENTICATE"}
 	, {"name":"TOR_CONTROL_COOKIE_AUTH_FILE"}
 ]
-, "allowed_groups": ["debian-tor"]
 , "seccomp": {
 	"mode":"blacklist"
 	, "enforce": true

@@ -67,6 +67,7 @@ sendmsg:1
 dup:1
 readlink:1
 exit:1
+clock_gettime:1
 # Following for about/contents modal
 dup2:1
 inotify_init1:1

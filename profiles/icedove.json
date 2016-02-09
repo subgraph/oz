@@ -4,7 +4,6 @@
 	"enabled": true
 	, "enable_tray": false
 	, "tray_icon": "/usr/share/icons/hicolor/scalable/apps/icedove.svg"
-	, "disable_audio": true
 }
 , "networking":{
 	"type":"empty"

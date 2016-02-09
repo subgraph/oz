@@ -73,6 +73,7 @@ futex: arg1 == 129 || arg1 == 0 || arg1 == 1 || arg1 == 128
 writev:1
 lseek:1
 inotify_add_watch:1
+inotify_rm_watch:1
 kill:1
 set_robust_list:1
 getpeername:1
@@ -98,3 +99,5 @@ clock_getres:1
 mkdir:1
 sendto:1
 exit:1
+fallocate:1
+fsync:1

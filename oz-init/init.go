@@ -177,7 +177,7 @@ func (st *initState) runInit() {
 
 	wlExtras := []oz.WhitelistItem{}
 	blExtras := []oz.BlacklistItem{}
-	wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/etc/oz/mimeapps.list", Target: "${HOME}/.config/mimeapps.list", ReadOnly: true})
+	//wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/etc/oz/mimeapps.list", Target: "${HOME}/.config/mimeapps.list", ReadOnly: true})
 	//wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/etc/oz/mimeapps.list", Target: "/etc/gnome/defaults.list", Force: true, ReadOnly: true})
 	//blExtras = append(blExtras, oz.BlacklistItem{Path: "/etc/shadow"})
 	//blExtras = append(blExtras, oz.BlacklistItem{Path: "/etc/shadow-"})

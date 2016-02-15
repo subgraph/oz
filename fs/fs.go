@@ -50,7 +50,7 @@ func (fs *Filesystem) CreateEmptyDir(target string) error {
 		return err
 	}
 
-	return copyFileInfo(fi, nil, target)
+	return copyFileInfo(fi, fs.absPath(target))
 }
 
 func (fs *Filesystem) CreateDevice(devpath string, dev int, mode uint32, gid int) error {

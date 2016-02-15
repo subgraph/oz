@@ -176,13 +176,19 @@ func (st *initState) runInit() {
 	}
 
 	wlExtras := []oz.WhitelistItem{}
+	blExtras := []oz.BlacklistItem{}
+	wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/etc/oz/mimeapps.list", Target: "${HOME}/.config/mimeapps.list", ReadOnly: true})
+	//wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/etc/oz/mimeapps.list", Target: "/etc/gnome/defaults.list", Force: true, ReadOnly: true})
+	//blExtras = append(blExtras, oz.BlacklistItem{Path: "/etc/shadow"})
+	//blExtras = append(blExtras, oz.BlacklistItem{Path: "/etc/shadow-"})
+
 	if st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_PULSE {
 		wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/run/user/${UID}/pulse/native", Ignore: true})
-		wlExtras = append(wlExtras, oz.WhitelistItem{Path: "${HOME}/.config/pulse/cookie", Ignore: true})
+		wlExtras = append(wlExtras, oz.WhitelistItem{Path: "${HOME}/.config/pulse/cookie", Ignore: true, ReadOnly: true})
 		wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/dev/shm/pulse-shm-*", Ignore: true})
 	}
 
-	if err := st.setupFilesystem(wlExtras); err != nil {
+	if err := st.setupFilesystem(wlExtras, blExtras); err != nil {
 		st.log.Error("Failed to setup filesytem: %v", err)
 		os.Exit(1)
 	}
@@ -704,19 +710,23 @@ func (st *initState) childrenVector() []procState {
 	return cs
 }
 
-func (st *initState) setupFilesystem(extra []oz.WhitelistItem) error {
+func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_blacklist []oz.BlacklistItem) error {
 
 	fs := fs.NewFilesystem(st.config, st.log)
 
-	if err := setupRootfs(fs, st.user.HomeDir, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
+	if err := setupRootfs(fs, st.user, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
 		return err
 	}
 
-	if err := st.bindWhitelist(fs, extra); err != nil {
+	if err := st.bindWhitelist(fs, extra_whitelist); err != nil {
 		return err
 	}
 
 	if err := st.bindWhitelist(fs, st.profile.Whitelist); err != nil {
+		return err
+	}
+
+	if err := st.applyBlacklist(fs, extra_blacklist); err != nil {
 		return err
 	}
 

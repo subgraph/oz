@@ -3,10 +3,12 @@ package ozinit
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path"
 	"strconv"
 	"syscall"
 
+	"github.com/naegelejd/go-acl"
 	"github.com/op/go-logging"
 
 	"github.com/subgraph/oz/fs"
@@ -95,7 +97,7 @@ func _makedev(x, y int) int {
 	return (((x) << 8) | (y))
 }
 
-func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, display int, useFullDev bool, log *logging.Logger) error {
+func setupRootfs(fsys *fs.Filesystem, user *user.User, uid, gid uint32, display int, useFullDev bool, log *logging.Logger) error {
 	if err := os.MkdirAll(fsys.Root(), 0755); err != nil {
 		return fmt.Errorf("could not create rootfs path '%s': %v", fsys.Root(), err)
 	}
@@ -119,6 +121,8 @@ func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, display i
 		}
 	}
 
+	userMountDir := path.Join("/media", user.Username)
+	basicEmptyDirs = append(basicEmptyDirs, userMountDir)
 	for _, p := range basicEmptyDirs {
 		//log.Debug("Creating empty dir: %s", p)
 		if err := fsys.CreateEmptyDir(p); err != nil {
@@ -126,7 +130,11 @@ func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, display i
 		}
 	}
 
-	basicEmptyUserDirs = append(basicEmptyUserDirs, homeDir)
+	if err := setupMountDirectory(fsys, userMountDir); err != nil {
+		return fmt.Errorf("failed to create mount directory: %v", err)
+	}
+
+	basicEmptyUserDirs = append(basicEmptyUserDirs, user.HomeDir)
 	for _, p := range basicEmptyUserDirs {
 		//log.Debug("Creating empty user dir: %s", p)
 		if err := fsys.CreateEmptyDir(p); err != nil {
@@ -186,7 +194,22 @@ func setupRootfs(fsys *fs.Filesystem, homeDir string, uid, gid uint32, display i
 	for _, bl := range basicBlacklist {
 		if err := fsys.BlacklistPath(bl, display, nil); err != nil {
 			return err
+			//log.Warning("Unable to blacklist %s: %v", bl, err)
 		}
+	}
+	return nil
+}
+
+func setupMountDirectory(fsys *fs.Filesystem, src string) error {
+	acls, err := acl.GetFileAccess(src)
+	if err != nil {
+		return err
+	}
+	defer acls.Free()
+
+	target := path.Join(fsys.Root(), src)
+	if err := acls.SetFileAccess(target); err != nil {
+		return fmt.Errorf("%v on %s", err, target)
 	}
 	return nil
 }

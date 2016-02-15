@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/naegelejd/go-acl"
 	"github.com/op/go-logging"
 
 	"github.com/subgraph/oz"
@@ -180,6 +179,7 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	if err := copyPathPermissions(fs.Root(), src); err != nil {
 		return fmt.Errorf("failed to copy path permissions for (%s): %v", src, err)
 	}
+
 	rolog := " "
 	mntflags := syscall.MS_NOSUID | syscall.MS_NODEV
 	if flags&BindReadOnly != 0 {
@@ -235,13 +235,7 @@ func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, erro
 		return nil, err
 	}
 
-	acls, err := acl.GetFileAccess(path.Dir(src))
-	if err != nil {
-		return nil, err
-	}
-	defer acls.Free()
-
-	if err := copyFileInfo(pinfo, acls, src); err != nil {
+	if err := copyFileInfo(pinfo, src); err != nil {
 		return nil, err
 	}
 
@@ -468,23 +462,12 @@ func copyFilePermissions(src, target string) error {
 	if err != nil {
 		return err
 	}
-	acls, err := acl.GetFileAccess(src)
-	if err != nil {
-		return err
-	}
-	defer acls.Free()
-
-	return copyFileInfo(fi, acls, target)
+	return copyFileInfo(fi, target)
 }
 
-func copyFileInfo(info os.FileInfo, acls *acl.ACL, target string) error {
+func copyFileInfo(info os.FileInfo, target string) error {
 	st := info.Sys().(*syscall.Stat_t)
 	os.Chown(target, int(st.Uid), int(st.Gid))
 	os.Chmod(target, info.Mode().Perm())
-	if acls != nil {
-		if err := acls.SetFileAccess(target); err != nil {
-			return err
-		}
-	}
 	return nil
 }

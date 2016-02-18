@@ -41,8 +41,7 @@ You must also have the `veth` and `bridge` kernel module loaded to use *bridge n
 ### Grsec
 
 If you are using grsecurity you will need to disable the following kernel options
-permanently via the sysctl interface or by echoing values to files in
-to files in `/proc/sys/kernel/grsecurity/`:
+permanently via the sysctl interface or by echoing values to files in `/proc/sys/kernel/grsecurity/`:
 
 ```
 kernel.grsecurity.chroot_caps = 0

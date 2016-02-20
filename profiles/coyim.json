@@ -1,6 +1,5 @@
 {
 "path": "/usr/bin/coyim"
-, "default_params": ["-single"]
 , "xserver": {
 	"enabled": true
 	, "tray_icon":"/usr/share/icons/Faenza-Darker/actions/scalable/im-message-new.svg"

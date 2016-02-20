@@ -459,14 +459,14 @@ func (sbox *Sandbox) setupXpraLogging() {
 		stdout.Close()
 		sbox.daemon.Warning("Failed to create xpra stderr pipe: %v", err)
 	}
-	go sbox.logPipeOutput(stdout, "xpra-stdout")
-	go sbox.logPipeOutput(stderr, "xpra-stderr")
+	go sbox.logPipeOutput(stdout, "xpra-client-stdout")
+	go sbox.logPipeOutput(stderr, "xpra-client-stderr")
 }
 
 func (sbox *Sandbox) logPipeOutput(p io.Reader, label string) {
 	scanner := bufio.NewScanner(p)
 	for scanner.Scan() {
 		line := scanner.Text()
-		sbox.daemon.log.Info("(%s) %s", label, line)
+		sbox.daemon.log.Info("[%s] (%s) %s", sbox.profile.Name, label, line)
 	}
 }

@@ -375,7 +375,7 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 				}
 			}
 			if st.config.LogXpra {
-				st.log.Debug("(xpra) %s", line)
+				st.log.Debug("(xpra-server) %s", line)
 			}
 		}
 	}

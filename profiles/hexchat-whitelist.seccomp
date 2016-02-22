@@ -76,5 +76,4 @@ inotify_rm_watch:1
 inotify_add_watch:1
 pipe2:1
 madvise:1
-fnctl: 
 sendmmsg:1

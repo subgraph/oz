@@ -64,6 +64,10 @@ type KillSandboxMsg struct {
 	Id int "KillSandbox"
 }
 
+type RelaunchXpraClientMsg struct {
+	Id int "RelaunchXpraClient"
+}
+
 type MountFilesMsg struct {
 	Id       int "MountFiles"
 	Files    []string
@@ -95,6 +99,7 @@ var messageFactory = ipc.NewMsgFactory(
 	new(ListSandboxesMsg),
 	new(ListSandboxesResp),
 	new(KillSandboxMsg),
+	new(RelaunchXpraClientMsg),
 	new(MountFilesMsg),
 	new(UnmountFileMsg),
 	new(LogsMsg),

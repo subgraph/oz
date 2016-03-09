@@ -49,6 +49,7 @@ func Main() {
 		d.handleLaunch,
 		d.handleListSandboxes,
 		d.handleKillSandbox,
+		d.handleRelaunchXpraClient,
 		d.handleMountFiles,
 		d.handleUnmountFile,
 		d.handleLogs,
@@ -325,6 +326,21 @@ func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) err
 		if err := sbox.init.Process.Signal(os.Interrupt); err != nil {
 			return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
 		}
+	}
+	return m.Respond(&OkMsg{})
+}
+
+func (d *daemonState) handleRelaunchXpraClient(msg *RelaunchXpraClientMsg, m *ipc.Message) error {
+	if msg.Id == -1 {
+		for _, sb := range d.sandboxes {
+			sb.startXpraClient()
+		}
+	} else {
+		sbox := d.sandboxById(msg.Id)
+		if sbox == nil {
+			return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+		}
+		sbox.startXpraClient()
 	}
 	return m.Respond(&OkMsg{})
 }

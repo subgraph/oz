@@ -99,6 +99,10 @@ func runApplication() {
 			Action: handleKillall,
 		},
 		{
+			Name:   "relaunchxpra",
+			Action: handleRelaunchXpraClient,
+		},
+		{
 			Name:   "logs",
 			Action: handleLogs,
 			Flags: []cli.Flag{
@@ -239,6 +243,30 @@ func handleLogs(c *cli.Context) {
 	}
 	for ll := range ch {
 		fmt.Println(ll)
+	}
+}
+
+func handleRelaunchXpraClient(c *cli.Context) {
+	if len(c.Args()) == 0 {
+		fmt.Fprintf(os.Stderr, "Need a sandbox id to relaunch\n")
+		os.Exit(1)
+	}
+	if c.Args()[0] == "all" {
+		if err := daemon.RelaunchAllXpraClient(); err != nil {
+			fmt.Fprintf(os.Stderr, "Killall command failed: %s.\n", err)
+			os.Exit(1)
+		}
+		return
+	} else {
+		id, err := strconv.Atoi(c.Args()[0])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not parse id value %s\n", c.Args()[0])
+			os.Exit(1)
+		}
+		if err := daemon.RelaunchXpraClient(id); err != nil {
+			fmt.Fprintf(os.Stderr, "Relaunch command failed: %s.\n", err)
+			os.Exit(1)
+		}
 	}
 }
 

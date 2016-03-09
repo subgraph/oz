@@ -110,6 +110,25 @@ func KillSandbox(id int) error {
 	}
 }
 
+func RelaunchXpraClient(id int) error {
+	resp, err := clientSend(&RelaunchXpraClientMsg{Id: id})
+	if err != nil {
+		return err
+	}
+	switch body := resp.Body.(type) {
+	case *ErrorMsg:
+		return errors.New(body.Msg)
+	case *OkMsg:
+		return nil
+	default:
+		return fmt.Errorf("Unexpected message received %+v", body)
+	}
+}
+
+func RelaunchAllXpraClient() error {
+	return RelaunchXpraClient(-1)
+}
+
 func MountFiles(files []string) error {
 	resp, err := clientSend(&MountFilesMsg{Files: files})
 	if err != nil {

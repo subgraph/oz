@@ -92,18 +92,22 @@ func runApplication() {
 		},
 		{
 			Name:   "kill",
+			Usage:  "terminate a running sandbox",
 			Action: handleKill,
 		},
 		{
 			Name:   "killall",
+			Usage:  "terminate all running sandboxes",
 			Action: handleKillall,
 		},
 		{
 			Name:   "relaunchxpra",
+			Usage:  "relaunch xpra client for a running sandbox",
 			Action: handleRelaunchXpraClient,
 		},
 		{
 			Name:   "logs",
+			Usage:  "display oz-daemon logs",
 			Action: handleLogs,
 			Flags: []cli.Flag{
 				cli.BoolFlag{

@@ -19,9 +19,6 @@
 	, {"path":"${HOME}/.cache/liferea", "can_create":true}
 	, {"path":"${HOME}/.config/liferea", "can_create":true}
 
-	, {"path":"${HOME}/.config/gtk-3.0", "ignore":true}
-	, {"_path":"${HOME}/.config/gtk-2.0", "ignore":true}
-
 	, {"path":"${HOME}/.config/dconf"}
 	, {"path":"${HOME}/.cache/dconf"}
 	, {"path":"/run/user/${UID}/dconf"}

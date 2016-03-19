@@ -16,10 +16,8 @@
 , "whitelist": [
 	{"path":"${HOME}/.config/hexchat", "can_create":true}
 
-	, {"path":"${HOME}/.config/gtk-3.0", "ignore":true}
-	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
-	, {"path":"/var/lib/oz/cells.d/hexchat.json"}
-	, {"path":"/var/lib/oz/cells.d/hexchat-whitelist.seccomp"}
+	, {"path":"/var/lib/oz/cells.d/hexchat.json", "read_only": true}
+	, {"path":"/var/lib/oz/cells.d/hexchat-whitelist.seccomp", "read_only": true}
 ]
 , "blacklist": [
 ]

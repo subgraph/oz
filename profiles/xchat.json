@@ -15,10 +15,8 @@
 , "whitelist": [
 	{"path":"${HOME}/.xchat2", "can_create":true}
 
-	, {"path":"${HOME}/.config/gtk-3.0", "ignore":true}
-	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
-	, {"path":"/var/lib/oz/cells.d/xchat.json"}
-	, {"path":"/var/lib/oz/cells.d/xchat-whitelist.seccomp"}
+	, {"path":"/var/lib/oz/cells.d/xchat.json", "read_only": true}
+	, {"path":"/var/lib/oz/cells.d/xchat-whitelist.seccomp", "read_only": true}
 ]
 , "blacklist": [
 ]

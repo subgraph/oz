@@ -30,7 +30,7 @@
 	"type":"empty"
 }
 , "whitelist": [
-	{"path":"${HOME}/Documents/LibreOffice", "can_create":true, "force":true}
+	{"path":"${HOME}/Documents/LibreOffice", "can_create":true}
 ]
 , "seccomp": {
 	"mode":"blacklist"

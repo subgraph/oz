@@ -18,10 +18,8 @@
 	, {"_path":"${HOME}/.cache/mozilla", "can_create":true}
 	, {"path":"${HOME}/Downloads/Iceweasel", "can_create":true}
 
-	, {"path":"${HOME}/.config/gtk-3.0", "ignore":true}
-	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
-	, {"path":"/var/lib/oz/cells.d/iceweasel-whitelist.seccomp"}
-	, {"path":"/var/lib/oz/cells.d/iceweasel.json"}
+	, {"path":"/var/lib/oz/cells.d/iceweasel-whitelist.seccomp", "read_only": true}
+	, {"path":"/var/lib/oz/cells.d/iceweasel.json", "read_only": true}
 ]
 , "blacklist": [
 ]

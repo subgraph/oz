@@ -20,11 +20,10 @@
 	, {"path":"${HOME}/.thunderbird", "ignore":true}
 	, {"path":"${HOME}/.icedove", "can_create":true}
 
-	, {"path":"${HOME}/.config/gtk-3.0", "ignore":true}
-	, {"_path":"${HOME}/.config/gtk-2.0"}
-	, {"path":"/var/lib/oz/cells.d/icedove-whitelist.seccomp"}
-	, {"path":"/var/lib/oz/cells.d/icedove.json"}
 	, {"path":"${HOME}/Downloads/Icedove", "can_create":true}
+
+	, {"path":"/var/lib/oz/cells.d/icedove-whitelist.seccomp", "read_only": true}
+	, {"path":"/var/lib/oz/cells.d/icedove.json", "read_only": true}
 ]
 , "_blacklist": [
 ]

@@ -11,9 +11,7 @@
 	"type":"empty"
 }
 , "whitelist": [
-	{"path":"${HOME}/.config/gtk-3.0", "ignore":true}
-	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
-	, {"path":"${HOME}/.config/mpv", "can_create":true}
+	{"path":"${HOME}/.config/mpv", "can_create":true}
 ]
 , "blacklist": [
 ]

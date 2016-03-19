@@ -30,10 +30,12 @@
 	"type":"empty"
 }
 , "whitelist": [
-	{"path":"${HOME}/Documents/LibreOffice", "target":"${HOME}/Documents", "can_create":true, "force":true}
+	{"path":"${HOME}/Documents/LibreOffice", "can_create":true, "force":true}
+	,{"path":"/var/lib/oz/cells.d/libreoffice-whitelist.seccomp"}
 ]
 , "seccomp": {
-	"mode":"blacklist"
+	"mode":"whitelist"
+	, "whitelist":"/var/lib/oz/cells.d/libreoffice-whitelist.seccomp"
 	, "enforce": true
 }
 }

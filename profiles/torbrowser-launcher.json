@@ -40,7 +40,6 @@
 , "seccomp": {
 	"mode":"whitelist"
         , "whitelist":"/var/lib/oz/cells.d/torbrowser-launcher-whitelist.seccomp"
-	, "enforce": false
-	, "debug": true
+	, "enforce": true
 }
 }

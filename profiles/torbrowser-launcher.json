@@ -17,6 +17,7 @@
 }
 , "whitelist": [
 	{"path":"${HOME}/.local/share/torbrowser", "can_create":true}
+        , {"path":"/var/lib/oz/cells.d/torbrowser-launcher-whitelist.seccomp"}
 #	, {"path":"${HOME}/.cache/torbrowser", "can_create":true}
 	, {"path":"${HOME}/.config/torbrowser", "can_create":true}
 	, {"path":"${HOME}/Downloads/TorBrowser", "can_create":true}
@@ -37,7 +38,9 @@
 	, {"name":"TOR_CONTROL_COOKIE_AUTH_FILE"}
 ]
 , "seccomp": {
-	"mode":"blacklist"
-	, "enforce": true
+	"mode":"whitelist"
+        , "whitelist":"/var/lib/oz/cells.d/torbrowser-launcher-whitelist.seccomp"
+	, "enforce": false
+	, "debug": true
 }
 }

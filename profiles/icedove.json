@@ -13,6 +13,7 @@
 }
 , "whitelist": [
 	{"path":"/run/resolvconf"}
+	, {"path":"/var/lib/oz/cells.d/icedove-whitelist.seccomp"}
 	, {"path":"/run/user/${UID}/keyring", "ignore":true}
 	, {"path":"/tmp/gpg-*", "ignore":true}
 	, {"path":"${HOME}/.cache/icedove", "can_create":true}
@@ -33,7 +34,8 @@
 	, {"name":"GNOME_KEYRING_PID", "value":"1"}
 ]
 , "seccomp": {
-	"mode":"blacklist"
+	"mode":"whitelist"
+	, "whitelist":"/var/lib/oz/cells.d/icedove-whitelist.seccomp"
 	, "enforce": true
 }
 }

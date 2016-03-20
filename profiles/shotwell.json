@@ -1,0 +1,27 @@
+{
+"name": "shotwell"
+, "path": "/usr/bin/shotwell"
+, "allow_files": true
+, "xserver": {
+	"enabled": true
+	, "enable_tray": false
+	, "tray_icon":"/usr/share/icons/hicolor/scalable/apps/shotwell.svg"
+}
+, "networking":{
+	"type":"empty"
+}
+, "whitelist": [
+	{"path": "${HOME}/.local/share/shotwell/", "can_create": true}
+	, {"path": "${HOME}/Pictures"}
+]
+, "blacklist": [
+]
+, "environment": [
+	{"name":"GTK_THEME", "value":"Adwaita:dark"}
+	, {"name":"GTK2_RC_FILES", "value":"/usr/share/themes/Darklooks/gtk-2.0/gtkrc"}
+]
+, "seccomp": {
+	"mode":"blacklist"
+	, "enforce": true
+}
+}

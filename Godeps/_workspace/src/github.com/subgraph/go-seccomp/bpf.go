@@ -14,6 +14,7 @@ import "C"
 // BPF machine opcodes. These are the only ones we use.
 const (
 	opLOAD = C.BPF_LD + C.BPF_W + C.BPF_ABS
+	opJGT = C.BPF_JMP + C.BPF_JGT + C.BPF_K
 	opJEQ  = C.BPF_JMP + C.BPF_JEQ + C.BPF_K
 	opJSET = C.BPF_JMP + C.BPF_JSET + C.BPF_K
 	opJUMP = C.BPF_JMP + C.BPF_JA
@@ -62,6 +63,11 @@ func bpfJeq(val uint32, jt, jf uint8) SockFilter {
 	return bpfInsn(opJEQ, val, jt, jf)
 }
 
+// bpfJgt returns an instruction encoding "jump-if-greater-than".
+func bpfJgt(val uint32, jt, jf uint8) SockFilter {
+	return bpfInsn(opJGT, val, jt, jf)
+}
+
 // bpfJset returns an instruction encoding "jump-if-set".
 // Register A is bitwise anded with val and result compared with zero.
 // Both jt and jf are relative offsets. Offset 0 means fallthrough.
@@ -90,6 +96,8 @@ func (f SockFilter) String() string {
 		code = "Jeq"
 	case opJSET:
 		code = "Jset"
+	case opJGT:
+		code = "Jgt"
 	case opJUMP:
 		code = "Jump"
 	case opRET:

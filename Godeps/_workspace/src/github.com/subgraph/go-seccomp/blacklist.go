@@ -49,6 +49,7 @@ import (
 )
 
 // #include <sys/prctl.h>
+// #include <asm/unistd.h>
 // #include "unistd_64.h"
 // #include "seccomp.h"
 import "C"
@@ -208,11 +209,18 @@ func compileBlacklist(ps []policy, long bool, def SockFilter, enforce bool) ([]S
 		jump(target)
 	}
 
+	var X32_SYSCALL_BIT = uint32(C.__X32_SYSCALL_BIT)
+
 	do(bpfLoadArch())
-	do(bpfJeq(auditArch, 1, 0))
-	do(bpfRet(retKill()))
+	do(bpfJeq(auditArch, 0, 2))
 
 	do(bpfLoadNR())
+
+	// Kill if NR > X32_SYSCALL_BIT-1
+
+	do(bpfJgt(X32_SYSCALL_BIT-1, 0, 1))
+	do(bpfRet(retKill()))
+
 	for _, p := range ps {
 		nr, ok := syscallNum[p.name]
 		if !ok {

@@ -1,5 +1,6 @@
 {
-"path": "/usr/bin/pond"
+"name": "pond"
+, "path": "/usr/local/bin/pond-client"
 , "xserver": {
 	"enabled": true
 	, "enable_tray": false

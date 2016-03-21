@@ -13,8 +13,7 @@
 	]
 }
 , "whitelist": [
-	{"path":"/run/resolvconf"}
-	, {"path":"${HOME}/.mozilla", "can_create": true}
+	{"path":"${HOME}/.mozilla", "can_create": true}
 	, {"_path":"${HOME}/.cache/mozilla", "can_create":true}
 	, {"path":"${HOME}/Downloads/Iceweasel", "can_create":true}
 

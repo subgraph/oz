@@ -25,7 +25,7 @@
 ]
 , "blacklist": [
 ]
-, "_environment": [
+, "environment": [
 ]
 , "seccomp": {
 	"mode":"blacklist"

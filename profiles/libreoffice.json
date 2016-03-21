@@ -31,7 +31,7 @@
 }
 , "whitelist": [
 	{"path":"${HOME}/Documents/LibreOffice", "can_create":true}
-	,{"path":"/var/lib/oz/cells.d/libreoffice-whitelist.seccomp"}
+	, {"path":"/var/lib/oz/cells.d/libreoffice-whitelist.seccomp", "read_only": true}
 ]
 , "seccomp": {
 	"mode":"whitelist"

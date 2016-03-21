@@ -9,7 +9,7 @@
 , "xserver": {
 	"enabled": true
 	, "enable_tray": false
-	, "tray_icon":"/usr/share/icons/hicolor/48x48/apps/evince.png"
+	, "tray_icon":"/usr/share/icons/hicolor/256x256/apps/evince.png"
 }
 , "networking":{
 	"type":"empty"

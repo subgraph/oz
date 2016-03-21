@@ -24,7 +24,7 @@
 #		"target":"${HOME}/.local/share/torbrowser/tbb/x86_64/tor-browser_en-US/Browser/Downloads",
 #		"can_create":true, "force":true}
 	, {"path":"/run/tor/control.authcookie", "ignore":true}
-	, {"path":"/var/lib/oz/cells.d/torbrowser-launcher-whitelist.seccomp"}
+	, {"path":"/var/lib/oz/cells.d/torbrowser-launcher-whitelist.seccomp", "read_only": true}
 ]
 , "blacklist": [
 ]

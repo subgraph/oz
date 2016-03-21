@@ -1,3 +1,4 @@
+openat:1
 shmctl:1
 rt_sigreturn:1
 select:1

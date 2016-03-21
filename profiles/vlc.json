@@ -11,12 +11,16 @@
 	"type":"empty"
 }
 , "whitelist": [
-	{"path":"${HOME}/.config/vlc", "can_create":true}
+	{"path":"${HOME}/.config/gtk-3.0", "ignore":true}
+	, {"path":"/var/lib/oz/cells.d/vlc-whitelist.seccomp"}
+	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
+	, {"path":"${HOME}/.config/vlc", "can_create":true}
 ]
 , "blacklist": [
 ]
 , "seccomp": {
-	"mode":"blacklist"
+	"mode":"whitelist"
+	, "whitelist": "/var/lib/oz/cells.d/vlc-whitelist.seccomp"
 	, "enforce": true
 }
 }

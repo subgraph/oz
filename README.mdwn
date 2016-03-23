@@ -371,12 +371,13 @@ You can find a list of existing profiles in the repository. Here is the porfile 
 }
 ```
 
-<p align="center">
-<img src="https://raw.githubusercontent.com/subgraph/oz/docs/images/oz_logo_02.png" alt="Obsidian Zebra" />
-</p>
-
 # FAQ
 
 **Q: Why don't you use unprivileged user namespaces, I hear it would be far more secure!**
 
 A: Please see [this issue which explains the reasoning and tracks multiple unprivileged user namespace related kernel vulnerabilities](https://github.com/subgraph/oz/issues/11#issuecomment-163396758)
+
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/subgraph/oz/docs/images/oz_logo_02.png" alt="Obsidian Zebra" />
+</p>

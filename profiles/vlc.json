@@ -11,10 +11,8 @@
 	"type":"empty"
 }
 , "whitelist": [
-	{"path":"${HOME}/.config/gtk-3.0", "ignore":true}
-	, {"path":"/var/lib/oz/cells.d/vlc-whitelist.seccomp"}
-	, {"path":"${HOME}/.config/gtk-2.0", "ignore":true}
-	, {"path":"${HOME}/.config/vlc", "can_create":true}
+	{"path":"${HOME}/.config/vlc", "can_create":true}
+	, {"path":"/var/lib/oz/cells.d/vlc-whitelist.seccomp", "read_only":true}
 ]
 , "blacklist": [
 ]

@@ -50,7 +50,6 @@ open:1
 close:1
 munmap:1
 futex: arg1 == 129 || arg1 == 134 || arg1 == 135 || arg1 == 139 || arg1 == 140 || arg1 == 128 || arg1 == 393 || arg1 == 133 || arg1 == 132 || arg1 == 137 || arg1 == 0 
-socket: arg0 == 1 
 sendto:1
 getresgid:1
 eventfd2:1
@@ -96,3 +95,10 @@ getegid:1
 getcwd:1
 inotify_init1:1
 sched_get_priority_min:1
+openat:1
+name_to_handle_at:1
+#chdir:1
+#epoll_create1:1
+#socket: arg0 == 1 
+socket:1
+restart_syscall:1

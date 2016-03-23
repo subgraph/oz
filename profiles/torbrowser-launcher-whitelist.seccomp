@@ -1,3 +1,5 @@
+fchdir:1
+utimes:1
 sigaltstack:1
 sched_yield:1
 mincore: 1

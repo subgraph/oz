@@ -99,3 +99,4 @@ name_to_handle_at:1
 #epoll_create1:1
 #socket: arg0 == 1 
 socket:1
+restart_syscall:1

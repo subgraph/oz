@@ -127,3 +127,4 @@ utime: 1
 wait4: 1
 writev: 1
 socket: arg0 == 1 || arg0 == 2 || arg0 == 10 || arg0 == 16
+rmdir: 1

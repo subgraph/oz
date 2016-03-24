@@ -1,10 +1,15 @@
 {
 	"ImportPath": "github.com/subgraph/oz",
-	"GoVersion": "go1.5.3",
+	"GoVersion": "go1.6",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-195-g114097b",
+			"Rev": "114097b8166ebf59ed86bd8aa6d739ff154de4e7"
+		},
 		{
 			"ImportPath": "github.com/docker/libcontainer/netlink",
 			"Comment": "v2.2.1-23-g83a102c",
@@ -20,35 +25,30 @@
 			"Rev": "aa3681d07d8596764629576fddd9b489b211150b"
 		},
 		{
+			"ImportPath": "github.com/kr/pty",
+			"Comment": "release.r56-29-gf7ee69f",
+			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
+		},
+		{
 			"ImportPath": "github.com/milosgajdos83/tenus",
 			"Comment": "0.0.2-10-g432ad4c",
 			"Rev": "432ad4c24866c6da98135c98cda9bb100192a94a"
+		},
+		{
+			"ImportPath": "github.com/naegelejd/go-acl",
+			"Rev": "f33f8615f62b73adb4e690a688a42dcf671ce6a4"
 		},
 		{
 			"ImportPath": "github.com/op/go-logging",
 			"Rev": "dfaf3dff9b631bc4236201d90d41ee0de9202889"
 		},
 		{
-			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "eb2c74142fd19a79b3f237334c7384d5167b1b46"
-		},
-		{
 			"ImportPath": "github.com/subgraph/go-seccomp",
 			"Rev": "93f4f357204b56af6737c2cbb6352e39ebedbe48"
 		},
 		{
-			"ImportPath": "github.com/kr/pty",
-			"Comment": "release.r56-29-gf7ee69f",
-			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
-		},
-		{
-			"ImportPath": "github.com/j-keck/arping",
-			"Rev": "aa3681d07d8596764629576fddd9b489b211150b"
-		},
-		{
-			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-195-g114097b",
-			"Rev": "114097b8166ebf59ed86bd8aa6d739ff154de4e7"
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "eb2c74142fd19a79b3f237334c7384d5167b1b46"
 		}
 	]
 }

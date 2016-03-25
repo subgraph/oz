@@ -95,8 +95,6 @@ getegid:1
 getcwd:1
 inotify_init1:1
 sched_get_priority_min:1
-openat:1
-name_to_handle_at:1
 #chdir:1
 #epoll_create1:1
 #socket: arg0 == 1 

@@ -18,7 +18,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	//"time"
+	"time"
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
@@ -609,18 +609,18 @@ func (st *initState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	}
 
 	if len(st.profile.Watchdog) > 0 {
-		//if st.getProcessExists(st.profile.Watchdog) {
-		//	return
-		//} else {
-		//	var ww sync.WaitGroup
-		//	ww.Add(1)
-		//	time.AfterFunc(time.Second*5, func() {
-		//		ww.Done()
-		//		st.log.Info("Watchdog timeout expired")
-		//	})
-		//	ww.Wait()
+		if st.getProcessExists(st.profile.Watchdog) {
+			return
+		} else {
+			var ww sync.WaitGroup
+			ww.Add(1)
+			time.AfterFunc(time.Second*5, func() {
+				ww.Done()
+				st.log.Info("Watchdog timeout expired")
+			})
+			ww.Wait()
 		track = !st.getProcessExists(st.profile.Watchdog)
-		//}
+		}
 	}
 	if track == true && st.profile.AutoShutdown == oz.PROFILE_SHUTDOWN_YES {
 		st.log.Info("Shutting down sandbox after child exit.")

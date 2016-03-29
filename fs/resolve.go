@@ -9,27 +9,31 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/subgraph/go-xdgdirs"
 )
 
-func ResolvePathNoGlob(p string, d int, u *user.User) (string, error) {
-	return resolveVars(p, d, u)
+func ResolvePathNoGlob(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs) (string, error) {
+	return resolveVars(p, d, u, xdgDirs)
 }
 
-func resolvePath(p string, d int, u *user.User) ([]string, error) {
-	p, err := resolveVars(p, d, u)
+func resolvePath(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs) ([]string, error) {
+	p, err := resolveVars(p, d, u, xdgDirs)
 	if err != nil {
 		return nil, err
 	}
 	return resolveGlob(p)
 }
 
-func resolveVars(p string, d int, u *user.User) (string, error) {
+func resolveVars(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs) (string, error) {
 	const pathVar = "${PATH}/"
 	const homeVar = "${HOME}"
 	const uidVar = "${UID}"
 	const userVar = "${USER}"
 	const displayVar = "${DISPLAY}"
 
+
+	fmt.Println("IS XDG: %s => %b", p, xdgdirs.IsXDGDir(p))
 	switch {
 	case strings.HasPrefix(p, pathVar):
 		emptyPath := false
@@ -69,6 +73,11 @@ func resolveVars(p string, d int, u *user.User) (string, error) {
 			return p, nil
 		}
 		return strings.Replace(p, userVar, u.Username, -1), nil
+	case xdgdirs.IsXDGDir(p):
+		if u == nil || xdgDirs == nil {
+			return p, nil
+		}
+		return xdgDirs.ResolvePath(p), nil
 	}
 	return p, nil
 }

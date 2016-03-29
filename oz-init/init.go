@@ -137,7 +137,7 @@ func parseArgs() *initState {
 		gids:      initData.Gids,
 		user:      &initData.User,
 		display:   initData.Display,
-		fs:        fs.NewFilesystem(&initData.Config, log),
+		fs:        fs.NewFilesystem(&initData.Config, log, &initData.User),
 		network:   &initData.Network,
 	}
 }
@@ -712,25 +712,25 @@ func (st *initState) childrenVector() []procState {
 
 func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_blacklist []oz.BlacklistItem) error {
 
-	fs := fs.NewFilesystem(st.config, st.log)
+//	fs := fs.NewFilesystem(st.config, st.log)
 
-	if err := setupRootfs(fs, st.user, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
+	if err := setupRootfs(st.fs, st.user, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
 		return err
 	}
 
-	if err := st.bindWhitelist(fs, extra_whitelist); err != nil {
+	if err := st.bindWhitelist(st.fs, extra_whitelist); err != nil {
 		return err
 	}
 
-	if err := st.bindWhitelist(fs, st.profile.Whitelist); err != nil {
+	if err := st.bindWhitelist(st.fs, st.profile.Whitelist); err != nil {
 		return err
 	}
 
-	if err := st.applyBlacklist(fs, extra_blacklist); err != nil {
+	if err := st.applyBlacklist(st.fs, extra_blacklist); err != nil {
 		return err
 	}
 
-	if err := st.applyBlacklist(fs, st.profile.Blacklist); err != nil {
+	if err := st.applyBlacklist(st.fs, st.profile.Blacklist); err != nil {
 		return err
 	}
 
@@ -739,22 +739,22 @@ func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_b
 		if err != nil {
 			return err
 		}
-		if err := fs.BindPath(xprapath, 0, st.display, nil); err != nil {
+		if err := st.fs.BindPath(xprapath, 0, st.display); err != nil {
 			return err
 		}
 	}
 
-	if err := fs.Chroot(); err != nil {
+	if err := st.fs.Chroot(); err != nil {
 		return err
 	}
 
 	mo := &mountOps{}
 	if st.config.UseFullDev {
-		mo.add(fs.MountFullDev, fs.MountShm)
+		mo.add(st.fs.MountFullDev, st.fs.MountShm)
 	}
-	mo.add( /*fs.MountTmp, */ fs.MountPts)
+	mo.add( /*st.fs.MountTmp, */ st.fs.MountPts)
 	if !st.profile.NoSysProc {
-		mo.add(fs.MountProc, fs.MountSys)
+		mo.add(st.fs.MountProc, st.fs.MountSys)
 	}
 	return mo.run()
 }
@@ -783,7 +783,7 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		if wl.Path == "" {
 			continue
 		}
-		if err := fsys.BindTo(wl.Path, wl.Target, flags, st.display, st.user); err != nil {
+		if err := fsys.BindTo(wl.Path, wl.Target, flags, st.display); err != nil {
 			return err
 		}
 	}
@@ -798,7 +798,7 @@ func (st *initState) applyBlacklist(fsys *fs.Filesystem, blist []oz.BlacklistIte
 		if bl.Path == "" {
 			continue
 		}
-		if err := fsys.BlacklistPath(bl.Path, st.display, st.user); err != nil {
+		if err := fsys.BlacklistPath(bl.Path, st.display); err != nil {
 			return err
 		}
 	}

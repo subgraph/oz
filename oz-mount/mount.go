@@ -45,7 +45,7 @@ func Main(mode int) {
 		log.Error("Could not load configuration: %s (%+v)", oz.DefaultConfigPath, err)
 		os.Exit(1)
 	}
-	fsys := fs.NewFilesystem(config, log)
+	fsys := fs.NewFilesystem(config, log, nil)
 	homedir := os.Getenv("_OZ_HOMEDIR")
 	if homedir == "" {
 		log.Error("Homedir must be set!")
@@ -101,7 +101,7 @@ func mount(fpath string, readonly bool, fsys *fs.Filesystem, log *logging.Logger
 	if readonly {
 		flags |= fs.BindReadOnly
 	}
-	if err := fsys.BindPath(fpath, flags, -1, nil); err != nil {
+	if err := fsys.BindPath(fpath, flags, -1); err != nil {
 		log.Error("%v", err)
 		os.Exit(1)
 	}

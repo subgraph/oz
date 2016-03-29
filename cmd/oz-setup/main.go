@@ -304,7 +304,7 @@ func handleRemove(c *cli.Context) {
 func handleStatus(c *cli.Context) {
 	OzConfig = loadConfig()
 	if len(c.Args()) == 0 {
-		fmt.Fprintf(os.Stderr, "You must supply the name of a profile or an executable path.")
+		fmt.Fprintf(os.Stderr, "You must supply the name of a profile or an executable path.\n")
 		os.Exit(1)
 	}
 	pname := c.Args()[0]

@@ -12,21 +12,31 @@ import (
 	"github.com/op/go-logging"
 
 	"github.com/subgraph/oz"
+	"github.com/subgraph/go-xdgdirs"
 )
 
 type Filesystem struct {
-	log    *logging.Logger
-	base   string
-	chroot bool
+	log     *logging.Logger
+	base    string
+	chroot  bool
+	xdgDirs *xdgdirs.Dirs
+	user    *user.User
 }
 
-func NewFilesystem(config *oz.Config, log *logging.Logger) *Filesystem {
+func NewFilesystem(config *oz.Config, log *logging.Logger, u *user.User) *Filesystem {
 	if log == nil {
 		log = logging.MustGetLogger("oz")
 	}
+	
+	dirs := new(xdgdirs.Dirs)
+	if u != nil {
+		dirs.Load(u.HomeDir)
+	}
 	return &Filesystem{
-		base: config.SandboxPath,
-		log:  log,
+		base:    config.SandboxPath,
+		log:     log,
+		user:    u,
+		xdgDirs: dirs,
 	}
 }
 
@@ -75,12 +85,12 @@ func (fs *Filesystem) CreateSymlink(oldpath, newpath string) error {
 	return nil
 }
 
-func (fs *Filesystem) BindPath(from string, flags int, display int, u *user.User) error {
-	return fs.bindResolve(from, "", flags, display, u)
+func (fs *Filesystem) BindPath(from string, flags int, display int) error {
+	return fs.bindResolve(from, "", flags, display)
 }
 
-func (fs *Filesystem) BindTo(from, to string, flags int, display int, u *user.User) error {
-	return fs.bindResolve(from, to, flags, display, u)
+func (fs *Filesystem) BindTo(from, to string, flags int, display int) error {
+	return fs.bindResolve(from, to, flags, display)
 }
 
 const (
@@ -91,41 +101,41 @@ const (
 	BindNoFollow
 )
 
-func (fs *Filesystem) bindResolve(from string, to string, flags int, display int, u *user.User) error {
+func (fs *Filesystem) bindResolve(from string, to string, flags int, display int) error {
 	if (to == "") || (from == to) {
-		return fs.bindSame(from, flags, display, u)
+		return fs.bindSame(from, flags, display)
 	}
 	if isGlobbed(to) {
 		return fmt.Errorf("bind target (%s) cannot have globbed path", to)
 	}
-	t, err := resolveVars(to, display, u)
+	t, err := resolveVars(to, display, fs.user, fs.xdgDirs)
 	if err != nil {
 		return err
 	}
 	if isGlobbed(from) {
 		return fmt.Errorf("bind src (%s) cannot have globbed path with separate target path (%s)", from, to)
 	}
-	f, err := resolveVars(from, display, u)
+	f, err := resolveVars(from, display, fs.user, fs.xdgDirs)
 	if err != nil {
 		return err
 	}
-	return fs.bind(f, t, flags, u)
+	return fs.bind(f, t, flags)
 }
 
-func (fs *Filesystem) bindSame(p string, flags int, display int, u *user.User) error {
-	ps, err := resolvePath(p, display, u)
+func (fs *Filesystem) bindSame(p string, flags int, display int) error {
+	ps, err := resolvePath(p, display, fs.user, fs.xdgDirs)
 	if err != nil {
 		return err
 	}
 	for _, p := range ps {
-		if err := fs.bind(p, p, flags, u); err != nil {
+		if err := fs.bind(p, p, flags); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) error {
+func (fs *Filesystem) bind(from string, to string, flags int) error {
 	cc := flags&BindCanCreate != 0
 	ii := flags&BindIgnore != 0
 	ff := flags&BindForce != 0
@@ -141,7 +151,7 @@ func (fs *Filesystem) bind(from string, to string, flags int, u *user.User) erro
 	if src == "" {
 		src = from
 	}
-	sinfo, err := readSourceInfo(src, cc, u)
+	sinfo, err := readSourceInfo(src, cc, fs.user)
 	if err != nil {
 		if !ii {
 			return fmt.Errorf("failed to bind path (%s): %v", src, err)
@@ -242,8 +252,8 @@ func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, erro
 	return os.Stat(src)
 }
 
-func (fs *Filesystem) BlacklistPath(target string, display int, u *user.User) error {
-	ps, err := resolvePath(target, display, u)
+func (fs *Filesystem) BlacklistPath(target string, display int) error {
+	ps, err := resolvePath(target, display, fs.user, fs.xdgDirs)
 	if err != nil {
 		return nil
 	}

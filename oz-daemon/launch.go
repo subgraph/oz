@@ -177,7 +177,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		init:    cmd,
 		cred:    &syscall.Credential{Uid: uid, Gid: gid, Groups: msg.Gids},
 		user:    u,
-		fs:      fs.NewFilesystem(d.config, log),
+		fs:      fs.NewFilesystem(d.config, log, u),
 		//addr:    path.Join(rootfs, ozinit.SocketAddress),
 		addr:    socketPath,
 		stderr:  pp,

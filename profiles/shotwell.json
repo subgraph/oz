@@ -12,7 +12,7 @@
 }
 , "whitelist": [
 	{"path": "${HOME}/.local/share/shotwell/", "can_create": true}
-	, {"path": "${HOME}/Pictures"}
+	, {"path": "${XDG_PICTURES_DIR}"}
 ]
 , "blacklist": [
 ]

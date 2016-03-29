@@ -116,7 +116,7 @@ func setupRootfs(fsys *fs.Filesystem, user *user.User, uid, gid uint32, display 
 	}
 
 	for _, p := range basicBindDirs {
-		if err := fsys.BindPath(p, fs.BindReadOnly, display, nil); err != nil {
+		if err := fsys.BindPath(p, fs.BindReadOnly, display); err != nil {
 			return fmt.Errorf("failed to bind directory '%s': %v", p, err)
 		}
 	}
@@ -192,7 +192,7 @@ func setupRootfs(fsys *fs.Filesystem, user *user.User, uid, gid uint32, display 
 	}
 
 	for _, bl := range basicBlacklist {
-		if err := fsys.BlacklistPath(bl, display, nil); err != nil {
+		if err := fsys.BlacklistPath(bl, display); err != nil {
 			return err
 			//log.Warning("Unable to blacklist %s: %v", bl, err)
 		}

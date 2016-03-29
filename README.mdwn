@@ -297,6 +297,7 @@ Both of these types support a few ways of resolving files:
 * In the home by using the `${HOME}` prefix.
 * By replacing `${UID}` with the user numeric id.
 * By replacing `${USER}` with the user login.
+* By replacing any `${XDG_<DIRECTORY>_DIR}` with the current localized version of that XDG directory.
 * By path globbing using the `*` wildcard.
 
 

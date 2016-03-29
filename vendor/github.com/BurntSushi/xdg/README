@@ -1,0 +1,9 @@
+Provides convenience functions for reading configuration and data files
+according to the XDG Base Directory Specification:
+
+http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+
+Install with
+
+  go get github.com/BurntSushi/xdg
+

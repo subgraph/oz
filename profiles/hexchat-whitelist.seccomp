@@ -78,3 +78,4 @@ inotify_add_watch:1
 pipe2:1
 madvise:1
 sendmmsg:1
+fadvise64:1

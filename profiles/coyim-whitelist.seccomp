@@ -104,3 +104,4 @@ fallocate:1
 fsync:1
 getgid:1
 mkdirat:1
+readlink:1

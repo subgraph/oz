@@ -6,7 +6,7 @@
 , "xserver": {
 	"enabled": true
 	, "enable_tray": false
-	, "tray_icon":"/usr/share/pixmaps/torbrowser80.xpm"
+	, "tray_icon":"/usr/share/pixmaps/torbrowser.png"
 	, "audio_mode": "pulseaudio"
 }
 , "networking":{

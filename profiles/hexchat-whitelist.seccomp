@@ -79,3 +79,6 @@ pipe2:1
 madvise:1
 sendmmsg:1
 fadvise64:1
+fchmod:1
+fsync:1
+fchown:1

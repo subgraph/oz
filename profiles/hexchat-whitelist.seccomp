@@ -82,3 +82,4 @@ fadvise64:1
 fchmod:1
 fsync:1
 fchown:1
+getcwd:1

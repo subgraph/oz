@@ -1,3 +1,4 @@
+mount: 1
 tkill: 1
 fadvise64: 1
 nanosleep: 1

@@ -15,7 +15,7 @@ keyctl: 1
 mbind: 1
 migrate_pages: 1
 modify_ldt: 1
-mount: 1
+#mount: 1
 move_pages: 1
 open_by_handle_at: 1
 perf_event_open: 1

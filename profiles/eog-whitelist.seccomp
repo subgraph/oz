@@ -1,3 +1,4 @@
+mount: 1
 restart_syscall:1
 access: 1
 arch_prctl: 1

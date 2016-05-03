@@ -1,3 +1,4 @@
+gettimeofday:1
 mount:1
 creat:1
 fchdir:1

@@ -1,3 +1,4 @@
+getrusage:1
 mount:1
 name_to_handle_at:1
 openat:1

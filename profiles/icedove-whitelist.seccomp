@@ -1,4 +1,3 @@
-mount:1
 pread64:1
 pselect6:1
 clock_gettime:1

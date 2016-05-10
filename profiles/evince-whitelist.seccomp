@@ -1,4 +1,3 @@
-mount: 1
 rt_sigreturn: 1
 prctl: arg0 == 15 || arg0 == 1 
 kill: 1

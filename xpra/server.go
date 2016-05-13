@@ -45,6 +45,7 @@ func prepareServerArgs(config *oz.XServerConf, display uint64, workdir string) [
 	//	args = append(args, "--no-pulseaudio")
 	//}
 	args = append(args,
+		fmt.Sprintf("--bind=%s", workdir),
 		fmt.Sprintf("--socket-dir=%s", workdir),
 		"start",
 		fmt.Sprintf(":%d", display),

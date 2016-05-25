@@ -170,8 +170,31 @@ func handleList(c *cli.Context) {
 }
 
 func handleMount(c *cli.Context) {
-	if len(c.Args()) == 0 {
-		fmt.Println("Sandbox file paths needed")
+	if len(c.Args()) < 2 {
+		fmt.Println("oz mount <sandbox_id> <paths...>")
+		os.Exit(1)
+	}
+	id, err := strconv.Atoi(c.Args()[0])
+	if err != nil {
+		fmt.Println("Sandbox id argument must be an integer")
+		os.Exit(1)
+	}
+	start := 1
+	readOnly := false
+	if c.Args()[1] == "--readonly" {
+		readOnly = true
+		start = 2
+	}
+
+	err = daemon.MountFiles(id, c.Args()[start:], readOnly)
+	if err != nil {
+		fmt.Println("MountFiles FAIL", err)
+	}
+}
+
+func handleUmount(c *cli.Context) {
+	if len(c.Args()) < 2 {
+		fmt.Println("oz unmount <sandbox_id> <path>")
 		os.Exit(1)
 	}
 	id, err := strconv.Atoi(c.Args()[0])
@@ -180,13 +203,10 @@ func handleMount(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	readOnly := true // XXX
-	files := c.Args()[1:]
-	daemon.MountFiles(id, files, readOnly)
-}
-
-func handleUmount(c *cli.Context) {
-	// XXX
+	err = daemon.UnmountFile(id, c.Args()[1])
+	if err != nil {
+		fmt.Println("UnmountFile FAIL", err)
+	}
 }
 
 func handleShell(c *cli.Context) {

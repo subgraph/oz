@@ -149,8 +149,12 @@ func MountFiles(id int, files []string, readOnly bool) error {
 	}
 }
 
-func UnmountFile(file string) error {
-	resp, err := clientSend(&UnmountFileMsg{File: file})
+func UnmountFile(id int, file string) error {
+	unmountFileMsg := UnmountFileMsg{
+		Id:   id,
+		File: file,
+	}
+	resp, err := clientSend(&unmountFileMsg)
 	if err != nil {
 		return err
 	}

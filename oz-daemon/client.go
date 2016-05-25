@@ -129,8 +129,13 @@ func RelaunchAllXpraClient() error {
 	return RelaunchXpraClient(-1)
 }
 
-func MountFiles(files []string) error {
-	resp, err := clientSend(&MountFilesMsg{Files: files})
+func MountFiles(id int, files []string, readOnly bool) error {
+	mountFilesMsg := MountFilesMsg{
+		Id:       id,
+		Files:    files,
+		ReadOnly: readOnly,
+	}
+	resp, err := clientSend(&mountFilesMsg)
 	if err != nil {
 		return err
 	}

@@ -91,6 +91,16 @@ func runApplication() {
 			Action: handleShell,
 		},
 		{
+			Name:   "mount",
+			Usage:  "cause a sandbox to mount a file from the host",
+			Action: handleMount,
+		},
+		{
+			Name:   "umount",
+			Usage:  "undo a previous oz mount",
+			Action: handleUmount,
+		},
+		{
 			Name:   "kill",
 			Usage:  "terminate a running sandbox",
 			Action: handleKill,
@@ -157,6 +167,26 @@ func handleList(c *cli.Context) {
 		fmt.Printf("%2d) %s\n", sb.Id, sb.Profile)
 
 	}
+}
+
+func handleMount(c *cli.Context) {
+	if len(c.Args()) == 0 {
+		fmt.Println("Sandbox file paths needed")
+		os.Exit(1)
+	}
+	id, err := strconv.Atoi(c.Args()[0])
+	if err != nil {
+		fmt.Println("Sandbox id argument must be an integer")
+		os.Exit(1)
+	}
+
+	readOnly := true // XXX
+	files := c.Args()[1:]
+	daemon.MountFiles(id, files, readOnly)
+}
+
+func handleUmount(c *cli.Context) {
+	// XXX
 }
 
 func handleShell(c *cli.Context) {

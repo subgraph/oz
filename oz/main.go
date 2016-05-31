@@ -91,6 +91,16 @@ func runApplication() {
 			Action: handleShell,
 		},
 		{
+			Name:   "mount",
+			Usage:  "cause a sandbox to mount a file from the host",
+			Action: handleMount,
+		},
+		{
+			Name:   "umount",
+			Usage:  "undo a previous oz mount",
+			Action: handleUmount,
+		},
+		{
 			Name:   "kill",
 			Usage:  "terminate a running sandbox",
 			Action: handleKill,
@@ -156,6 +166,46 @@ func handleList(c *cli.Context) {
 	for _, sb := range sboxes {
 		fmt.Printf("%2d) %s\n", sb.Id, sb.Profile)
 
+	}
+}
+
+func handleMount(c *cli.Context) {
+	if len(c.Args()) < 2 {
+		fmt.Println("oz mount <sandbox_id> <paths...>")
+		os.Exit(1)
+	}
+	id, err := strconv.Atoi(c.Args()[0])
+	if err != nil {
+		fmt.Println("Sandbox id argument must be an integer")
+		os.Exit(1)
+	}
+	start := 1
+	readOnly := false
+	if c.Args()[1] == "--readonly" {
+		readOnly = true
+		start = 2
+	}
+
+	err = daemon.MountFiles(id, c.Args()[start:], readOnly)
+	if err != nil {
+		fmt.Println("MountFiles FAIL", err)
+	}
+}
+
+func handleUmount(c *cli.Context) {
+	if len(c.Args()) < 2 {
+		fmt.Println("oz unmount <sandbox_id> <path>")
+		os.Exit(1)
+	}
+	id, err := strconv.Atoi(c.Args()[0])
+	if err != nil {
+		fmt.Println("Sandbox id argument must be an integer")
+		os.Exit(1)
+	}
+
+	err = daemon.UnmountFile(id, c.Args()[1])
+	if err != nil {
+		fmt.Println("UnmountFile FAIL", err)
 	}
 }
 

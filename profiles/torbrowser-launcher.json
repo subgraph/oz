@@ -29,6 +29,7 @@
 	{"name":"TOR_SKIP_LAUNCH"}
 	, {"name":"TOR_SOCKS_HOST"}
 	, {"name":"TOR_SOCKS_PORT"}
+	, {"name":"TOR_CONTROL_HOST"}
 	, {"name":"TOR_CONTROL_PORT"}
 	, {"name":"TOR_CONTROL_PASSWD"}
 	, {"name":"TOR_CONTROL_AUTHENTICATE"}

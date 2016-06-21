@@ -24,11 +24,12 @@ const (
 type ProtoType string
 
 const (
-	PROTO_TCP        ProtoType = "tcp"
-	PROTO_UDP        ProtoType = "udp"
-	PROTO_UNIX       ProtoType = "unix"
-	PROTO_UNIXGRAM   ProtoType = "unixgram"
-	PROTO_UNIXPACKET ProtoType = "unixpacket"
+	PROTO_TCP         ProtoType = "tcp"
+	PROTO_UDP         ProtoType = "udp"
+	PROTO_UNIX        ProtoType = "unix"
+	PROTO_TCP_TO_UNIX ProtoType = "tcp2unix"
+	PROTO_UNIXGRAM    ProtoType = "unixgram"
+	PROTO_UNIXPACKET  ProtoType = "unixpacket"
 )
 
 // Socket list, used to hold ports that should be forwarded
@@ -94,21 +95,33 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 	}
 
 	var lAddr, rAddr string
-	if !strings.HasPrefix(string(config.Proto), "unix") {
+	if string(config.Proto) == "tcp" {
 		lAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(config.Port))
 		rAddr = net.JoinHostPort(config.Destination, strconv.Itoa(config.Port))
-	} else {
+	} else if strings.HasPrefix(string(config.Proto), "unix") {
 		if !strings.HasPrefix(config.Destination, "@") {
 			log.Warning("Only abstract unix socket are supported!")
 			return nil
 		}
 		lAddr = config.Destination
 		rAddr = config.Destination
+	} else if string(config.Proto) == "tcp2unix" {
+		lAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(config.Port))
+		rAddr = config.Destination
+	} else {
+		log.Warning("Unsupported proxy protocol specified!")
+		return nil
 	}
 
-	log.Info("Starting socket client forwarding: %s://%s.", config.Proto, rAddr)
-
-	listen, err := proxySocketListener(pid, config.Proto, lAddr)
+	var listenProto ProtoType
+	if string(config.Proto) == "tcp2unix" {
+		listenProto = PROTO_TCP
+		log.Info("Starting socket client forwarding: %s://%s -> unix://%s.", listenProto, lAddr, config.Destination)
+	} else {
+		listenProto = config.Proto
+		log.Info("Starting socket client forwarding: %s://%s.", listenProto, rAddr)
+	}
+	listen, err := proxySocketListener(pid, listenProto, lAddr)
 	if err != nil {
 		return err
 	}
@@ -124,7 +137,13 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 				continue
 			}
 
-			go proxyClientConn(&conn, config.Proto, rAddr, ready)
+			var dialProto ProtoType
+			if string(config.Proto) == "tcp2unix" {
+				dialProto = PROTO_UNIX
+			} else {
+				dialProto = config.Proto
+			}
+			go proxyClientConn(&conn, dialProto, rAddr, ready)
 		}
 	}()
 

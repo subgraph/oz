@@ -95,7 +95,7 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 	}
 
 	var lAddr, rAddr string
-	if string(config.Proto) == "tcp" {
+	if strings.HasPrefix(string(config.Proto), "tcp") && config.Proto != PROTO_TCP_TO_UNIX {
 		lAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(config.Port))
 		rAddr = net.JoinHostPort(config.Destination, strconv.Itoa(config.Port))
 	} else if strings.HasPrefix(string(config.Proto), "unix") {
@@ -105,7 +105,7 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 		}
 		lAddr = config.Destination
 		rAddr = config.Destination
-	} else if string(config.Proto) == "tcp2unix" {
+	} else if config.Proto == PROTO_TCP_TO_UNIX {
 		lAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(config.Port))
 		rAddr = config.Destination
 	} else {
@@ -114,7 +114,7 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 	}
 
 	var listenProto ProtoType
-	if string(config.Proto) == "tcp2unix" {
+	if config.Proto == PROTO_TCP_TO_UNIX {
 		listenProto = PROTO_TCP
 		log.Info("Starting socket client forwarding: %s://%s -> unix://%s.", listenProto, lAddr, config.Destination)
 	} else {
@@ -138,7 +138,7 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 			}
 
 			var dialProto ProtoType
-			if string(config.Proto) == "tcp2unix" {
+			if config.Proto == PROTO_TCP_TO_UNIX {
 				dialProto = PROTO_UNIX
 			} else {
 				dialProto = config.Proto

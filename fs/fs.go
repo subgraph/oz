@@ -180,7 +180,7 @@ func (fs *Filesystem) bind(from string, to string, flags int) error {
 		if err := os.MkdirAll(to, sinfo.Mode().Perm()); err != nil {
 			return err
 		}
-	} else {
+	} else if os.IsNotExist(err) {
 		if err := createEmptyFile(to, 0750); err != nil {
 			return err
 		}

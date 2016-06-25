@@ -16,7 +16,11 @@
 	, {"path":"/run/user/${UID}/keyring", "ignore":true}
 	, {"path":"/tmp/gpg-*", "ignore":true}
 	, {"path":"${HOME}/.cache/icedove", "can_create":true}
+
 	, {"path":"${HOME}/.gnupg", "ignore":true}
+	, {"path":"${HOME}/.gnupg/gpg-agent.conf", "read_only": true, "force":true}
+	, {"path":"${HOME}/.gnupg/gpg.conf", "read_only": true, "force":true}
+
 	, {"path":"${HOME}/.thunderbird", "ignore":true}
 	, {"path":"${HOME}/.icedove", "can_create":true}
 

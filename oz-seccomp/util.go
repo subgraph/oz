@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strconv"
 	"syscall"
 	"unicode"
@@ -152,4 +153,36 @@ func getProcessCmdLine(pid int) string {
 		return "unknown"
 	}
 	return string(cmdline)
+}
+
+/* For sorting the invocation frequency map */
+
+type sortedFreqMap struct {
+	sm  map[int]int
+	sks []int
+}
+
+func (sfm *sortedFreqMap) Len() int {
+	return len(sfm.sm)
+}
+
+func (sfm *sortedFreqMap) Less(i, j int) bool {
+	return sfm.sm[sfm.sks[i]] > sfm.sm[sfm.sks[j]]
+}
+
+func (sfm *sortedFreqMap) Swap(i, j int) {
+	sfm.sks[i], sfm.sks[j] = sfm.sks[j], sfm.sks[i]
+}
+
+func sortedKeys(fm map[int]int) []int {
+	sfm := new(sortedFreqMap)
+	sfm.sm = fm
+	sfm.sks = make([]int, len(fm))
+	i := 0
+	for key, _ := range fm {
+		sfm.sks[i] = key
+		i++
+	}
+	sort.Sort(sfm)
+	return sfm.sks
 }

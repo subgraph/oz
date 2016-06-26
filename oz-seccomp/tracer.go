@@ -38,6 +38,7 @@ func Tracer() {
 	var noprofile = flag.Bool("train", false, "Training mode")
 	var debug = flag.Bool("debug", false, "Debug")
 	var appendpolicy = flag.Bool("append", false, "Append to existing policy if exists")
+	var verbosetrain = flag.Bool("verbosetrain", false, "Verbose training output")
 	var trainingoutput = flag.String("output", "", "Training policy output file")
 
 	flag.Parse()
@@ -99,6 +100,7 @@ func Tracer() {
 	renderFunctions := getRenderingFunctions()
 
 	trainingset := make(map[int]bool)
+	freqcount := make(map[int]int)
 	trainingargs := make(map[int]map[int][]uint)
 
 	if err := c.Start(); err == nil {
@@ -163,6 +165,7 @@ func Tracer() {
 
 				if train == true {
 					trainingset[getSyscallNumber(regs)] = true
+					freqcount[getSyscallNumber(regs)] += 1
 					if systemcall.captureArgs != nil {
 						for c, i := range systemcall.captureArgs {
 							if i == 1 {
@@ -309,8 +312,16 @@ func Tracer() {
 					resolvedpath, e = fs.ResolvePathNoGlob(s, -1, u, nil)
 				}
 			}
-			policyout := "execve:1\n"
-			for call := range trainingset {
+			policyout := ""
+			sk := sortedKeys(freqcount)
+			if *verbosetrain == true {
+				fmt.Println("\nInvocation counts for observed system calls:\n")
+			}
+			for _, call := range sk {
+				sc, _ := syscallByNum(call)
+				if *verbosetrain == true {
+					fmt.Printf("%s calls: %d\n", sc.name, freqcount[call])
+				}
 				done := false
 				for c := range trainingargs {
 					if c == call {
@@ -325,6 +336,11 @@ func Tracer() {
 					sc, _ := syscallByNum(call)
 					policyout += fmt.Sprintf("%s:1\n", sc.name)
 				}
+			}
+			policyout += fmt.Sprintf("execve:1")
+			if *verbosetrain == true {
+				fmt.Println("\nTrainer generated seccomp-bpf whitelist policy:\n")
+				fmt.Println(policyout)
 			}
 			if *appendpolicy == true {
 				log.Error("Not yet implemented.")

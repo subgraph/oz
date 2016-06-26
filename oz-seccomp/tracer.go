@@ -165,7 +165,7 @@ func Tracer() {
 
 				if train == true {
 					trainingset[getSyscallNumber(regs)] = true
-					freqcount[getSyscallNumber(regs)] += 1
+					freqcount[getSyscallNumber(regs)]++
 					if systemcall.captureArgs != nil {
 						for c, i := range systemcall.captureArgs {
 							if i == 1 {

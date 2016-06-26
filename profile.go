@@ -107,7 +107,6 @@ type WhitelistItem struct {
 	Path      string
 	Target    string
 	ReadOnly  bool `json:"read_only"`
-	NoExec	  bool `json:"no_exec"`
 	CanCreate bool `json:"can_create"`
 	Ignore    bool `json:"ignore"`
 	Force     bool

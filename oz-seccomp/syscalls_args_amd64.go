@@ -414,7 +414,7 @@ var syscalls = []SystemCall{
 	SystemCall{
 		name: "getcwd",
 		num:  79,
-		args: SystemCallArgs{1, 3, 0, 0, 0, 0},
+		args: SystemCallArgs{2, 3, 0, 0, 0, 0},
 	},
 	SystemCall{
 		name: "chdir",

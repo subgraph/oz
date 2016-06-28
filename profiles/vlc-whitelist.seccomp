@@ -1,7 +1,36 @@
+futex: arg1 == 129 || arg1 == 134 || arg1 == 135 || arg1 == 139 || arg1 == 140 || arg1 == 128 || arg1 == 393 || arg1 == 133 || arg1 == 132 || arg1 == 137 || arg1 == 0 
+read:1
+poll:1
+write:1
+recvmsg:1
+writev:1
+mprotect:1
+clock_nanosleep:1
+stat:1
+sendmsg:1
+mmap:1
+fstat:1
+fcntl: arg1 == 2 || arg1 == 3 || arg1 == 1 || arg1 == 4 || arg1 == 6 || arg1 == 7 || arg1 == 0
+getdents:1
+fstatfs:1
+rt_sigprocmask:1
+ioctl: arg1 == 21505 || arg1 == 2147771394 || arg1 == 2148557923 || arg1 == 3222299718 || arg1 == 3222299739 || arg1 == 3222299745 || arg1 == 1074291721 || arg1 == 3222299761 || arg1 == 3222824050 || arg1 == 21531 || arg1 == 3223872606 || arg1 == 1074553951 || arg1 == 3221775469 || arg1 == 3222299748 || arg1 == 1074029664 || arg1 == 1077961833 || arg1 == 3222299659 || arg1 == 3222299746 || arg1 == 1075864669 || arg1 == 25688 || arg1 == 3222037606 || arg1 == 3221775447 || arg1 == 1074291822
+sendto:1
+recvfrom:1
+set_robust_list:1
+fadvise64:1
+clone:1
+connect:1
+socket:1
+shmctl:1
+brk:1
+uname:1
+getsockname:1
+dup3:1
+shmat:1
 getrusage:1
 name_to_handle_at:1
 openat:1
-shmctl:1
 rt_sigreturn:1
 select:1
 mremap:1
@@ -16,82 +45,54 @@ link:1
 mkdir:1
 umask:1
 execve:1
-brk:1
 getrlimit:1
-recvfrom:1
 unlink:1
-mprotect:1
-fcntl: arg1 == 2 || arg1 == 3 || arg1 == 1 || arg1 == 4 || arg1 == 6 || arg1 == 7 || arg1 == 0
 getgid:1
 fdatasync:1
 access:1
 arch_prctl:1
 rt_sigaction:1
 prctl: arg0 == 15 
-sendmsg:1
 sched_getaffinity:1
 lseek:1
-getsockname:1
-write:1
-clock_nanosleep:1
-mmap:1
-ioctl: arg1 == 21505 || arg1 == 2147771394 || arg1 == 2148557923 || arg1 == 3222299718 || arg1 == 3222299739 || arg1 == 3222299745 || arg1 == 1074291721 || arg1 == 3222299761 || arg1 == 3222824050 || arg1 == 21531 || arg1 == 3223872606 || arg1 == 1074553951 || arg1 == 3221775469 || arg1 == 3222299748 || arg1 == 1074029664 || arg1 == 1077961833 || arg1 == 3222299659 || arg1 == 3222299746 || arg1 == 1075864669 || arg1 == 25688 || arg1 == 3222037606 || arg1 == 3221775447 || arg1 == 1074291822
-recvmsg:1
 gettid:1
 chmod:1
 nanosleep:1
-dup3:1
 shmget:1
 sched_get_priority_max:1
 inotify_rm_watch:1
 getresuid:1
-fadvise64:1
 rename:1
 open:1
 close:1
 munmap:1
-futex: arg1 == 129 || arg1 == 134 || arg1 == 135 || arg1 == 139 || arg1 == 140 || arg1 == 128 || arg1 == 393 || arg1 == 133 || arg1 == 132 || arg1 == 137 || arg1 == 0 
-sendto:1
 getresgid:1
 eventfd2:1
 alarm:1
-getdents:1
 setsockopt: arg2 == 12 || arg2 == 8 || arg2 == 7 || arg2 == 16 
 readlinkat:1
 flock:1
 tgkill:1
 pipe2:1
-clone:1
 getrandom:1
 exit:1
-fstat:1
 clock_getres:1
-poll:1
 kill:1
 shmdt:1
 sched_setscheduler:1
-connect:1
-uname:1
 inotify_add_watch:1
 madvise:1
-set_robust_list:1
 geteuid:1
 shutdown:1
 getuid:1
-shmat:1
-rt_sigprocmask:1
 getpeername:1
 ftruncate:1
-fstatfs:1
-read:1
 set_tid_address:1
 statfs:1
 getsockopt:1
 lstat:1
 rt_sigtimedwait:1
-stat:1
 readlink:1
-writev:1
 getegid:1
 getcwd:1
 inotify_init1:1
@@ -99,5 +100,4 @@ sched_get_priority_min:1
 #chdir:1
 #epoll_create1:1
 #socket: arg0 == 1 
-socket:1
 restart_syscall:1

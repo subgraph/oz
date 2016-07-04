@@ -82,8 +82,17 @@ func proxyClientConn(conn *net.Conn, proto ProtoType, rAddr string, ready sync.W
 		return fmt.Errorf("Socket: %+v.\n", err)
 	}
 
-	go io.Copy(rConn, *conn)
-	go io.Copy(*conn, rConn)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	copyLoop := func(dst, src net.Conn) {
+		defer wg.Done()
+		defer dst.Close()
+		io.Copy(dst, src)
+	}
+
+	go copyLoop(*conn, rConn)
+	go copyLoop(rConn, *conn)
 
 	return nil
 }
@@ -165,8 +174,17 @@ func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log
 		return err
 	}
 
-	go io.Copy(*conn, rConn)
-	go io.Copy(rConn, *conn)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	copyLoop := func(dst, src net.Conn) {
+		defer wg.Done()
+		defer dst.Close()
+		io.Copy(dst, src)
+	}
+
+	go copyLoop(*conn, rConn)
+	go copyLoop(rConn, *conn)
 
 	return nil
 }

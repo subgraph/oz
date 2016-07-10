@@ -58,7 +58,7 @@ set_tid_address:1
 ioctl: arg1 == 21505 
 pipe2:1
 eventfd2:1
-setsockopt: arg2 == 6 || arg2 == 1 || arg2 = 26
+setsockopt: arg2 == 6 || arg2 == 1 || arg2 == 26
 pipe:1
 shmget:1
 rt_sigreturn:1

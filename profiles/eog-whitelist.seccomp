@@ -71,6 +71,7 @@ mincore: 1
 mkdir: 1
 mremap: 1
 openat: 1
+sysinfo:1
 pipe: 1
 pipe2: 1
 prctl: 1

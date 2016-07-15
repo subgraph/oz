@@ -43,6 +43,7 @@ getdents:1
 bind:1
 pwrite64:1
 unlink:1
+sysinfo:1
 rename:1
 getrlimit:1
 epoll_create1:1

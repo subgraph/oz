@@ -48,6 +48,7 @@ geteuid:1
 clone:1
 prctl: arg0 == 15 
 chmod:1
+sysinfo:1
 link:1
 rename:1
 arch_prctl:1

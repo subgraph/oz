@@ -49,6 +49,7 @@ getrandom: 1
 accept4: 1
 newfstatat: 1
 select: 1
+memfd_create:1
 execve: 1
 fstat: 1
 set_tid_address: 1

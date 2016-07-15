@@ -4,7 +4,7 @@ writev:1
 lstat:1
 access:1
 open:1
-futex: arg1 == 129 || arg1 == 128 || arg1 == 393 || arg1 == 133 || arg1 == 132 || arg1 == 0 
+futex: arg1 == 129 || arg1 == 128 || arg1 == 393 || arg1 == 133 || arg1 == 132 || arg1 == 0 || arg1 == 1
 read:1
 close:1
 fstat:1

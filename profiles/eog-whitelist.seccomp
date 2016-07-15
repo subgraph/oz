@@ -21,7 +21,7 @@ fstatfs: 1
 eventfd2: 1
 sendto: 1
 recvfrom: 1
-fcntl: arg1 == 3 || arg1 == 4 || arg1 == 2 
+fcntl: arg1 == 3 || arg1 == 4 || arg1 == 2 || arg1 == 1
 getuid: 1
 uname: 1
 statfs: 1
@@ -35,7 +35,7 @@ set_robust_list: 1
 fadvise64: 1
 inotify_add_watch: 1
 chmod: 1
-ioctl: arg1 == 1074041865 
+ioctl: arg1 == 1074041865 || arg1 == 21505
 restart_syscall:1
 arch_prctl: 1
 bind: 1
@@ -49,6 +49,7 @@ execve: 1
 exit: 1
 exit_group: 1
 fallocate: 1
+setrlimit: 1
 flistxattr: 1
 fsync: 1
 getcwd: 1
@@ -77,6 +78,17 @@ pipe2: 1
 prctl: 1
 pread64: 1
 pwrite64: 1
+epoll_create1: 1
+getsockopt: 1
+epoll_wait: 1
+epoll_ctl: 1
+kill: 1
+socketpair: 1
+setsid: 1
+capget: 1
+listen: 1
+newfstatat: 1
+accept4: 1
 readlink: 1
 rename: 1
 rmdir: 1

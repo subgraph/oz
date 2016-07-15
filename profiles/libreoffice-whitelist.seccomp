@@ -72,6 +72,7 @@ fchdir:1
 link:1
 chdir:1
 getegid:1
+sysinfo:1
 pipe2:1
 sched_getaffinity:1
 symlink:1

@@ -79,6 +79,8 @@ arch_prctl: 1
 pipe: 1
 uname: 1
 exit_group: 1
+memfd_create:1
+sysinfo:1
 bind: 1
 chmod: 1
 clock_getres: 1
@@ -127,7 +129,6 @@ shmget: 1
 shutdown: 1
 socketpair: 1
 statfs: 1
-sysinfo: 1
 rt_tgsigqueueinfo: 1
 umask: 1
 utime: 1

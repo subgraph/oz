@@ -76,17 +76,17 @@ func Main() {
 		}
 		filter, err := seccomp.Compile(fpath, false)
 		if err != nil {
-			log.Error("Seccomp filter compile failed: %v", err)
+			log.Error("[FATAL] Seccomp filter compile failed: %v", err)
 			os.Exit(1)
 		}
 		err = seccomp.Install(filter)
 		if err != nil {
-			log.Error("Error (seccomp): %v", err)
+			log.Error("[FATAL] Error (seccomp): %v", err)
 			os.Exit(1)
 		}
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
-			log.Error("Error (exec): %v %s", err, cmd)
+			log.Error("[FATAL] Error (exec): %v %s", err, cmd)
 			os.Exit(1)
 		}
 	case "whitelist":
@@ -94,7 +94,7 @@ func Main() {
 		fpath := ""
 		if p.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
 			if p.Seccomp.Whitelist == "" {
-				log.Error("No seccomp policy file.")
+				log.Error("[FATAL] No seccomp policy file.")
 				os.Exit(1)
 			}
 			fpath = p.Seccomp.Whitelist
@@ -108,17 +108,17 @@ func Main() {
 		}
 		filter, err := seccomp.Compile(fpath, enforce)
 		if err != nil {
-			log.Error("Seccomp filter compile failed: %v", err)
+			log.Error("[FATAL] Seccomp filter compile failed: %v", err)
 			os.Exit(1)
 		}
 		err = seccomp.Install(filter)
 		if err != nil {
-			log.Error("Error (seccomp): %v", err)
+			log.Error("[FATAL] Error (seccomp): %v", err)
 			os.Exit(1)
 		}
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
-			log.Error("Error (exec): %v %s", err, cmd)
+			log.Error("[FATAL] Error (exec): %v %s", err, cmd)
 			os.Exit(1)
 		}
 	case "blacklist":
@@ -127,18 +127,18 @@ func Main() {
 		}
 		filter, err := seccomp.CompileBlacklist(p.Seccomp.Blacklist, p.Seccomp.Enforce)
 		if err != nil {
-			log.Error("Seccomp blacklist filter compile failed: %v", err)
+			log.Error("[FATAL] Seccomp blacklist filter compile failed: %v", err)
 			os.Exit(1)
 		}
 		err = seccomp.InstallBlacklist(filter)
 		if err != nil {
-			log.Error("Error (seccomp): %v", err)
+			log.Error("[FATAL] Error (seccomp): %v", err)
 			os.Exit(1)
 		}
 		log.Info("%s %v\n", cmd, cmdArgs)
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
-			log.Error("Error (exec): %v %s", err, cmd)
+			log.Error("[FATAL] Error (exec): %v %s", err, cmd)
 			os.Exit(1)
 		}
 	default:

@@ -48,7 +48,6 @@ geteuid:1
 clone:1
 prctl: arg0 == 15 
 chmod:1
-sysinfo:1
 link:1
 rename:1
 arch_prctl:1
@@ -66,6 +65,7 @@ write:1
 unlink:1
 kill:1
 openat:1
+sysinfo:1
 dup:1
 readlink:1
 exit:1

@@ -5,6 +5,8 @@ write:1
 recvmsg:1
 writev:1
 mprotect:1
+epoll_wait:1
+epoll_ctl:1
 clock_nanosleep:1
 stat:1
 sendmsg:1
@@ -25,6 +27,7 @@ socket:1
 shmctl:1
 brk:1
 uname:1
+accept4:1
 getsockname:1
 dup3:1
 shmat:1
@@ -38,10 +41,14 @@ faccessat:1
 dup2:1
 getpid:1
 getppid:1
+bind:1
 wait4:1
 exit_group:1
+memfd_create:1
 pipe:1
 link:1
+sysinfo:1
+chdir:1
 mkdir:1
 umask:1
 execve:1
@@ -52,10 +59,13 @@ fdatasync:1
 access:1
 arch_prctl:1
 rt_sigaction:1
+epoll_create1:1
 prctl: arg0 == 15 
 sched_getaffinity:1
 lseek:1
 gettid:1
+listen:1
+newfstatat:1
 chmod:1
 nanosleep:1
 shmget:1
@@ -78,8 +88,11 @@ getrandom:1
 exit:1
 clock_getres:1
 kill:1
+capget:1
+socketpair:1
 shmdt:1
 sched_setscheduler:1
+setsid:1
 inotify_add_watch:1
 madvise:1
 geteuid:1

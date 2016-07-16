@@ -32,6 +32,7 @@ shmctl:1
 shmget:1
 shmat:1
 getsockname:1
+gettimeofday:1
 rt_sigprocmask:1
 getuid:1
 select:1

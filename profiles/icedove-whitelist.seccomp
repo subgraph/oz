@@ -49,9 +49,11 @@ mlock: 1
 fdatasync: 1
 capget: 1
 capset: 1
+sigaltstack: 1
 chdir: 1
 kill: 1
 listen: 1
+accept: 1
 name_to_handle_at: 1
 personality: 1
 ppoll: 1

@@ -1,0 +1,24 @@
+{
+"name": "inkscape"
+, "path": "/usr/bin/inkscape"
+, "allow_files": true
+, "xserver": {
+	"enabled": true
+	, "enable_tray": false
+	, "tray_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/inkscape.svg"
+	, "window_icon":"/usr/share/icons/gnome-colors-common/scalable/apps/inkscape.svg"
+}
+, "networking":{
+	"type":"empty"
+}
+, "whitelist": [
+	{"path":"/home/user/Pictures/inkscape", "can_create":true}
+	, {"path":"/var/lib/oz/cells.d/inkscape-whitelist.seccomp", "read_only": true}
+	, {"path":"/home/user/.local/share/fonts", "read_only": true}
+]
+, "seccomp": {
+	"mode":"whitelist"
+	, "whitelist":"/var/lib/oz/cells.d/inkscape-whitelist.seccomp"
+	, "enforce": true
+}
+}

@@ -1,0 +1,24 @@
+{
+"name": "onionshare-gui"
+, "path": "/usr/bin/onionshare-gui"
+, "_watchdog": ["onionshare-gui"]
+, "xserver": {
+	"enabled": true
+	, "enable_tray": false
+	, "tray_icon": "/usr/share/icons/hicolor/scalable/apps/xterm-color.svg"
+	, "window_icon": "/usr/share/icons/hicolor/scalable/apps/xterm-color.svg"
+}
+, "networking":{
+	"type": "empty"
+	, "sockets": [
+		{"type": "client", "proto": "tcp", "port": 9050}
+		, {"type": "client", "proto": "tcp2unix", "port": 9051, "destination": "/var/run/roflcoptor/onionshare.socket"}
+	]
+}
+, "whitelist": []
+, "environment": []
+, "seccomp": {
+	"mode": "blacklist"
+	, "enforce": true
+}
+}

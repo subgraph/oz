@@ -16,19 +16,19 @@ import (
 // Setup the networking inside the child
 // Namely setup the loopback interface
 // and the veth interface if requested
-func NetSetup(stn *SandboxNetwork) error {
+func NetSetup() error {
 	if os.Getpid() != 1 {
 		panic(errors.New("Cannot use NetSetup from parent."))
 	}
 
-	if err := setupLoopback(stn); err != nil {
+	if err := setupLoopback(); err != nil {
 		return fmt.Errorf("Unable to setup loopback interface: %+v", err)
 	}
 
 	return nil
 }
 
-func setupLoopback(stn *SandboxNetwork) error {
+func setupLoopback() error {
 	// Bring loopback interface up
 	lo, err := tenus.NewLinkFrom("lo")
 	if err != nil {

@@ -136,6 +136,8 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 	}
 
 	wgProxy.Add(1)
+	c := *config
+
 	go func() {
 		defer wgProxy.Done()
 		for {
@@ -147,11 +149,12 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 			}
 
 			var dialProto ProtoType
-			if config.Proto == PROTO_TCP_TO_UNIX {
+			if c.Proto == PROTO_TCP_TO_UNIX {
 				dialProto = PROTO_UNIX
 			} else {
-				dialProto = config.Proto
+				dialProto = c.Proto
 			}
+
 			go proxyClientConn(&conn, dialProto, rAddr, ready)
 		}
 	}()

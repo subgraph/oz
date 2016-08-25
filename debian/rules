@@ -1,0 +1,14 @@
+#!/usr/bin/make -f
+
+#export DH_VERBOSE=1
+
+export DH_OPTIONS
+
+export DH_GOPKG := github.com/subgraph/oz
+
+%:
+	dh $@ --buildsystem=golang --with=golang,systemd
+
+override_dh_auto_install:
+	dh_auto_install
+	rm -rf $(CURDIR)/debian/oz/usr/share/gocode

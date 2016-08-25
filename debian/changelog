@@ -1,0 +1,202 @@
+oz-daemon (0.1.0-1) testing; urgency=medium
+
+  * First minor tag release in source package
+
+ -- Subgraph <info@subgraph.com>  Tue, 23 Aug 2016 20:30:00 +0000
+
+oz-daemon (0.0.23) testing; urgency=urgent
+
+  * Multiple seccomp fixes
+
+ -- Subgraph <info@subgraph.com>  Tue, 5 Jul 2016 17:30:00 +0000
+
+oz-daemon (0.0.22) testing; urgency=urgent
+
+  * Multiple seccomp fixes
+
+ -- Subgraph <info@subgraph.com>  Tue, 5 Jul 2016 17:30:00 +0000
+
+oz-daemon (0.0.21) testing; urgency=medium
+
+  * Optimized whitelist for multiple profiles
+  * Fixed issue #60 where some readonly dirs would be overwritten
+
+ -- Subgraph <info@subgraph.com>  Mon, 27 Jun 2016 16:55:00 +0000
+
+oz-daemon (0.0.20) testing; urgency=high
+
+  * Fix whitelist for icedove after addition of seccomp, take two
+
+ -- Subgraph <info@subgraph.com>  Thu, 16 Jun 2016 16:15:00 +0000
+
+oz-daemon (0.0.19) testing; urgency=high
+
+  * Fix whitelist for icedove after addition of seccomp
+
+ -- Subgraph <info@subgraph.com>  Tue, 14 Jun 2016 17:00:00 +0000
+
+oz-daemon (0.0.18) unstable; urgency=high
+
+  * Fix TorBrowser seccomp whitelist for TBB 6.0.0 sandboxing support
+  * Added cli support for mount/unmount files
+
+ -- Subgraph <info@subgraph.com>  Tue, 31 May 2016 21:30:00 +0000
+
+oz-daemon (0.0.17) unstable; urgency=high
+
+  * Fixed XPRA aruments to match upstream upgrade
+  * Removed temporary mount fix for libselinux fubar
+  * Added getcwd syscall to hexchat whitelist
+  * Added getrusage syscall to vlc whitelist
+  * Added gettimeofday syscall to tbb whitelist
+
+ -- Subgraph <info@subgraph.com>  Fri, 13 May 2016 17:00:00 +0000
+
+oz-daemon (0.0.16) unstable; urgency=high
+
+  * Added mount to all whitelists to temporarily fix libselinux.
+  * Fix some syscalls for hexchat, tbb
+  * Fix copytruncate on logrorate
+  * Fix icon on tbb
+  * New syscall for CoyIM with gsettings
+  * Added profile for firefox-esr
+  * Added support for XDG directories
+
+ -- Subgraph <info@subgraph.com>  Mon, 2 May 2016 22:30:00 +0000
+
+oz-daemon (0.0.15) unstable; urgency=high
+
+  * Removed all shared writable directories from profiles following chroot escape by Jann Horn
+  * Fixed seccomp bpf blacklist bug following vuln report from Jann Horn
+  * Added VLC seccomp whitelist
+  * Added icedove seccomp whitelist
+  * Added torbrowser launcher seccomp whitelist
+  * Added tentative ricochet profile
+  * Added tentative shotwell profile
+
+ -- Subgraph <info@subgraph.com>  Wed, 23 Mar 2016 14:30:00 +0000
+
+oz-daemon (0.0.14) unstable; urgency=medium
+
+  * Fixed automatic directories for profiles
+  * Fixed missing syscall for hexchat
+  * Added client methods for relaunching xpra client
+  
+ -- Subgraph <info@subgraph.com>  Wed, 9 Mar 2016 15:00:00 +0000
+
+oz-daemon (0.0.13) unstable; urgency=medium
+
+  * Fixed hexchat whitelist typo
+
+ -- Subgraph <info@subgraph.com>  Sat, 20 Feb 2016 19:45:00 +0000
+
+oz-daemon (0.0.12) unstable; urgency=medium
+
+  * Clarified xpra logging output
+  * Removed default param from coyim profile
+
+ -- Subgraph <info@subgraph.com>  Sat, 20 Feb 2016 19:45:00 +0000
+
+oz-daemon (0.0.11) unstable; urgency=medium
+
+  * Fixed /media/user
+  * Added missing fcntl args to hexchat whitelist
+  * Upping xpra clipboard limit
+  * Removed all ACLs from fs permissions
+
+ -- Subgraph <info@subgraph.com>  Mon, 15 Feb 2016 19:00:00 +0000
+
+oz-daemon (0.0.10) unstable; urgency=medium
+
+  * Allowed dynamic bind mounts in /media/user
+  * Updated coyim profile and whitelist
+  * Added Hexchat profile and whitelist
+  * Update pond profile
+
+ -- Subgraph <info@subgraph.com>  Thu, 11 Feb 2016 06:30:00 +0000
+
+oz-daemon (0.0.9) unstable; urgency=medium
+
+  * Fixed network reconfigure when there is no bridge configured
+  * Fixed watchdog exit
+  * Added comments to profiles
+  * Tentative basic MPV profile
+  * Moved all profiles network mode from 'bridge' to 'empty' with socks
+  * Added Downloads and Documents directories to relevant profiles
+  * Added user mounts to allowable user bind mounts prefix
+
+ -- Subgraph <info@subgraph.com>  Mon, 1 Feb 2016 00:00:00 +0000
+
+oz-daemon (0.0.8) unstable; urgency=medium
+
+  * Updated dependencies to latest versions
+  * Fixed creation of user home when XServer/Xpra is disabled
+  * Automatic shutdown once main process exits (and watchdog for detached processes)
+  * Fixed shm mounting
+  * Tentative basic VLC profile
+  * Resolving of files passed with the file:// uri format
+
+ -- Subgraph <info@subgraph.com>  Fri, 28 Jan 2016 00:00:00 +0000
+
+oz-daemon (0.0.7) unstable; urgency=medium
+
+  * Added pulseaudio passthrough
+  * Enabled pulseaudio for torbrowser and iceweasel profiles
+
+ -- Subgraph <info@subgraph.com>  Fri, 22 Jan 2016 00:00:00 +0000
+
+oz-daemon (0.0.6) unstable; urgency=medium
+
+  * Updated profiles
+  * Fixed whitelist target
+  * Added XDG env vars
+  * Moved to golang 1.5.3
+
+ -- Subgraph <info@subgraph.com>  Fri, 15 Jan 2016 00:00:00 +0000
+
+oz-daemon (0.0.5) unstable; urgency=medium
+
+  * Fix seccomp whitelists
+
+ -- Subgraph <info@subgraph.com>  Sun, 27 Dec 2015 00:00:00 +0000
+
+oz-daemon (0.0.4) unstable; urgency=medium
+
+  * Fix whitelist ignores
+  * Reverting seccomp whitelists
+
+ -- Subgraph <info@subgraph.com>  Tue, 22 Dec 2015 00:00:00 +0000
+
+oz-daemon (0.0.3) unstable; urgency=medium
+
+  * Added ability to set static IPs for sandboxes
+
+ -- Subgraph <info@subgraph.com>  Tue, 22 Dec 2015 00:00:00 +0000
+
+oz-daemon (0.0.2) unstable; urgency=medium
+
+  * seccomp tracer
+  * bug fixing
+
+ -- Subgraph <info@subgraph.com>  Fri, 18 Dec 2015 00:00:00 +0000
+
+oz-daemon (0.0.1~646910) unstable; urgency=medium
+
+  * Fixing another inaccurate argument type chosen by the syscall signature parser.
+  * Trial icedove seccomp whitelist.
+  * Add mlock(2).
+  * Multiple bootstrap fixes.
+
+ -- Subgraph <info@subgraph.com>  Thu, 26 Oct 2015 00:00:00 +0000
+
+oz-daemon (0.0.1~2b3ee33) unstable; urgency=medium
+
+  * Fixed OpError and iceweasel whitelist.
+
+ -- Subgraph <info@subgraph.com>  Thu, 26 Oct 2015 00:00:00 +0000
+
+oz-daemon (0.0.1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Subgraph <info@subgraph.com>  Thu, 22 Oct 2015 22:05:45 +0000

@@ -1,0 +1,16 @@
+Source: oz-daemon
+Section: security
+Priority: optional
+Maintainer: Subgraph <info@subgraph.com>
+Build-Depends: debhelper (>= 9), libacl1-dev, golang
+Standards-Version: 3.9.6
+Homepage: https://github.com/subgraph/oz
+#Vcs-Git: https://github.com/subgraph/oz.git
+#Vcs-Browser: https://github.com/subgraph/oz
+
+Package: oz-daemon
+Architecture: amd64
+Depends: xpra, python-rencode, arping, libacl1, xdg-user-dirs, ${shlibs:Depends}, ${misc:Depends}
+Recommends: subgraph-oz-profiles
+Description: oz-daemon binary package
+ OZ desktop application sandbox.

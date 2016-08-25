@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: oz-daemon
+Source: <https://github.com/subgraph/oz>
+
+Files: *
+Copyright: 2015 Subgraph <info@subgraph.com>
+License: UNDEFINED
+
+License: UNDEFINED
+ This program is free software: you can redistribute it and/or modify

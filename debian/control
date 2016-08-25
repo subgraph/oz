@@ -2,11 +2,12 @@ Source: oz-daemon
 Section: security
 Priority: optional
 Maintainer: Subgraph <info@subgraph.com>
-Build-Depends: debhelper (>= 9), libacl1-dev, golang
+Build-Depends: debhelper (>= 9), libacl1-dev, golang-go (>= 1.6), dh-golang, dh-systemd
 Standards-Version: 3.9.6
 Homepage: https://github.com/subgraph/oz
-#Vcs-Git: https://github.com/subgraph/oz.git
-#Vcs-Browser: https://github.com/subgraph/oz
+Vcs-Git: https://github.com/subgraph/oz.git
+XS-Go-Import-Path: https://github.com/subgraph/oz
+Vcs-Browser: https://github.com/subgraph/oz
 
 Package: oz-daemon
 Architecture: amd64

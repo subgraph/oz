@@ -1,0 +1,10 @@
+usr/bin/oz usr/bin
+usr/bin/oz-init usr/bin
+usr/bin/oz-mount usr/bin
+usr/bin/oz-umount usr/bin
+usr/bin/oz-seccomp usr/bin
+usr/bin/oz-seccomp-tracer usr/bin
+usr/bin/oz-daemon usr/sbin
+usr/bin/oz-setup usr/sbin
+src/github.com/subgraph/oz/profiles/* var/lib/oz/cells.d
+sources/* ./

@@ -11,7 +11,7 @@ export DH_GOPKG := github.com/subgraph/oz
 
 override_dh_auto_install:
 	dh_auto_install
-	rm -rf $(CURDIR)/debian/oz/usr/share/gocode
+	rm -rf $(CURDIR)/debian/oz-daemon/usr/share/gocode
 
 override_dh_auto_test:
 	@echo skipped auto test

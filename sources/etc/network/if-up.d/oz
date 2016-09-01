@@ -1,8 +1,0 @@
-#!/bin/bash
-set -e
-
-if [[ "$METHOD" = loopback ]] || [[ "$LOGICAL" = "oz0" ]] || [[ "$LOGICAL" == veth* ]] || [[ "$LOGICAL" == voz* ]]; then
-	exit 0
-fi
-
-killall -SIGUSR2 oz-daemon || exit 0

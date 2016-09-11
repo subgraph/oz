@@ -53,6 +53,8 @@ func Main() {
 		d.handleMountFiles,
 		d.handleUnmountFile,
 		d.handleLogs,
+		d.handleAskForwarder,
+		d.handleListForwarders,
 	)
 	if err != nil {
 		d.log.Error("Error running server: %v", err)
@@ -367,6 +369,30 @@ func (d *daemonState) handleUnmountFile(msg *UnmountFileMsg, m *ipc.Message) err
 	return m.Respond(&OkMsg{})
 }
 
+func (d *daemonState) handleAskForwarder(msg *AskForwarderMsg, m *ipc.Message) error {
+	sbox := d.sandboxById(msg.Id)
+	hasListenerName := false
+	if sbox == nil {
+                return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+	}
+	if len(sbox.profile.ExternalForwarders) == 0 {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("no listeners configured in sandbox profile.")})
+	}
+	for _,l := range sbox.profile.ExternalForwarders {
+		if l.Name == msg.Name {
+			hasListenerName = true
+		}
+	}
+	if !hasListenerName {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("No listener %s found.", msg.Name)})
+	}
+	forwarder, err := sbox.SetupDynamicForwarder(msg.Name, msg.Port, d.log)
+	if err != nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to create forwarder: %v", err)})
+	}
+	return m.Respond(&ForwarderSuccessMsg{Proto: msg.Name, Addr:forwarder})
+}
+
 func (d *daemonState) sandboxById(id int) *Sandbox {
 	for _, sb := range d.sandboxes {
 		if sb.id == id {
@@ -431,6 +457,19 @@ func (d *daemonState) handleListSandboxes(list *ListSandboxesMsg, msg *ipc.Messa
 	}
 	return msg.Respond(r)
 }
+
+func (d *daemonState) handleListForwarders(msg *ListForwardersMsg, m *ipc.Message) error {
+        sbox := d.sandboxById(msg.Id)
+	r := new(ListForwardersResp)
+        if sbox == nil {
+                return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+        }
+	for _, f := range sbox.forwarders {
+		r.Forwarders = append(r.Forwarders, Forwarder{Name: f.name, Target: f.dest, Desc: f.desc})
+	}
+        return m.Respond(r)
+}
+
 
 func (d *daemonState) handleLogs(logs *LogsMsg, msg *ipc.Message) error {
 	for n := d.memBackend.Head(); n != nil; n = n.Next() {

@@ -125,6 +125,38 @@ func runApplication() {
 				},
 			},
 		},
+		{
+			Name:   "forward",
+			Usage:  "setup forwarder",
+			Action: handleForward,
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "sandbox",
+					Usage: "Sandbox number, e.g. 1",
+					Value: -1,
+				},
+				cli.StringFlag{
+					Name:  "name",
+					Usage: "Name of forwarder, e.g. dynamic-onionshare-server",
+				},
+				cli.StringFlag{
+					Name:  "port",
+					Usage: "Target port, e.g. tcp",
+				},
+			},
+		},
+		{
+			Name: "listforwarders",
+			Usage: "list forwarders",
+			Action: handleListForwarders,
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name: "sandbox",
+					Usage: "Sandbox number, e.g. 1",
+					Value: -1,
+				},
+			},
+		},
 	}
 	app.Run(os.Args)
 }
@@ -324,6 +356,44 @@ func handleRelaunchXpraClient(c *cli.Context) {
 	}
 }
 
+func handleForward(c *cli.Context) {
+	var out string
+	var err error
+	id := c.Int("sandbox")
+	if id == -1 {
+		fmt.Fprintf(os.Stderr, "Need a sandbox id to create a forwarder\n")
+		os.Exit(1)
+	}
+	name, port := c.String("name"), c.String("port")
+	if name == "" || port == "" {
+		fmt.Fprintf(os.Stderr, "Missing required arguments.\n")
+		os.Exit(1)
+	}
+	if out, err = daemon.AskForwarder(id, c.String("name"), c.String("port")); err != nil {
+		fmt.Fprintf(os.Stderr, "Fowarder command failed: %s.\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Listener established: "+out)
+}
+
+func handleListForwarders(c *cli.Context) {
+	id := c.Int("sandbox")
+	if id == -1 {
+		fmt.Fprintf(os.Stderr, "Need a sandbox id to list forwarders\n")
+		os.Exit(1)
+	}
+	forwarders, err := daemon.ListForwarders(id)
+	if (err != nil) {
+		fmt.Fprintf(os.Stderr, "List forwarders failed: %+v %+v", err, forwarders)
+		os.Exit(1)
+	}
+	
+	fmt.Printf("Listeners for sandbox %d:\n", id)
+	for _, r := range forwarders {
+		fmt.Printf("  %s: %s => %s\n", r.Name, r.Desc, r.Target)
+	}
+}
+	
 func checkRecursingSandbox() error {
 	hostname, _ := os.Hostname()
 	fsbox := path.Join("/tmp", "oz-sandbox")

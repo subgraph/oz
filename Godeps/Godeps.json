@@ -1,10 +1,15 @@
 {
 	"ImportPath": "github.com/subgraph/oz",
 	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/BurntSushi/xdg",
+			"Rev": "e80d3446fea190e21fbd294569844f066e47ccfc"
+		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
 			"Comment": "1.2.0-195-g114097b",
@@ -43,8 +48,60 @@
 			"Rev": "dfaf3dff9b631bc4236201d90d41ee0de9202889"
 		},
 		{
+			"ImportPath": "github.com/subgraph/constants",
+			"Rev": "979abf7df6e07f4ad41530affaf0f1b3810128f5"
+		},
+		{
 			"ImportPath": "github.com/subgraph/go-seccomp",
 			"Rev": "93f4f357204b56af6737c2cbb6352e39ebedbe48"
+		},
+		{
+			"ImportPath": "github.com/subgraph/go-xdgdirs",
+			"Rev": "42db8d15c28b27a490c0dcc3784b29fd0bcbf6fe"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/checker",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/compiler",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/constants",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/data",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/native",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/parser",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/precompilation",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/simplifier",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/tree",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
+		},
+		{
+			"ImportPath": "github.com/twtiger/gosecco/unifier",
+			"Rev": "836ec369b30ef6585384158ca3994874ebb2ace0"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",

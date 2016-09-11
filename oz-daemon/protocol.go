@@ -34,6 +34,11 @@ type ListProfilesResp struct {
 	Profiles []Profile "ListProfilesResp"
 }
 
+type ListForwardersResp struct {
+	Name string "ListForwardersResp"
+	Forwarders []Forwarder "ListForwardersResp"
+}
+
 type LaunchMsg struct {
 	Index  int "Launch"
 	Path   string
@@ -88,6 +93,29 @@ type LogData struct {
 	Lines []string "LogData"
 }
 
+type ListForwardersMsg struct {
+	Id int "ListForwarders"
+}
+
+type AskForwarderMsg struct {
+	Id int "AskForwarder"
+	Name string
+	Addr string
+	Port string
+}
+
+type Forwarder struct {
+	Name string "Forwarder"
+	Desc string
+	Target string
+}
+
+type ForwarderSuccessMsg struct {
+        Proto string "ForwarderSuccess"
+        Addr string
+	Port string
+}
+
 var messageFactory = ipc.NewMsgFactory(
 	new(PingMsg),
 	new(OkMsg),
@@ -104,4 +132,8 @@ var messageFactory = ipc.NewMsgFactory(
 	new(UnmountFileMsg),
 	new(LogsMsg),
 	new(LogData),
+	new(AskForwarderMsg),
+	new(ForwarderSuccessMsg),
+	new(ListForwardersMsg),
+	new(ListForwardersResp),
 )

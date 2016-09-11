@@ -11,7 +11,7 @@ flock:1
 getegid:1
 chdir:1
 nanosleep:1
-prctl: arg0 == 15 
+prctl: arg0 == PR_SET_NAME
 uname:1
 getresuid:1
 getuid:1
@@ -24,7 +24,7 @@ connect:1
 lstat:1
 readlink:1
 link:1
-setsockopt: arg2 == 2 || arg2 == 9 
+setsockopt: arg1 == SOL_SOCKET && (arg2 == SO_REUSEADDR || arg2 == SO_KEEPALIVE)
 mkdir:1
 listen:1
 brk:1
@@ -38,7 +38,7 @@ clock_getres:1
 clone:1
 kill:1
 fstat:1
-fcntl: arg1 == 3 || arg1 == 4 || arg1 == 2 || arg1 == 1 
+fcntl: arg1 == F_GETFL || arg1 == F_SETFL || arg1 == F_SETFD || arg1 == F_GETFD
 fstatfs:1
 rename:1
 writev:1
@@ -46,7 +46,7 @@ getdents:1
 fadvise64:1
 shmctl:1
 inotify_rm_watch:1
-socket: arg0 == 1 || arg0 == 2 || arg0 == 10 
+socket: arg0 == AF_UNIX || arg0 == AF_INET || arg0 == AF_INET6
 getresgid:1
 getcwd:1
 wait4:1

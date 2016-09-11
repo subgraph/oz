@@ -1,0 +1,124 @@
+TCGETS=0x5401
+FIONREAD=0x541B
+
+FUTEX_WAIT=0
+FUTEX_WAKE=1
+FUTEX_FD=2
+FUTEX_REQUEUE=3
+FUTEX_CMP_REQUEUE=4
+FUTEX_WAKE_OP=5
+FUTEX_LOCK_PI=6
+FUTEX_UNLOCK_PI=7
+FUTEX_TRYLOCK_PI=8
+FUTEX_WAIT_BITSET=9
+FUTEX_WAKE_BITSET=10
+FUTEX_WAIT_REQUEUE_PI=11
+FUTEX_CMP_REQUEUE_PI=12
+
+FUTEX_PRIVATE_FLAG=128
+FUTEX_CLOCK_REALTIME=256
+FUTEX_CMD_MASK=~(FUTEX_PRIVATE_FLAG | FUTEX_CLOCK_REALTIME)
+
+FUTEX_WAIT_PRIVATE=(FUTEX_WAIT | FUTEX_PRIVATE_FLAG)
+FUTEX_WAKE_PRIVATE=(FUTEX_WAKE | FUTEX_PRIVATE_FLAG)
+FUTEX_REQUEUE_PRIVATE=(FUTEX_REQUEUE | FUTEX_PRIVATE_FLAG)
+FUTEX_CMP_REQUEUE_PRIVATE=(FUTEX_CMP_REQUEUE | FUTEX_PRIVATE_FLAG)
+FUTEX_WAKE_OP_PRIVATE=(FUTEX_WAKE_OP | FUTEX_PRIVATE_FLAG)
+FUTEX_LOCK_PI_PRIVATE=(FUTEX_LOCK_PI | FUTEX_PRIVATE_FLAG)
+FUTEX_UNLOCK_PI_PRIVATE=(FUTEX_UNLOCK_PI | FUTEX_PRIVATE_FLAG)
+FUTEX_TRYLOCK_PI_PRIVATE=(FUTEX_TRYLOCK_PI | FUTEX_PRIVATE_FLAG)
+FUTEX_WAIT_BITSET_PRIVATE=(FUTEX_WAIT_BITSET | FUTEX_PRIVATE_FLAG)
+FUTEX_WAKE_BITSET_PRIVATE=(FUTEX_WAKE_BITSET | FUTEX_PRIVATE_FLAG)
+FUTEX_WAIT_REQUEUE_PI_PRIVATE=(FUTEX_WAIT_REQUEUE_PI | FUTEX_PRIVATE_FLAG)
+FUTEX_CMP_REQUEUE_PI_PRIVATE=(FUTEX_CMP_REQUEUE_PI | FUTEX_PRIVATE_FLAG)
+
+recvmsg:1
+open:1
+poll:1
+read:1
+stat:1
+fstat:1
+writev:1
+close:1
+access:1
+mmap:1
+write:1
+mprotect:1
+futex: (arg1 &? FUTEX_WAKE) || (arg1 &? FUTEX_WAIT) || (arg1 == FUTEX_CMP_REQUEUE|FUTEX_PRIVATE_FLAG)
+lstat:1
+lseek:1
+brk:1
+munmap:1
+rt_sigaction:1
+fstatfs:1
+fcntl: (arg1 == F_DUPFD) || (arg1 == F_GETFD) || (arg1 == F_SETFD) || (arg1 == F_GETFL) || (arg1 == F_SETFL) || (arg1 == F_SETLKW)
+getdents:1
+sendmsg:1
+uname:1
+socket: (arg0 == AF_UNIX && arg1 &? SOCK_STREAM && arg2 == IPPROTO_IP) || (arg0 == AF_INET && arg1 &? SOCK_STREAM && arg2 == IPPROTO_IP) || (arg0 == AF_INET && arg1 &? SOCK_STREAM && arg2 == IPPROTO_TCP)
+fadvise64:1
+connect:1
+recvfrom:1
+sendto:1
+readlink:1
+geteuid:1
+statfs:1
+getsockname:1
+shmctl:1
+shmget:1
+dup2:1
+unlink:1
+mkdir:1
+link:1
+rename:1
+clone:1
+shmat:1
+ioctl: arg1 == TCGETS || arg1 == FIONREAD
+set_robust_list:1
+exit_group:1
+prctl: arg0 == PR_SET_NAME
+arch_prctl:1
+vfork:1
+setrlimit:1
+chmod:1
+accept:1
+getegid:1
+shutdown:1
+wait4:1
+getuid:1
+inotify_rm_watch:1
+inotify_add_watch:1
+getpeername:1
+shmdt:1
+getgid:1
+madvise:1
+setresgid:1
+pipe:1
+getrlimit:1
+eventfd2:1
+getresgid:1
+inotify_init1:1
+clock_getres:1
+exit:1
+sched_get_priority_max:1
+setresuid:1
+pipe2:1
+select:1
+listen:1
+sched_yield:1
+sched_get_priority_min:1
+ftruncate:1
+getresuid:1
+getcwd:1
+setsockopt:arg1 == 1 && arg2 == 2
+set_tid_address:1
+mremap:1
+sched_setscheduler:1
+bind:1
+sysinfo:1
+rt_sigprocmask:1
+getrusage:1
+getppid:1
+getpid:1
+getsockopt:1
+execve:1

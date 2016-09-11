@@ -41,8 +41,7 @@ getpgrp: 1
 getppid: 1
 getpid: 1
 fchown: 1
-# prctl: PR_SET_NAME || PR_GET_NAME || PR_GET_TIMERSLACK || PR_SET_SECCOMP
-prctl: arg0 == 15 || arg0 == 16 || arg0 == 30 || arg0 == 22
+prctl: arg0 == PR_SET_NAME || arg0 == PR_GET_NAME || arg0 == PR_GET_TIMERSLACK || arg0 == PR_SET_SECCOMP
 epoll_create1: 1
 readlinkat: 1
 getrandom: 1
@@ -142,4 +141,4 @@ setresgid: 1
 capget: 1
 getdents64: 1
 inotify_rm_watch: 1
-socket: arg0 == 1 || arg0 == 2 || arg0 == 10 || arg0 == 16
+socket: arg0 == AF_UNIX || arg0 == AF_INET || arg0 == AF_INET6 || arg0 == AF_NETLINK

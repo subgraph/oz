@@ -24,7 +24,7 @@ select: 1
 fstatfs: 1
 nanosleep:1
 getdents: 1
-fcntl: arg1 == 3 || arg1 == 4 || arg1 == 2 || arg1 == 1
+fcntl: arg1 == F_GETFL || arg1 == F_SETFL || arg1 == F_SETFD || arg1 == F_GETFD
 set_robust_list: 1
 clone: 1
 recvfrom: 1
@@ -32,7 +32,7 @@ sendto: 1
 rt_sigprocmask: 1
 madvise: 1
 exit: 1
-socket: arg0 == 1 || arg0 == 2 || arg0 == 10 
+socket: arg0 == AF_UNIX || arg0 == AF_INET || arg0 == AF_INET6
 fadvise64: 1
 geteuid: 1
 sigaltstack: 1
@@ -48,7 +48,7 @@ epoll_wait: 1
 gettid: 1
 pwrite64: 1
 rt_sigreturn: 1
-prctl: arg0 == 15 || arg0 == 1 
+prctl: arg0 == PR_SET_NAME || arg0 == PR_SET_PDEATHSIG
 kill: 1
 setsid: 1
 listen: 1

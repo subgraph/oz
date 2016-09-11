@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -165,6 +166,7 @@ func (st *initState) runInit() {
 		handlePing,
 		st.handleRunProgram,
 		st.handleRunShell,
+		st.handleSetupForwarder,
 	)
 	if err != nil {
 		st.log.Error("NewServer failed: %v", err)
@@ -317,7 +319,7 @@ func (st *initState) startXpraServer() {
 	}
 	workdir := path.Join(st.user.HomeDir, ".Xoz", st.profile.Name)
 	st.log.Info("xpra work dir is %s", workdir)
-	spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+	spath := path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
 	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), spath, workdir)
 	//st.log.Debug("%s %s", strings.Join(xpra.Process.Env, " "), strings.Join(xpra.Process.Args, " "))
 	if xpra == nil {
@@ -398,28 +400,28 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	switch st.profile.Seccomp.Mode {
 	case oz.PROFILE_SECCOMP_TRAIN:
 		st.log.Notice("Enabling seccomp training mode for : %s", cpath)
-		spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+		spath := path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
 		cmdArgs = append([]string{spath, "-mode=whitelist", cpath}, cmdArgs...)
-		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
+		cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp-tracer")
 	case oz.PROFILE_SECCOMP_WHITELIST:
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
-			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+			spath := path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
 			cmdArgs = append([]string{spath, "-mode=whitelist", cpath}, cmdArgs...)
-			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
+			cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp-tracer")
 		} else {
 			cmdArgs = append([]string{"-mode=whitelist", cpath}, cmdArgs...)
-			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+			cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
 		}
 	case oz.PROFILE_SECCOMP_BLACKLIST:
 		st.log.Notice("Enabling seccomp blacklist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
-			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+			spath := path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
 			cmdArgs = append([]string{spath, "-mode=blacklist", cpath}, cmdArgs...)
-			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
+			cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp-tracer")
 		} else {
 			cmdArgs = append([]string{"-mode=blacklist", cpath}, cmdArgs...)
-			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+			cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
 		}
 	}
 
@@ -504,6 +506,52 @@ func loadProfile(dir, name string) (*oz.Profile, error) {
 
 func handlePing(ping *PingMsg, msg *ipc.Message) error {
 	return msg.Respond(&PingMsg{Data: ping.Data})
+}
+
+func (st *initState) handleSetupForwarder(rp *ForwarderSuccessMsg, msg *ipc.Message) error {
+	st.log.Info("Setting up forwarder to: %s", rp.Addr)
+	if len(msg.Fds) == 0 {
+		return fmt.Errorf("SetupForwarder message received, but no file descriptor included")
+	}
+	go func() {
+		f := os.NewFile(uintptr(msg.Fds[0]), "")
+		l, err := net.FileListener(f)
+		if err != nil {
+			st.log.Warning(err.Error())
+			return
+		}
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				st.log.Error(err.Error())
+			}
+			st.log.Info("Forwarder to accepted incoming client.", rp.Addr)
+			go proxyForwarder(&conn, rp.Proto, rp.Addr)
+		}
+	}()
+	err := msg.Respond(&OkMsg{})
+	return err
+}
+
+func proxyForwarder(conn *net.Conn, proto string, rAddr string) error {
+	rConn, err := net.Dial(proto, rAddr)
+	if err != nil {
+		return fmt.Errorf("Socket: %+v.\n", err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	copyLoop := func(dst, src net.Conn) {
+		defer wg.Done()
+		defer dst.Close()
+		io.Copy(dst, src)
+	}
+
+	go copyLoop(*conn, rConn)
+	go copyLoop(rConn, *conn)
+
+	return nil
 }
 
 func (st *initState) handleRunProgram(rp *RunProgramMsg, msg *ipc.Message) error {
@@ -712,7 +760,7 @@ func (st *initState) childrenVector() []procState {
 
 func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_blacklist []oz.BlacklistItem) error {
 
-//	fs := fs.NewFilesystem(st.config, st.log)
+	//	fs := fs.NewFilesystem(st.config, st.log)
 
 	if err := setupRootfs(st.fs, st.user, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
 		return err

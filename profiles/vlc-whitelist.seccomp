@@ -12,7 +12,7 @@ stat:1
 sendmsg:1
 mmap:1
 fstat:1
-fcntl: arg1 == 2 || arg1 == 3 || arg1 == 1 || arg1 == 4 || arg1 == 6 || arg1 == 7 || arg1 == 0
+fcntl: arg1 == F_SETFD || arg1 == F_GETFL || arg1 == F_GETFD || arg1 == F_SETFL || arg1 == F_SETLK || arg1 == F_SETLKW || arg1 == F_DUPFD
 getdents:1
 fstatfs:1
 rt_sigprocmask:1
@@ -60,7 +60,7 @@ access:1
 arch_prctl:1
 rt_sigaction:1
 epoll_create1:1
-prctl: arg0 == 15 
+prctl: arg0 == PR_SET_NAME
 sched_getaffinity:1
 lseek:1
 gettid:1
@@ -79,7 +79,7 @@ munmap:1
 getresgid:1
 eventfd2:1
 alarm:1
-setsockopt: arg2 == 12 || arg2 == 8 || arg2 == 7 || arg2 == 16 
+setsockopt: arg1 == SOL_SOCKET && (arg2 == SO_PRIORITY || arg2 == SO_RCVBUF || arg2 == SO_SNDBUF || arg2 == SO_PASSCRED)
 readlinkat:1
 flock:1
 tgkill:1
@@ -112,5 +112,8 @@ inotify_init1:1
 sched_get_priority_min:1
 #chdir:1
 #epoll_create1:1
-#socket: arg0 == 1 
+#socket: arg0 == AF_UNIX
 restart_syscall:1
+symlink:1
+rt_sigsuspend:1
+personality:1

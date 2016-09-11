@@ -1,0 +1,9 @@
+dist: trusty
+sudo: required
+language: go
+
+go:
+  - 1.6
+
+install: make deps-dev
+script: make ci

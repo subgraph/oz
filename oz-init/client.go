@@ -87,3 +87,24 @@ func RunShell(addr, term string) (int, error) {
 		return 0, fmt.Errorf("Unexpected message type received: %+v", body)
 	}
 }
+
+func SetupForwarder(addr, proto, daddr string, fd uintptr) error {
+	c, err := clientConnect(addr)
+	if err != nil {
+		return err
+	}
+	rr, err := c.ExchangeMsg(&ForwarderSuccessMsg{Addr: daddr, Proto: proto}, int(fd))
+	if err != nil {
+		return fmt.Errorf("Error %v: %+v", err, rr)
+	}
+	resp := <-rr.Chan()
+	switch body := resp.Body.(type) {
+	case *ErrorMsg:
+		return errors.New(body.Msg)
+	case *OkMsg:
+		return nil
+	default:
+		return fmt.Errorf("Unexpected message type received: %+v", body)
+	}
+
+}

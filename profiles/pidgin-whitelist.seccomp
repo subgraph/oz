@@ -28,7 +28,7 @@ mremap:1
 poll:1
 getdents:1
 wait4:1
-setsockopt: arg2 == 26 || arg2 == 16 || arg2 == 3 || arg2 == 1 || arg2 == 12 
+setsockopt: arg1 == SOL_SOCKET && (arg2 == SO_ATTACH_FILTER || arg2 == SO_PASSCRED || arg2 == SO_TYPE || arg2 == SO_DEBUG || arg2 == SO_PRIORITY)
 exit:1
 statfs:1
 bind:1
@@ -69,7 +69,7 @@ stat:1
 ioctl: arg1 == 21505 || arg1 == 35090 
 fsync:1
 getpeername:1
-fcntl: arg1 == 1 || arg1 == 2 || arg1 == 3 || arg1 == 4 || arg1 == 7 
+fcntl: arg1 == F_GETFD || arg1 == F_SETFD || arg1 == F_GETFL || arg1 == F_SETFL || arg1 ==  F_SETLKW
 connect:1
 name_to_handle_at:1
 madvise:1
@@ -86,14 +86,14 @@ recvmsg:1
 setsid:1
 setresgid:1
 open:1
-socket: arg0 == 1 || arg0 == 2 || arg0 == 16 
+socket: arg0 == AF_UNIX || arg0 == AF_INET || arg0 == AF_NETLINK
 mkdir:1
 geteuid:1
 setresuid:1
 set_robust_list:1
 sched_setscheduler:1
 chdir:1
-prctl: arg0 == 15 || arg0 == 30 || arg0 == 16 
+prctl: arg0 == PR_SET_NAME || arg0 == PR_GET_TIMERSLACK || arg0 == PR_GET_NAME
 clock_getres:1
 ppoll:1
 getrlimit:1

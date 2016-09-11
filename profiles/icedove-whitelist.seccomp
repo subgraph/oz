@@ -43,8 +43,7 @@ newfstatat: 1
 readlinkat: 1
 rt_sigreturn: 1
 getrandom: 1
-# prctl: PR_SET_NAME || PR_GET_NAME || PR_GET_TIMERSLACK || PR_SET_SECCOMP || PR_SET_DUMPABLE
-prctl: arg0 == 15 || arg0 == 16 || arg0 == 30 || arg0 == 22 || arg0 == 4
+prctl: arg0 == PR_SET_NAME || arg0 == PR_GET_NAME || arg0 == PR_GET_TIMERSLACK || arg0 == PR_SET_SECCOMP || arg0 == PR_SET_DUMPABLE
 mlock: 1
 fdatasync: 1
 capget: 1
@@ -134,5 +133,5 @@ statfs: 1
 rt_tgsigqueueinfo: 1
 umask: 1
 utime: 1
-socket: arg0 == 1 || arg0 == 2 || arg0 == 10 || arg0 == 16
+socket: arg0 == AF_UNIX || arg0 == AF_INET || arg0 == AF_INET6 || arg0 == AF_NETLINK 
 rmdir: 1

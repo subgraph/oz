@@ -21,7 +21,7 @@ fstatfs: 1
 eventfd2: 1
 sendto: 1
 recvfrom: 1
-fcntl: arg1 == 3 || arg1 == 4 || arg1 == 2 || arg1 == 1
+fcntl: arg1 == F_GETFL || arg1 == F_SETFL || arg1 == F_SETFD || arg1 == F_GETFD
 getuid: 1
 uname: 1
 statfs: 1
@@ -100,7 +100,7 @@ setsockopt: 1
 set_tid_address: 1
 shutdown: 1
 sigaltstack: 1
-socket: arg0 == 0x1
+socket: arg0 == AF_UNIX
 splice: 1
 tgkill: 1
 unlink: 1

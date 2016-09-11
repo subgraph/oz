@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/url"
 	"os"
 	"os/exec"
@@ -45,16 +46,23 @@ type Sandbox struct {
 	network      *network.SandboxNetwork
 	mountedFiles []string
 	rawEnv       []string
+	forwarders   []ActiveForwarder
 }
 
-func createSocketPath(base string) (string, error) {
+type ActiveForwarder struct {
+	name string
+	desc string
+	dest string
+}
+
+func createSocketPath(base, prefix string) (string, error) {
 	bs := make([]byte, 8)
 	_, err := rand.Read(bs)
 	if err != nil {
 		return "", err
 	}
 
-	return path.Join(base, fmt.Sprintf("oz-init-control-%s", hex.EncodeToString(bs))), nil
+	return path.Join(base, fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(bs))), nil
 }
 
 func createInitCommand(initPath string, cloneNet bool) *exec.Cmd {
@@ -121,7 +129,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		}
 	}
 
-	socketPath, err := createSocketPath(path.Join(d.config.SandboxPath, "sockets"))
+	socketPath, err := createSocketPath(path.Join(d.config.SandboxPath, "sockets"), "oz-init-control")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create random socket path: %v", err)
 	}
@@ -212,7 +220,6 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 			}
 		}()
 	}
-
 	if !msg.Noexec {
 		go func() {
 			sbox.ready.Wait()
@@ -227,7 +234,6 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 			go sbox.startXpraClient()
 		}()
 	}
-
 	d.nextSboxId += 1
 	d.sandboxes = append(d.sandboxes, sbox)
 	return sbox, nil
@@ -273,6 +279,90 @@ func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, lo
 	if err != nil {
 		log.Error("run program command failed: %v", err)
 	}
+}
+
+func (sbox *Sandbox) SetupDynamicForwarder(name, port string, log *logging.Logger) (desc string, e error) {
+	// TODO: Put error checking here
+	var lp oz.ExternalForwarder
+	var f *os.File
+	var fd uintptr
+	dest := ""
+
+	for _, l := range sbox.profile.ExternalForwarders {
+		if l.Name == name {
+			lp = l
+			break
+		}
+	}
+	if lp.ExtProto == "unix" {
+		socketPath, err := createSocketPath(path.Join(sbox.daemon.config.SandboxPath, "sockets"), "oz-dynamic-listener")
+		l, err := net.ListenUnix("unix", &net.UnixAddr{socketPath, "unix"})
+		if err != nil {
+			log.Warning("Socket creation failure: %+s", err)
+			return "", err
+		}
+		if lp.SocketOwner != "" {
+			u, err := user.Lookup(lp.SocketOwner)
+			if err != nil {
+				return "", fmt.Errorf("failed to lookup user for uid=%d: %v", u.Uid, err)
+			}
+			uid, err := strconv.Atoi(u.Uid)
+			if err != nil {
+				return "", err
+			}
+			err = syscall.Chown(socketPath, uid, 0)
+			if err != nil {
+				return "", fmt.Errorf("failed to set ownership of socket %s to uid %d: %v", socketPath, uid, err)
+			}
+		}
+
+		f, err = l.File()
+		if err != nil {
+			log.Warning("File object access failed: %+s", err)
+			return "", err
+		}
+		fd = f.Fd()
+		desc = socketPath
+	} else {
+		return "", fmt.Errorf("unimplemented external protocol type: %s", lp.ExtProto)
+	}
+
+	if lp.Proto == "tcp" {
+		if lp.TargetHost != "" {
+			if lp.TargetHost != "127.0.0.1" {
+				return "", fmt.Errorf("Unimplemented connectivity to %s\n", lp.TargetHost)
+			}
+			if lp.Dynamic {
+				if port != "" {
+					dest = lp.TargetHost + ":" + port
+				} else {
+					return "", fmt.Errorf("Port missing.")
+				}
+			} else {
+				if lp.TargetPort != "" {
+					dest = lp.TargetHost + ":" + lp.TargetPort
+				} else {
+					return "", fmt.Errorf("Port missing.")
+				}
+			}
+		}
+	} else {
+		return "", fmt.Errorf("Unimplemented target protocol type %s\n", lp.Proto)
+	}
+	err := ozinit.SetupForwarder(sbox.addr, lp.Proto, dest, fd)
+	if err != nil {
+		log.Warning("Error setting up forwarder: %+s", err)
+		return "", err
+	}
+	sbox.forwarders = append(sbox.forwarders, ActiveForwarder{name: name, desc: desc, dest: dest})
+/*
+	if sbox.forwarders[name] != nil {
+		sbox.forwarders[name] = append(sbox.forwarders[name], desc)
+	} else {
+		sbox.forwarders[name] = []string{desc}
+	}
+*/
+	return desc, nil
 }
 
 func (sbox *Sandbox) MountFiles(files []string, readonly bool, binpath string, log *logging.Logger) error {

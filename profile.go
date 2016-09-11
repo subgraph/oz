@@ -53,6 +53,8 @@ type Profile struct {
 	Networking NetworkProfile
 	// Seccomp
 	Seccomp SeccompConf
+	// External Forwarders
+	ExternalForwarders []ExternalForwarder `json:"external_forwarders"`
 }
 
 type ShutdownMode string
@@ -101,6 +103,19 @@ type SeccompConf struct {
 	TrainOutput string `json:"train_output"`
 	Whitelist   string
 	Blacklist   string
+	ExtraDefs   []string
+}
+
+type ExternalForwarder struct {
+	Name       string
+	Dynamic    bool
+	Multi      bool
+	ExtProto   string
+	Proto      string
+	Addr       string
+	TargetHost string
+	TargetPort string
+	SocketOwner  string
 }
 
 type WhitelistItem struct {

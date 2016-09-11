@@ -26,9 +26,9 @@ sendmsg:1
 sigaltstack:1
 set_robust_list:1
 clone:1
-fcntl: arg1 == 3 || arg1 == 4 || arg1 == 2 || arg1 == 1 
+fcntl: arg1 == F_GETFL || arg1 == F_SETFL || arg1 == F_SETFD || arg1 ==  F_GETFD
 fadvise64: 1
-socket: arg0 == 2 || arg0 == 10 || arg0 == 1 
+socket: arg0 == AF_INET || arg0 == AF_INET6 || arg0 == AF_UNIX
 uname:1
 clock_gettime:1
 tkill: 1
@@ -38,7 +38,7 @@ getpid: 1
 lstat: 1
 execve:1
 getuid:1
-prctl: arg0 == 15 || arg0 == 1 
+prctl: arg0 == PR_SET_NAME || arg0 == PR_SET_PDEATHSIG 
 getdents:1
 bind:1
 pwrite64:1
@@ -59,7 +59,7 @@ set_tid_address:1
 ioctl: arg1 == 21505 
 pipe2:1
 eventfd2:1
-setsockopt: arg2 == 6 || arg2 == 1 || arg2 == 26
+setsockopt: arg1 == SOL_SOCKET && (arg2 == SO_BROADCAST || arg2 == SO_DEBUG || arg2 == SO_ATTACH_FILTER)
 pipe:1
 shmget:1
 rt_sigreturn:1

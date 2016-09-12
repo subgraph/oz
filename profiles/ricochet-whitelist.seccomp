@@ -84,6 +84,7 @@ readlinkat:1
 getrandom:1
 setsockopt: (arg1 == 1 && arg2 == SO_REUSEADDR) || (arg1 == 1 && arg2 == SO_BROADCAST) || (arg1 == 1 && arg2 == SO_SNDBUF) || (arg1 == 1 && arg2 == SO_RCVBUF) || (arg1 == 1 && arg2 == SO_OOBINLINE) || (arg1 == 1 && arg2 == SO_PRIORITY) || (arg1 == 1 && arg2 == SO_PASSCRED)
 mkdir:1
+rmdir:1
 link:1
 getpeername:1
 prctl: arg0 == PR_SET_NAME

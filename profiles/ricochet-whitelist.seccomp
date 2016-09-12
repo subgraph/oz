@@ -93,6 +93,7 @@ exit_group:1
 kill:1
 fdatasync:1
 shmctl:1
+rt_sigsuspend:1
 mremap:1
 inotify_add_watch:1
 gettid:1

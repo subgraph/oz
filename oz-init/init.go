@@ -319,7 +319,7 @@ func (st *initState) startXpraServer() {
 	}
 	workdir := path.Join(st.user.HomeDir, ".Xoz", st.profile.Name)
 	st.log.Info("xpra work dir is %s", workdir)
-	spath := path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
+	spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), spath, workdir)
 	//st.log.Debug("%s %s", strings.Join(xpra.Process.Env, " "), strings.Join(xpra.Process.Args, " "))
 	if xpra == nil {
@@ -400,28 +400,28 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	switch st.profile.Seccomp.Mode {
 	case oz.PROFILE_SECCOMP_TRAIN:
 		st.log.Notice("Enabling seccomp training mode for : %s", cpath)
-		spath := path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
+		spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 		cmdArgs = append([]string{spath, "-mode=whitelist", cpath}, cmdArgs...)
-		cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp-tracer")
+		cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
 	case oz.PROFILE_SECCOMP_WHITELIST:
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
-			spath := path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
+			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 			cmdArgs = append([]string{spath, "-mode=whitelist", cpath}, cmdArgs...)
-			cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp-tracer")
+			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
 		} else {
 			cmdArgs = append([]string{"-mode=whitelist", cpath}, cmdArgs...)
-			cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
+			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 		}
 	case oz.PROFILE_SECCOMP_BLACKLIST:
 		st.log.Notice("Enabling seccomp blacklist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
-			spath := path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
+			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 			cmdArgs = append([]string{spath, "-mode=blacklist", cpath}, cmdArgs...)
-			cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp-tracer")
+			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
 		} else {
 			cmdArgs = append([]string{"-mode=blacklist", cpath}, cmdArgs...)
-			cpath = path.Join(st.config.PrefixPath, "bin", "oz-gosecco-seccomp")
+			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 		}
 	}
 

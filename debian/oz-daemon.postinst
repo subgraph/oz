@@ -22,8 +22,9 @@ case "$1" in
     configure)
         mkdir -p /srv/oz
         for file in /var/lib/oz/cells.d/*.json; do bf=$(basename $file); /usr/sbin/oz-setup install --force ${bf%%.*}; done
+        systemctl daemon-reload
         systemctl enable oz-daemon.service
-        systemctl start oz-daemon.service || true
+        systemctl restart oz-daemon.service || true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

@@ -17,7 +17,15 @@ Please note that Oz is currently under major development and still at a very alp
 
 # Installing
 
-Due to the alpha nature of this project there currently is no package for easy installation.
+You can easily build a debian package from the latest tagged release:
+
+	$ sudo apt-get install golang xpra bridge-utils ebtables libacl1
+	$ git clone -b debian https://github.com/subgraph/oz.git
+	$ cd oz
+	$ gbp buildpackage -us -uc
+	$ sudo dpkg -i /tmp/build-area/oz-daemon_<version>.deb
+
+Or to build it manually:
 
 ## Prerequisites
 

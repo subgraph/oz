@@ -1,3 +1,5 @@
+TCGETS=0x5401
+
 FUTEX_WAIT=0
 FUTEX_WAKE=1
 FUTEX_FD=2
@@ -11,9 +13,11 @@ FUTEX_WAIT_BITSET=9
 FUTEX_WAKE_BITSET=10
 FUTEX_WAIT_REQUEUE_PI=11
 FUTEX_CMP_REQUEUE_PI=12
+
 FUTEX_PRIVATE_FLAG=128
 FUTEX_CLOCK_REALTIME=256
 FUTEX_CMD_MASK=~(FUTEX_PRIVATE_FLAG | FUTEX_CLOCK_REALTIME)
+
 FUTEX_WAIT_PRIVATE=(FUTEX_WAIT | FUTEX_PRIVATE_FLAG)
 FUTEX_WAKE_PRIVATE=(FUTEX_WAKE | FUTEX_PRIVATE_FLAG)
 FUTEX_REQUEUE_PRIVATE=(FUTEX_REQUEUE | FUTEX_PRIVATE_FLAG)
@@ -34,7 +38,7 @@ writev:1
 open:1
 read:1
 access:1
-futex: arg1 == FUTEX_WAKE_PRIVATE || arg1 == FUTEX_WAIT_PRIVATE
+futex: arg1 == FUTEX_WAIT || arg1 == 129 || arg1 == 128 
 mmap:1
 close:1
 fstat:1
@@ -45,14 +49,14 @@ fstatfs:1
 lseek:1
 sendmsg:1
 getdents:1
-fcntl: arg1 == F_SETFD || arg1 == F_GETFD || arg1 == F_SETFL || arg1 == F_GETFL 
+fcntl: arg1 == 3 || arg1 == 4 || arg1 == 2 || arg1 == 1
 sendto:1
 fadvise64:1
 recvfrom:1
 mkdir:1
 eventfd2:1
 uname:1
-socket: arg0 == AF_LOCAL || arg0 == AF_INET || arg0 == AF_INET6 || arg0 == AF_NETLINK
+socket: arg0 == 1 || arg0 == 2 || arg0 == 10 || arg0 == 16 
 lstat:1
 rt_sigaction:1
 connect:1
@@ -61,6 +65,7 @@ shmctl:1
 shmget:1
 shmat:1
 getsockname:1
+ioctl: arg1 == TCGETS
 gettimeofday:1
 rt_sigprocmask:1
 getuid:1
@@ -72,11 +77,11 @@ bind:1
 getegid:1
 getresuid:1
 shmdt:1
-setsockopt: arg1 == SOL_SOCKET && (arg2 == SO_REUSEADDR || arg2 == SO_KEEPALIVE)
+setsockopt: arg2 == 2 || arg2 == 9 
 pipe:1
 geteuid:1
 clone:1
-prctl: arg0 == PR_SET_NAME
+prctl: arg0 == 15 
 chmod:1
 link:1
 rename:1
@@ -92,7 +97,6 @@ nanosleep:1
 set_tid_address:1
 getrlimit:1
 write:1
-sysinfo:1
 unlink:1
 kill:1
 openat:1

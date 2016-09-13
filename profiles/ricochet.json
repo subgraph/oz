@@ -20,7 +20,16 @@
 	, {"path": "${HOME}/.local/share/Ricochet", "can_create": true}
 	, {"path": "/var/lib/oz/cells.d/ricochet-whitelist.seccomp"}
 ]
-, "environment": []
+, "environment": [
+        {"name":"TOR_SKIP_LAUNCH"}
+        , {"name":"TOR_SOCKS_HOST"}
+        , {"name":"TOR_SOCKS_PORT"}
+        , {"name":"TOR_CONTROL_HOST"}
+        , {"name":"TOR_CONTROL_PORT"}
+        , {"name":"TOR_CONTROL_PASSWD"}
+        , {"name":"TOR_CONTROL_AUTHENTICATE"}
+        , {"name":"TOR_CONTROL_COOKIE_AUTH_FILE"}
+]
 , "external_forwarders": [
         {"name":"dynamic-ricochet-server", "dynamic":true, "multi":true, "proto":"tcp", "targethost":"127.0.0.1", "extproto":"unix", "socketowner":"debian-tor"}
         ]

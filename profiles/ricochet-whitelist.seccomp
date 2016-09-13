@@ -36,11 +36,12 @@ poll:1
 recvmsg:1
 write:1
 read:1
-futex: arg1 == FUTEX_CMP_REQUEUE_PRIVATE || arg1 == FUTEX_LOCK_PI_PRIVATE || arg1 == FUTEX_UNLOCK_PI_PRIVATE || arg1 == FUTEX_WAIT || arg1 == FUTEX_WAIT_BITSET_PRIVATE || arg1 == FUTEX_WAIT_PRIVATE || arg1 == FUTEX_WAKE_OP_PRIVATE || arg1 == FUTEX_WAKE_PRIVATE
+futex: arg1 == FUTEX_CMP_REQUEUE_PRIVATE || arg1 == FUTEX_LOCK_PI_PRIVATE || arg1 == FUTEX_UNLOCK_PI_PRIVATE || arg1 == FUTEX_WAIT || arg1 == FUTEX_WAIT_BITSET_PRIVATE || arg1 == FUTEX_WAIT_PRIVATE || arg1 == FUTEX_WAKE_OP_PRIVATE || arg1 == FUTEX_WAKE_PRIVATE || arg1 == FUTEX_WAIT_BITSET_PRIVATE|FUTEX_CLOCK_REALTIME
 writev:1
 sendmsg:1
 stat:1
 close:1
+setrlimit:1
 mprotect:1
 mmap:1
 open:1
@@ -56,10 +57,13 @@ fcntl: (arg1 == F_DUPFD) || (arg1 == F_GETFD) || (arg1 == F_SETFD) || (arg1 == F
 rt_sigaction:1
 getcwd:1
 fstatfs:1
+ppoll:1
 select:1
 sendto:1
 recvfrom:1
-socket: (arg0 == AF_UNIX && arg1 == SOCK_STREAM && arg2 == IPPROTO_IP) || (arg0 == AF_INET && arg1 &? SOCK_STREAM && arg2 == IPPROTO_TCP) || (arg0 == AF_INET && arg1 == SOCK_DGRAM && arg2 == IPPROTO_IP) || (arg0 == AF_INET && arg1 &? SOCK_STREAM && arg2 == IPPROTO_IP) || (arg0 == AF_INET6 && arg1 &? SOCK_STREAM && arg2 == IPPROTO_TCP) || (arg0 == AF_NETLINK && arg1 == SOCK_RAW && arg2 == IPPROTO_IP) || (arg0 == AF_UNIX && arg1 &? SOCK_STREAM && arg2 == 0)
+socket: (arg0 == AF_UNIX && arg1 == SOCK_STREAM && arg2 == IPPROTO_IP) || (arg0 == AF_INET && arg1 &? SOCK_STREAM && arg2 == IPPROTO_TCP) || (arg0 == AF_INET && arg1 == SOCK_DGRAM && arg2 == IPPROTO_IP) || (arg0 == AF_INET && arg1 &? SOCK_STREAM && arg2 == IPPROTO_IP) || (arg0 == AF_INET6 && arg1 &? SOCK_STREAM && arg2 == IPPROTO_TCP) || (arg0 == AF_NETLINK && arg1 == SOCK_RAW && arg2 == IPPROTO_IP) || (arg0 == AF_UNIX && arg1 &? SOCK_STREAM && arg2 == 0) || (arg0 == AF_INET && arg1 &? SOCK_DGRAM && arg2 == IPPROTO_UDP) || (arg0 == AF_UNIX && arg1 &? SOCK_DGRAM) || (arg0 == AF_NETLINK && arg1 &? SOCK_RAW && arg2 == 15)
+dup3:1
+waitid:1
 lseek:1
 newfstatat:1
 getdents:1
@@ -72,6 +76,7 @@ accept4:1
 connect:1
 pselect6:1
 uname:1
+personality:1
 statfs:1
 eventfd2:1
 fadvise64:1
@@ -82,17 +87,19 @@ sigaltstack:1
 epoll_wait:1
 readlinkat:1
 getrandom:1
-setsockopt: (arg1 == 1 && arg2 == SO_REUSEADDR) || (arg1 == 1 && arg2 == SO_BROADCAST) || (arg1 == 1 && arg2 == SO_SNDBUF) || (arg1 == 1 && arg2 == SO_RCVBUF) || (arg1 == 1 && arg2 == SO_OOBINLINE) || (arg1 == 1 && arg2 == SO_PRIORITY) || (arg1 == 1 && arg2 == SO_PASSCRED)
+setsockopt: (arg1 == 1 && arg2 == SO_REUSEADDR) || (arg1 == 1 && arg2 == SO_BROADCAST) || (arg1 == 1 && arg2 == SO_SNDBUF) || (arg1 == 1 && arg2 == SO_RCVBUF) || (arg1 == 1 && arg2 == SO_OOBINLINE) || (arg1 == 1 && arg2 == SO_PRIORITY) || (arg1 == 1 && arg2 == SO_PASSCRED) || (arg1 == 1 && arg2 == 26)
 mkdir:1
 rmdir:1
 link:1
 getpeername:1
-prctl: arg0 == PR_SET_NAME
+prctl: arg0 == PR_SET_NAME || arg0 == PR_SET_DUMPABLE || arg0 == PR_GET_TIMERSLACK || arg0 == PR_GET_NAME
 dup2:1
 exit_group:1
 kill:1
 fdatasync:1
 shmctl:1
+name_to_handle_at:1
+sched_setscheduler:1
 rt_sigsuspend:1
 mremap:1
 inotify_add_watch:1
@@ -103,6 +110,8 @@ madvise:1
 capget:1
 exit:1
 arch_prctl:1
+epoll_create:1
+setpriority:1
 shmat:1
 shmget:1
 rename:1
@@ -125,6 +134,9 @@ shutdown:1
 getresgid:1
 getpid:1
 getppid:1
+setresuid:1
+capset:1
+setresgid:1
 sysinfo:1
 inotify_init1:1
 getgroups:1

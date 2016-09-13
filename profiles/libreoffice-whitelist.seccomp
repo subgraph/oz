@@ -22,7 +22,7 @@ getdents:1
 mkdir:1
 getcwd:1
 pwrite64:1
-fcntl: arg1 == F_DUPFD || arg1 == F_SETFD || arg1 == F_GETFD || arg1 == F_GETFL || arg1 == F_SETFL || arg1 == F_SETLK || arg1 == F_SETLKW 
+fcntl: arg1 == 0 || arg1 == 2 || arg1 == 1 || arg1 == 3 || arg1 == 4 || arg1 == 6 || arg1 == 7 
 fstatfs:1
 uname:1
 clone:1
@@ -35,12 +35,13 @@ exit:1
 unlink:1
 rename:1
 fsync:1
-socket: arg0 == AF_UNIX || arg0 == AF_INET || arg0 == AF_NETLINK || arg0 == AF_INET6
+socket: arg0 == 1 || arg0 == 2 || arg0 == 16 || arg0 == 10 
 eventfd2:1
 connect:1
 dup2:1
 fallocate:1
 clock_gettime:1
+getrandom:1
 chmod:1
 fadvise64:1
 inotify_rm_watch:1
@@ -89,7 +90,7 @@ sigaltstack:1
 socketpair:1
 faccessat:1
 getrlimit:1
-setsockopt: arg1 == SOL_SOCKET && (arg2 == SO_TYPE || arg2 == SO_REUSEADDR || arg2 == 15 || arg2 == SO_DEBUG)
+setsockopt: arg2 == 3 || arg2 == 2 || arg2 == 15 || arg2 == 1 
 shmget:1
 epoll_wait:1
 restart_syscall:1
@@ -99,7 +100,7 @@ getsockname:1
 clock_getres:1
 getrusage:1
 pipe:1
-prctl: arg0 == PR_SET_NAME
+prctl: arg0 == 15 
 accept4:1
 getsockopt:1
 set_tid_address:1

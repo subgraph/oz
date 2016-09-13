@@ -2,7 +2,6 @@
 "path": "/usr/bin/torbrowser-launcher"
 , "watchdog": ["start-tor-browser", "firefox"]
 , "auto_shutdown":"no"
-, "allowed_groups": ["debian-tor"]
 , "xserver": {
 	"enabled": true
 	, "enable_tray": false
@@ -11,9 +10,9 @@
 }
 , "networking":{
 	"type":"empty"
-	, "sockets": [
-		{"type":"client", "proto":"tcp", "port":9050}
-		, {"type":"client", "proto":"tcp", "port":9051}
+      , "sockets": [
+               {"type":"client", "proto":"tcp", "port":9050}
+             , {"type": "client", "proto": "tcp2unix", "port": 9051, "destination": "/var/run/roflcoptor/tbb.socket"}
 	]
 }
 , "whitelist": [

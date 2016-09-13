@@ -12,7 +12,7 @@ export DH_GOPKG := github.com/subgraph/oz
 override_dh_auto_install:
 	dh_auto_install
 	mkdir -p $(CURDIR)/debian/oz-daemon/usr/sbin
-	mkdir -p $(CURDIR)/debian/oz-daemon/sources/var/crash
+	mkdir -p $(CURDIR)/debian/oz-daemon/var/crash
 	mv $(CURDIR)/debian/oz-daemon/usr/bin/oz-daemon $(CURDIR)/debian/oz-daemon/usr/sbin
 	mv $(CURDIR)/debian/oz-daemon/usr/bin/oz-setup $(CURDIR)/debian/oz-daemon/usr/sbin
 	rm -rf $(CURDIR)/debian/oz-daemon/usr/share/gocode

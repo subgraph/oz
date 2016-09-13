@@ -1,6 +1,10 @@
 oz-daemon (0.1.0-1) testing; urgency=medium
 
-  * First minor tag release in source package
+  * First minor tag release with source package
+  * Gosecco migration
+  * New socket dynamic forwarders
+  * Tentative Ricochet and Onionshare profiles
+  * Fixes to coyim profile to support local dconf file
 
  -- Subgraph <info@subgraph.com>  Tue, 23 Aug 2016 20:30:00 +0000
 

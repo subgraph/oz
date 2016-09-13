@@ -1,1 +1,2 @@
-profiles/* var/lib/oz/cells.d
+profiles/* ./var/lib/oz/cells.d/
+sources/* ./

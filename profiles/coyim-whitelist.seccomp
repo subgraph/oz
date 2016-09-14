@@ -59,7 +59,7 @@ set_tid_address:1
 ioctl: arg1 == 21505 
 pipe2:1
 eventfd2:1
-setsockopt: arg1 == SOL_SOCKET && (arg2 == SO_BROADCAST || arg2 == SO_DEBUG || arg2 == SO_ATTACH_FILTER)
+setsockopt: (arg1 == SOL_SOCKET && (arg2 == SO_BROADCAST || arg2 == SO_DEBUG || arg2 == SO_ATTACH_FILTER)) || (arg1 == IPPROTO_TCP && arg2 == TCP_NODELAY)
 pipe:1
 shmget:1
 rt_sigreturn:1

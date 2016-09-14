@@ -13,7 +13,8 @@
 	"type":"empty"
 	, "sockets": [
 		{"type":"client", "proto":"tcp", "port":9050}
-		, {"type":"client", "proto":"tcp", "port":9051}
+		,{"type": "client", "proto": "tcp2unix", "port": 9051, "destination": "/var/run/roflcoptor/tbb.socket"}
+
 	]
 }
 , "whitelist": [

@@ -1,3 +1,5 @@
+TCGETS=0x5401
+
 recvmsg:1
 poll:1
 read:1
@@ -22,11 +24,11 @@ lseek:1
 eventfd2:1
 fstatfs:1
 set_robust_list:1
-prctl: arg0 == PR_SET_NAME
+prctl: arg0 == PR_SET_NAME || arg0 == PR_SET_PDEATHSIG 
 clone:1
 exit:1
 madvise:1
-fcntl: arg1 == F_GETFL || arg1 == F_SETFL || arg1 == F_SETFD
+fcntl: arg1 == F_GETFL || arg1 == F_SETFL || arg1 == F_SETFD || arg1 == F_GETFD
 sendto:1
 statfs:1
 geteuid:1
@@ -48,7 +50,17 @@ fsync:1
 fallocate:1
 chmod:1
 rt_sigprocmask:1
+setsid:1
+setrlimit:1
+ioctl: arg1 == TCGETS
+newfstatat:1
+epoll_create:1
+epoll_create1:1
+kill:1
+capget:1
+listen:1
 rename:1
+nanosleep:1
 getpeername:1
 getresgid:1
 getresuid:1
@@ -68,15 +80,19 @@ exit_group:1
 execve:1
 pipe2:1
 dup2:1
+chdir:1
 wait4:1
 unlink:1
 mkdir:1
 getcwd:1
+socketpair:1
+accept4:1
 link:1
 mremap:1
 pipe:1
+gettid:1
 restart_syscall:1
-
+readlink:1
 #dbus
 epoll_wait:1
 epoll_ctl:1

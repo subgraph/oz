@@ -1,3 +1,8 @@
 build.sh
 debian/autoreconf.*
 .pc
+files
+oz-daemon.debhelper.log
+oz-daemon.substvars
+oz/
+oz-daemon/

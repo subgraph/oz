@@ -12,10 +12,14 @@ export DH_GOPKG := github.com/subgraph/oz
 override_dh_auto_install:
 	dh_auto_install
 	mkdir -p $(CURDIR)/debian/oz-daemon/usr/sbin
-	mkdir -p $(CURDIR)/debian/oz-daemon/var/crash
 	mv $(CURDIR)/debian/oz-daemon/usr/bin/oz-daemon $(CURDIR)/debian/oz-daemon/usr/sbin
 	mv $(CURDIR)/debian/oz-daemon/usr/bin/oz-setup $(CURDIR)/debian/oz-daemon/usr/sbin
 	rm -rf $(CURDIR)/debian/oz-daemon/usr/share/gocode
+
+ifeq ($(DEB_BUILD_ARCH_OS),linux)
+override_dh_systemd_enable:
+	dh_systemd_enable oz-daemon.service
+endif
 
 override_dh_auto_test:
 	@echo skipped auto test

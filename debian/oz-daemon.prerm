@@ -19,8 +19,8 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-        oz killall &>>/dev/null
-        for file in /var/lib/oz/cells.d/*.json; do bf=$(basename $file); /usr/sbin/oz-setup remove --force ${bf%%.*}; done
+        systemctl stop oz-daemon.service || true
+        #for file in /var/lib/oz/cells.d/*.json; do bf=$(basename $file); /usr/sbin/oz-setup remove --force ${bf%%.*}; done
     ;;
 
     failed-upgrade)

@@ -12,6 +12,6 @@ Vcs-Browser: https://github.com/subgraph/oz
 Package: oz-daemon
 Architecture: amd64
 Depends: xpra, python-rencode, arping, libacl1, xdg-user-dirs, ${shlibs:Depends}, ${misc:Depends}
-Recommends: subgraph-oz-profiles
+Recommends: subgraph-oz-profiles (>= 0.1.1)
 Description: oz-daemon binary package
  OZ desktop application sandbox.

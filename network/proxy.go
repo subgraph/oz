@@ -43,6 +43,8 @@ type ProxyConfig struct {
 	// TCP or UDP port number
 	Port int
 
+	// Destination port number
+	DPort int
 	// Optional: Destination address
 	// In client mode: the host side address to connect to
 	// In server mode: the sandbox side address to bind to
@@ -103,10 +105,15 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 		config.Destination = "127.0.0.1"
 	}
 
-	var lAddr, rAddr string
+	var lAddr, rAddr, dport string
 	if strings.HasPrefix(string(config.Proto), "tcp") && config.Proto != PROTO_TCP_TO_UNIX {
+		if config.DPort != 0 {
+			dport = strconv.Itoa(config.DPort)
+		} else {
+			dport = strconv.Itoa(config.Port)
+		}
 		lAddr = net.JoinHostPort("127.0.0.1", strconv.Itoa(config.Port))
-		rAddr = net.JoinHostPort(config.Destination, strconv.Itoa(config.Port))
+		rAddr = net.JoinHostPort(config.Destination, dport)
 	} else if strings.HasPrefix(string(config.Proto), "unix") {
 		if !strings.HasPrefix(config.Destination, "@") {
 			log.Warning("Only abstract unix socket are supported!")

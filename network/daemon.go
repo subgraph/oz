@@ -25,6 +25,7 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 
 	htn := &HostNetwork{
 		BridgeMAC: bridgeMAC,
+		log:       log,
 	}
 
 	if nmIgnoreFile != "" {
@@ -44,7 +45,7 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 	}
 	htn.Interface = br
 
-	if err := htn.configureBridgeInterface(log); err != nil {
+	if err := htn.configureBridgeInterface(); err != nil {
 		return nil, err
 	}
 
@@ -62,7 +63,51 @@ func BridgeInit(bridgeMAC string, nmIgnoreFile string, log *logging.Logger) (*Ho
 	return htn, nil
 }
 
-func (htn *HostNetwork) BridgeReconfigure(log *logging.Logger) (*HostNetwork, error) {
+func NewHostNetwork(name string, log *logging.Logger) *HostNetwork {
+	return &HostNetwork{Name: name, log: log}
+}
+
+func (hn *HostNetwork) bridgeName() string {
+	return ozDefaultInterfaceBridgeBase + hn.Name
+}
+
+func (hn *HostNetwork) Initialize() error {
+	if os.Getpid() == 1 {
+		panic(errors.New("Cannot initialize bridges from child."))
+	}
+	hn.log.Info("Initializing bridge: %s", hn.bridgeName())
+
+	br, err := tenus.BridgeFromName(hn.bridgeName())
+	if err != nil {
+		hn.log.Info("Bridge not found, attempting to create a new one")
+
+		br, err = tenus.NewBridgeWithName(hn.bridgeName())
+		if err != nil {
+			return fmt.Errorf("Unable to create bridge %+v", err)
+		}
+	}
+
+	hn.Interface = br
+
+	if err := hn.configureBridgeInterface(); err != nil {
+		return err
+	}
+
+	brL := br.NetInterface()
+	addrs, err := brL.Addrs()
+	if err != nil {
+		return fmt.Errorf("Unable to get bridge interface addresses: %+v", err)
+	}
+
+	// Build the ip range which we will use for the network
+	if err := hn.buildBridgeNetwork(addrs); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (htn *HostNetwork) BridgeReconfigure() (*HostNetwork, error) {
 	if os.Getpid() == 1 {
 		panic(errors.New("Cannot use BridgeReconfigure from child."))
 	}
@@ -72,16 +117,16 @@ func (htn *HostNetwork) BridgeReconfigure(log *logging.Logger) (*HostNetwork, er
 	}
 
 	if err := htn.Interface.UnsetLinkIp(htn.Gateway, htn.GatewayNet); err != nil {
-		log.Warning("Unable to remove old IP address from bridge: %+v", err)
+		htn.log.Warning("Unable to remove old IP address from bridge: %+v", err)
 	}
 
-	br, err := tenus.BridgeFromName(ozDefaultInterfaceBridge)
+	br, err := tenus.BridgeFromName(htn.bridgeName())
 	if err != nil {
 		return nil, err
 	}
 	newhtn.Interface = br
 
-	if err := newhtn.configureBridgeInterface(log); err != nil {
+	if err := newhtn.configureBridgeInterface(); err != nil {
 		return nil, err
 	}
 
@@ -208,7 +253,7 @@ func (stn *SandboxNetwork) Cleanup(log *logging.Logger) {
 	tenus.DeleteLink(stn.VethHost)
 }
 
-func (htn *HostNetwork) configureBridgeInterface(log *logging.Logger) error {
+func (htn *HostNetwork) configureBridgeInterface() error {
 	// Set the bridge mac address so it can be fucking ignored by Network-Manager.
 	if htn.BridgeMAC != "" {
 		if err := htn.Interface.SetLinkMacAddress(htn.BridgeMAC); err != nil {
@@ -225,12 +270,12 @@ func (htn *HostNetwork) configureBridgeInterface(log *logging.Logger) error {
 		htn.Gateway = brIp
 		htn.GatewayNet = brIpNet
 		htn.Broadcast = net_getbroadcast(brIp, brIpNet.Mask)
-		log.Info("Found available range: %+v", htn.GatewayNet.String())
+		htn.log.Info("Found available range: %+v", htn.GatewayNet.String())
 	}
 
 	if err := htn.Interface.SetLinkIp(htn.Gateway, htn.GatewayNet); err != nil {
 		if os.IsExist(err) {
-			log.Info("Bridge IP appears to be already assigned")
+			htn.log.Info("Bridge IP appears to be already assigned")
 		} else {
 			return fmt.Errorf("Unable to set gateway IP", err)
 		}
@@ -238,7 +283,7 @@ func (htn *HostNetwork) configureBridgeInterface(log *logging.Logger) error {
 
 	// Bridge the interface up
 	if err := htn.Interface.SetLinkUp(); err != nil {
-		return fmt.Errorf("Unable to bring bridge '%+v' up: %+v", ozDefaultInterfaceBridge, err)
+		return fmt.Errorf("Unable to bring bridge '%+v' up: %+v", htn.bridgeName(), err)
 	}
 
 	return nil
@@ -300,9 +345,9 @@ func findEmptyRange() (net.IP, *net.IPNet, error) {
 	// and calulate their network's min and max values
 	ifs, _ := net.Interfaces()
 	for _, netif := range ifs {
-		// Disable loopback and our bridge
-		if netif.Name == ozDefaultInterfaceBridge ||
-			strings.HasPrefix(netif.Name, "lo") ||
+		// ignore loopback and oz interfaces
+		if strings.HasPrefix(netif.Name, "lo") ||
+			strings.HasPrefix(netif.Name, ozDefaultInterfaceBridgeBase) ||
 			strings.HasPrefix(netif.Name, ozDefaultInterfacePrefix) {
 			continue
 		}

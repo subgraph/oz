@@ -53,7 +53,6 @@ type initState struct {
 	ipcServer         *ipc.MsgServer
 	xpra              *xpra.Xpra
 	xpraReady         sync.WaitGroup
-	network           *network.SandboxNetwork
 	dbusUuid          string
 	shutdownRequested bool
 }
@@ -67,7 +66,6 @@ type InitData struct {
 	Gid       uint32
 	Gids      map[string]uint32
 	User      user.User
-	Network   network.SandboxNetwork
 	Display   int
 }
 
@@ -139,7 +137,6 @@ func parseArgs() *initState {
 		user:      &initData.User,
 		display:   initData.Display,
 		fs:        fs.NewFilesystem(&initData.Config, log, &initData.User),
-		network:   &initData.Network,
 	}
 }
 
@@ -201,7 +198,7 @@ func (st *initState) runInit() {
 
 	if st.profile.Networking.Nettype != network.TYPE_HOST ||
 		st.profile.Networking.Nettype != network.TYPE_NONE {
-		err := network.NetSetup(st.network)
+		err := network.NetSetup()
 		if err != nil {
 			st.log.Error("Unable to setup networking: %+v", err)
 			os.Exit(1)

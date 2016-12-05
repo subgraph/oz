@@ -25,17 +25,16 @@ type groupEntry struct {
 }
 
 type daemonState struct {
-	log           *logging.Logger
-	config        *oz.Config
-	profiles      oz.Profiles
-	sandboxes     []*Sandbox
-	nextSboxId    int
-	nextDisplay   int
-	memBackend    *logging.ChannelMemoryBackend
-	backends      []logging.Backend
-	network       *network.HostNetwork
-	systemGroups  map[string]groupEntry
-	bridgeEnabled bool
+	log          *logging.Logger
+	config       *oz.Config
+	profiles     oz.Profiles
+	sandboxes    []*Sandbox
+	nextSboxId   int
+	nextDisplay  int
+	memBackend   *logging.ChannelMemoryBackend
+	backends     []logging.Backend
+	bridges      *network.Bridges
+	systemGroups map[string]groupEntry
 }
 
 func Main() {
@@ -86,30 +85,7 @@ func initialize() *daemonState {
 	d.nextSboxId = 1
 	d.nextDisplay = 100
 
-	bridgeNeeded := false
-	staticBytes := []uint{}
-	for _, pp := range d.profiles {
-		if pp.Networking.Nettype == network.TYPE_BRIDGE {
-			bridgeNeeded = true
-			if pp.Networking.IpByte > 0 {
-				staticBytes = append(staticBytes, pp.Networking.IpByte)
-			}
-		}
-	}
-
-	if bridgeNeeded {
-		d.bridgeEnabled = true
-		d.log.Info("Initializing bridge networking")
-		htn, err := network.BridgeInit(d.config.BridgeMACAddr, d.config.NMIgnoreFile, d.log)
-		if err != nil {
-			d.log.Fatalf("Failed to initialize bridge networking: %+v", err)
-			return nil
-		}
-
-		d.network = htn
-		d.network.IpBytes = staticBytes
-		//network.NetPrint(d.log)
-	}
+	d.bridges = network.NewBridges(d.log)
 
 	sockets := path.Join(config.SandboxPath, "sockets")
 	if err := os.MkdirAll(sockets, 0755); err != nil {
@@ -485,41 +461,5 @@ func (d *daemonState) handleLogs(logs *LogsMsg, msg *ipc.Message) error {
 }
 
 func (d *daemonState) handleNetworkReconfigure() {
-	if !d.bridgeEnabled {
-		d.log.Info("No bridge available not reconfiguring.")
-		return
-	}
-
-	brIP, brNet, err := network.FindEmptyRange()
-	if err != nil {
-		d.log.Error("Unable to find new network range: %v", err)
-		return
-	}
-	if brIP.Equal(d.network.Gateway) {
-		d.log.Notice("Range %s is still available, not reconfiguring %s.", d.network.GatewayNet.String(), brNet.String())
-		return
-	}
-	d.log.Notice("Network has changed, reconfiguring %s to %s", d.network.GatewayNet.String(), brNet.String())
-	newhtn, err := d.network.BridgeReconfigure(d.log)
-	if err != nil {
-		d.log.Error("Unable to reconfigure bridge network: %v", err)
-		return
-	}
-	d.network = newhtn
-	for _, sbox := range d.sandboxes {
-		if sbox.profile.Networking.Nettype == network.TYPE_BRIDGE {
-			d.log.Debug("Reconfiguring network for sandbox `%s` (%d).", sbox.profile.Name, sbox.init.Process.Pid)
-			sbox.network, err = network.PrepareSandboxNetwork(sbox.network, d.network, sbox.profile.Networking.IpByte, d.log)
-			if err != nil {
-				d.log.Error("Unable to prepare reconfigure of sandbox `%s` networking: %v", sbox.profile.Name, err)
-				continue
-			}
-			if err := network.NetReconfigure(sbox.network, d.network, sbox.init.Process.Pid, d.log); err != nil {
-				d.log.Error("Unable to reconfigure sandbox `%s` networking: %v", sbox.profile.Name, err)
-				continue
-			}
-		}
-	}
-
-	return
+	d.bridges.Reconfigure()
 }

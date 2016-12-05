@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	ozDefaultInterfaceBridgeBase = "oz"
-	ozDefaultInterfaceBridge     = ozDefaultInterfaceBridgeBase + "0"
+	ozDefaultInterfaceBridgeBase = "oz-"
+	ozDefaultInterfaceBridge     = ozDefaultInterfaceBridgeBase + "default"
 	ozDefaultInterfacePrefix     = "voz"
 	ozDefaultInterfaceInternal   = "eth0"
 	ozMaxRandTries               = 3
@@ -51,6 +51,9 @@ type HostNetwork struct {
 	Nettype NetType
 	//
 	IpBytes []uint
+
+	Name string
+	log  *logging.Logger
 }
 
 type SandboxNetwork struct {

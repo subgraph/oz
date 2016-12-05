@@ -43,7 +43,7 @@ type Sandbox struct {
 	xpra         *xpra.Xpra
 	ready        sync.WaitGroup
 	waiting      sync.WaitGroup
-	network      *network.SandboxNetwork
+	iface        *network.OzVeth
 	mountedFiles []string
 	rawEnv       []string
 	forwarders   []ActiveForwarder
@@ -117,24 +117,12 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		d.nextDisplay += 1
 	}
 
-	stn := new(network.SandboxNetwork)
-	stn.Nettype = p.Networking.Nettype
-	if p.Networking.Nettype == network.TYPE_BRIDGE {
-		stn, err = network.PrepareSandboxNetwork(nil, d.network, p.Networking.IpByte, log)
-		if err != nil {
-			return nil, fmt.Errorf("Unable to prepare veth network: %+v", err)
-		}
-		if err := network.NetInit(stn, d.network, log); err != nil {
-			return nil, fmt.Errorf("Unable to create veth networking: %+v", err)
-		}
-	}
-
 	socketPath, err := createSocketPath(path.Join(d.config.SandboxPath, "sockets"), "oz-init-control")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create random socket path: %v", err)
 	}
 	initPath := path.Join(d.config.PrefixPath, "bin", "oz-init")
-	cmd := createInitCommand(initPath, (stn.Nettype != network.TYPE_HOST))
+	cmd := createInitCommand(initPath, (p.Networking.Nettype != network.TYPE_HOST))
 	pp, err := cmd.StderrPipe()
 	if err != nil {
 		//fs.Cleanup()
@@ -147,20 +135,11 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 	}
 
 	jdata, err := json.Marshal(ozinit.InitData{
-		Display: display,
-		User:    *u,
-		Uid:     uid,
-		Gid:     gid,
-		Gids:    groups,
-		Network: network.SandboxNetwork{
-			Interface: stn.Interface,
-			VethHost:  stn.VethHost,
-			VethGuest: stn.VethGuest,
-			Ip:        stn.Ip,
-			Gateway:   stn.Gateway,
-			Class:     stn.Class,
-			Nettype:   stn.Nettype,
-		},
+		Display:   display,
+		User:      *u,
+		Uid:       uid,
+		Gid:       gid,
+		Gids:      groups,
 		Profile:   *p,
 		Config:    *d.config,
 		Sockaddr:  socketPath,
@@ -187,10 +166,9 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		user:    u,
 		fs:      fs.NewFilesystem(d.config, log, u),
 		//addr:    path.Join(rootfs, ozinit.SocketAddress),
-		addr:    socketPath,
-		stderr:  pp,
-		network: stn,
-		rawEnv:  rawEnv,
+		addr:   socketPath,
+		stderr: pp,
+		rawEnv: rawEnv,
 	}
 
 	sbox.ready.Add(1)
@@ -198,10 +176,12 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 	go sbox.logMessages()
 
 	sbox.waiting.Wait()
+
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
-		if err := network.NetAttach(stn, d.network, cmd.Process.Pid); err != nil {
+		if err := sbox.configureBridgedIface(); err != nil {
+			//if err := network.NetAttach(stn, d.network, cmd.Process.Pid); err != nil {
 			cmd.Process.Kill()
-			return nil, fmt.Errorf("Unable to attach veth networking: %+v", err)
+			return nil, fmt.Errorf("Unable to setup bridged networking: %+v", err)
 		}
 	}
 	cmd.Process.Signal(syscall.SIGUSR1)
@@ -269,6 +249,34 @@ func (d *daemonState) sanitizeGroups(p *oz.Profile, username string, gids []uint
 	}
 
 	return groups, nil
+}
+
+func (sbox *Sandbox) configureBridgedIface() error {
+	bname := sbox.getBridgeName()
+	sbox.daemon.log.Infof("Configuring bridged networking on bridge '%s' for %s (id=%d)",
+		bname, sbox.profile.Name, sbox.id)
+
+	br, err := sbox.daemon.bridges.GetBridge(bname)
+	if err != nil {
+		return err
+	}
+	veth, err := br.NewVeth(sbox.id, sbox.init.Process.Pid)
+	if err != nil {
+		return err
+	}
+	if err := veth.Setup(); err != nil {
+		veth.Delete()
+		return err
+	}
+	sbox.iface = veth
+	return nil
+}
+
+func (sbox *Sandbox) getBridgeName() string {
+	if name := sbox.profile.Networking.Bridge; name != "" {
+		return name
+	}
+	return "default"
 }
 
 func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, log *logging.Logger) {
@@ -446,10 +454,11 @@ func (sbox *Sandbox) remove(log *logging.Logger) {
 	sboxes := []*Sandbox{}
 	for _, sb := range sbox.daemon.sandboxes {
 		if sb == sbox {
-			//		sb.fs.Cleanup()
-			if sb.profile.Networking.Nettype == network.TYPE_BRIDGE {
-				sb.network.Cleanup(log)
+			if sb.iface != nil {
+				sb.iface.Delete()
+				sb.iface = nil
 			}
+			//		sb.fs.Cleanup()
 			os.Remove(sb.addr)
 		} else {
 			sboxes = append(sboxes, sb)

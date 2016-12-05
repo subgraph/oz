@@ -152,7 +152,7 @@ type NetworkProfile struct {
 	Nettype network.NetType `json:"type"`
 
 	// Name of the bridge to attach to
-	//Bridge string
+	Bridge string
 
 	// List of Sockets we want to attach to the jail
 	//  Applies to Nettype: bridge and empty only

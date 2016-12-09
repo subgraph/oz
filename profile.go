@@ -119,13 +119,14 @@ type ExternalForwarder struct {
 }
 
 type WhitelistItem struct {
-	Path      string
-	Target    string
-	ReadOnly  bool `json:"read_only"`
-	CanCreate bool `json:"can_create"`
-	Ignore    bool `json:"ignore"`
-	Force     bool
-	NoFollow  bool `json:"no_follow"`
+	Path        string
+	Target      string
+	ReadOnly    bool `json:"read_only"`
+	CanCreate   bool `json:"can_create"`
+	Ignore      bool `json:"ignore"`
+	Force       bool
+	NoFollow    bool `json:"no_follow"`
+	AllowSetuid bool `json:"allow_suid"`
 }
 
 type BlacklistItem struct {

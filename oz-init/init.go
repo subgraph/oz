@@ -822,6 +822,9 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		if wl.ReadOnly {
 			flags |= fs.BindReadOnly
 		}
+		if wl.AllowSetuid {
+			flags |= fs.BindAllowSetuid
+		}
 		if wl.Force {
 			flags |= fs.BindForce
 		}

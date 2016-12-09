@@ -99,6 +99,7 @@ const (
 	BindIgnore
 	BindForce
 	BindNoFollow
+	BindAllowSetuid
 )
 
 func (fs *Filesystem) bindResolve(from string, to string, flags int, display int) error {
@@ -191,14 +192,20 @@ func (fs *Filesystem) bind(from string, to string, flags int) error {
 	}
 
 	rolog := " "
-	mntflags := syscall.MS_NOSUID | syscall.MS_NODEV
+	sulog := " "
+	mntflags := syscall.MS_NODEV
 	if flags&BindReadOnly != 0 {
 		mntflags |= syscall.MS_RDONLY
 		rolog = "(as readonly) "
 	} else {
 		flags |= syscall.MS_NOEXEC
 	}
-	fs.log.Info("bind mounting %s%s -> %s", rolog, src, to)
+	if flags&BindAllowSetuid != 0 {
+		sulog = "(setuid allowed) "
+	} else {
+		mntflags |= syscall.MS_NOSUID
+	}
+	fs.log.Info("bind mounting %s%s%s -> %s", rolog, sulog, src, to)
 	return bindMount(src, to, mntflags)
 }
 

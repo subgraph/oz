@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"io/ioutil"
+	"bytes"
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/ipc"
@@ -25,15 +27,16 @@ type groupEntry struct {
 }
 
 type daemonState struct {
-	log          *logging.Logger
-	config       *oz.Config
-	profiles     oz.Profiles
-	sandboxes    []*Sandbox
-	nextSboxId   int
-	nextDisplay  int
-	memBackend   *logging.ChannelMemoryBackend
-	backends     []logging.Backend
-	bridges      *network.Bridges
+	log         *logging.Logger
+	config      *oz.Config
+	profiles    oz.Profiles
+	sandboxes   []*Sandbox
+	nextSboxId  int
+	nextDisplay int
+	memBackend  *logging.ChannelMemoryBackend
+	backends    []logging.Backend
+	bridges     *network.Bridges
+	// openvpns     *network.OpenVPNs
 	systemGroups map[string]groupEntry
 }
 
@@ -52,6 +55,8 @@ func Main() {
 		d.handleMountFiles,
 		d.handleUnmountFile,
 		d.handleLogs,
+		d.handleAskForwarder,
+		d.handleListForwarders,
 	)
 	if err != nil {
 		d.log.Error("Error running server: %v", err)
@@ -177,10 +182,46 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 	for _, sbox := range d.sandboxes {
 		if sbox.init.Process.Pid == pid {
 			sbox.remove(d.log)
+
+			/* Terminate OpenVPN client daemon */
+
+			if sbox.ovpn != nil {
+				pid, err := readOpenVPNPidFromFile(sbox.ovpn.pidfilepath)
+				if err != nil {
+					d.Debug("Failed to retrieve openvpn pid: %v", err)
+				}
+				err = syscall.Kill(pid, syscall.SIGTERM)
+				if err != nil {
+					d.Debug("Failed to send openvpn SIGTERM: %v", err)
+				}
+				err = os.Remove(sbox.ovpn.pidfilepath)
+				if err != nil {
+					d.Debug("Failed to remove openvpn pidfile at %s: %v", sbox.ovpn.pidfilepath, err)
+				}
+			}
+
 			return
 		}
 	}
 	d.Notice("No sandbox found with oz-init pid = %d", pid)
+}
+
+func readOpenVPNPidFromFile(path string) (int, error) {
+	if path == "" {
+		return 0, fmt.Errorf("Invalid pid file path: %s", path)
+	}
+
+	d, err := ioutil.ReadFile(path)
+	if err != nil {
+		return 0, err
+	}
+
+	pid, err := strconv.Atoi(string(bytes.TrimSpace(d)))
+	if err != nil {
+		return 0, fmt.Errorf("Parse error on pidfile %s: %s", path, err)
+	}
+
+	return pid, nil
 }
 
 func runServer(log *logging.Logger, args ...interface{}) error {
@@ -293,6 +334,11 @@ func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) err
 			if err := sb.init.Process.Signal(os.Interrupt); err != nil {
 				return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
 			}
+			if sb.ovpn != nil {
+				if err := sb.ovpn.cmd.Process.Signal(os.Interrupt); err != nil {
+					return m.Respond(&ErrorMsg{fmt.Sprintf("failedto send openvpn interrupt signal: %v", err)})
+				}
+			}
 		}
 	} else {
 		sbox := d.sandboxById(msg.Id)
@@ -301,6 +347,11 @@ func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) err
 		}
 		if err := sbox.init.Process.Signal(os.Interrupt); err != nil {
 			return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
+		}
+		if sbox.ovpn != nil {
+			if err := sbox.ovpn.cmd.Process.Signal(os.Interrupt); err != nil {
+				return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send openvpn interrupt signal: %v", err)})
+			}
 		}
 	}
 	return m.Respond(&OkMsg{})
@@ -341,6 +392,30 @@ func (d *daemonState) handleUnmountFile(msg *UnmountFileMsg, m *ipc.Message) err
 		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to unmount: %v", err)})
 	}
 	return m.Respond(&OkMsg{})
+}
+
+func (d *daemonState) handleAskForwarder(msg *AskForwarderMsg, m *ipc.Message) error {
+	sbox := d.sandboxById(msg.Id)
+	hasListenerName := false
+	if sbox == nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+	}
+	if len(sbox.profile.ExternalForwarders) == 0 {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("no listeners configured in sandbox profile.")})
+	}
+	for _, l := range sbox.profile.ExternalForwarders {
+		if l.Name == msg.Name {
+			hasListenerName = true
+		}
+	}
+	if !hasListenerName {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("No listener %s found.", msg.Name)})
+	}
+	forwarder, err := sbox.SetupDynamicForwarder(msg.Name, msg.Port, d.log)
+	if err != nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to create forwarder: %v", err)})
+	}
+	return m.Respond(&ForwarderSuccessMsg{Proto: msg.Name, Addr: forwarder})
 }
 
 func (d *daemonState) sandboxById(id int) *Sandbox {
@@ -406,6 +481,18 @@ func (d *daemonState) handleListSandboxes(list *ListSandboxesMsg, msg *ipc.Messa
 		r.Sandboxes = append(r.Sandboxes, SandboxInfo{Id: sb.id, Address: sb.addr, Mounts: sb.mountedFiles, Profile: sb.profile.Name})
 	}
 	return msg.Respond(r)
+}
+
+func (d *daemonState) handleListForwarders(msg *ListForwardersMsg, m *ipc.Message) error {
+	sbox := d.sandboxById(msg.Id)
+	r := new(ListForwardersResp)
+	if sbox == nil {
+		return m.Respond(&ErrorMsg{fmt.Sprintf("no sandbox found with id = %d", msg.Id)})
+	}
+	for _, f := range sbox.forwarders {
+		r.Forwarders = append(r.Forwarders, Forwarder{Name: f.name, Target: f.dest, Desc: f.desc})
+	}
+	return m.Respond(r)
 }
 
 func (d *daemonState) handleLogs(logs *LogsMsg, msg *ipc.Message) error {

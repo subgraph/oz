@@ -53,6 +53,8 @@ type Profile struct {
 	Networking NetworkProfile
 	// Seccomp
 	Seccomp SeccompConf
+	// External Forwarders
+	ExternalForwarders []ExternalForwarder `json:"external_forwarders"`
 }
 
 type ShutdownMode string
@@ -101,16 +103,37 @@ type SeccompConf struct {
 	TrainOutput string `json:"train_output"`
 	Whitelist   string
 	Blacklist   string
+	ExtraDefs   []string
+}
+
+type VPNConf struct {
+	VpnType          string `json:"type"`
+	ConfigPath       string
+	DNS              []string
+	UserPassFilePath string `json:"authfile"`
+}
+
+type ExternalForwarder struct {
+	Name        string
+	Dynamic     bool
+	Multi       bool
+	ExtProto    string
+	Proto       string
+	Addr        string
+	TargetHost  string
+	TargetPort  string
+	SocketOwner string
 }
 
 type WhitelistItem struct {
-	Path      string
-	Target    string
-	ReadOnly  bool `json:"read_only"`
-	CanCreate bool `json:"can_create"`
-	Ignore    bool `json:"ignore"`
-	Force     bool
-	NoFollow  bool `json:"no_follow"`
+	Path        string
+	Target      string
+	ReadOnly    bool `json:"read_only"`
+	CanCreate   bool `json:"can_create"`
+	Ignore      bool `json:"ignore"`
+	Force       bool
+	NoFollow    bool `json:"no_follow"`
+	AllowSetuid bool `json:"allow_suid"`
 }
 
 type BlacklistItem struct {
@@ -138,6 +161,9 @@ type NetworkProfile struct {
 
 	// Name of the bridge to attach to
 	Bridge string
+
+	// VPN type
+	VPNConf VPNConf `json:"vpn"`
 
 	// List of Sockets we want to attach to the jail
 	//  Applies to Nettype: bridge and empty only

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -162,6 +163,7 @@ func (st *initState) runInit() {
 		handlePing,
 		st.handleRunProgram,
 		st.handleRunShell,
+		st.handleSetupForwarder,
 	)
 	if err != nil {
 		st.log.Error("NewServer failed: %v", err)
@@ -503,6 +505,52 @@ func handlePing(ping *PingMsg, msg *ipc.Message) error {
 	return msg.Respond(&PingMsg{Data: ping.Data})
 }
 
+func (st *initState) handleSetupForwarder(rp *ForwarderSuccessMsg, msg *ipc.Message) error {
+	st.log.Info("Setting up forwarder to: %s", rp.Addr)
+	if len(msg.Fds) == 0 {
+		return fmt.Errorf("SetupForwarder message received, but no file descriptor included")
+	}
+	go func() {
+		f := os.NewFile(uintptr(msg.Fds[0]), "")
+		l, err := net.FileListener(f)
+		if err != nil {
+			st.log.Warning(err.Error())
+			return
+		}
+		for {
+			conn, err := l.Accept()
+			if err != nil {
+				st.log.Error(err.Error())
+			}
+			st.log.Info("Forwarder to accepted incoming client.", rp.Addr)
+			go proxyForwarder(&conn, rp.Proto, rp.Addr)
+		}
+	}()
+	err := msg.Respond(&OkMsg{})
+	return err
+}
+
+func proxyForwarder(conn *net.Conn, proto string, rAddr string) error {
+	rConn, err := net.Dial(proto, rAddr)
+	if err != nil {
+		return fmt.Errorf("Socket: %+v.\n", err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	copyLoop := func(dst, src net.Conn) {
+		defer wg.Done()
+		defer dst.Close()
+		io.Copy(dst, src)
+	}
+
+	go copyLoop(*conn, rConn)
+	go copyLoop(rConn, *conn)
+
+	return nil
+}
+
 func (st *initState) handleRunProgram(rp *RunProgramMsg, msg *ipc.Message) error {
 	st.log.Info("Run program message received: %+v", rp)
 	_, err := st.launchApplication(rp.Path, rp.Pwd, rp.Args)
@@ -709,7 +757,7 @@ func (st *initState) childrenVector() []procState {
 
 func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_blacklist []oz.BlacklistItem) error {
 
-//	fs := fs.NewFilesystem(st.config, st.log)
+	//	fs := fs.NewFilesystem(st.config, st.log)
 
 	if err := setupRootfs(st.fs, st.user, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
 		return err
@@ -770,6 +818,9 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		}
 		if wl.ReadOnly {
 			flags |= fs.BindReadOnly
+		}
+		if wl.AllowSetuid {
+			flags |= fs.BindAllowSetuid
 		}
 		if wl.Force {
 			flags |= fs.BindForce

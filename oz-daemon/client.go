@@ -41,6 +41,18 @@ func ListProfiles() ([]Profile, error) {
 	return body.Profiles, nil
 }
 
+func ListForwarders(id int) ([]Forwarder, error) {
+	resp, err := clientSend(&ListForwardersMsg{Id: id})
+	if err != nil {
+		return nil, err
+	}
+	body, ok := resp.Body.(*ListForwardersResp)
+	if !ok {
+		return nil, errors.New("ListForwarders response was not expected type")
+	}
+	return body.Forwarders, nil
+}
+
 func ListSandboxes() ([]SandboxInfo, error) {
 	resp, err := clientSend(&ListSandboxesMsg{})
 	if err != nil {
@@ -165,6 +177,24 @@ func UnmountFile(id int, file string) error {
 		return nil
 	default:
 		return fmt.Errorf("Unexpected message received %+v", body)
+	}
+}
+
+func AskForwarder(id int, name, port string) (string, error) {
+	askForwarderMsg := AskForwarderMsg{
+		Id: id,
+		Name: name,
+		Port: port,
+	}
+	resp, err := clientSend(&askForwarderMsg)
+	if err != nil {
+		return "", err
+	}
+        body, ok := resp.Body.(*ForwarderSuccessMsg)
+	if !ok {
+                return "", fmt.Errorf("Unexpected message received %+v", body)
+	} else {
+		return body.Addr, nil
 	}
 }
 

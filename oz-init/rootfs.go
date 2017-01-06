@@ -50,7 +50,7 @@ var basicBlacklist = []string{
 
 	"/usr/sbin", "/sbin",
 
-	"/etc/machine-id", "/etc/shadow", "/etc/shadow-",
+	"/etc/machine-id", "/etc/shadow", "/etc/shadow-", "/etc/fstab",
 	"${PATH}/sudo", "${PATH}/su",
 	"${PATH}/xinput", "${PATH}/strace",
 	"${PATH}/mount", "${PATH}/umount",

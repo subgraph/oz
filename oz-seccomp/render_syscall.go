@@ -26,6 +26,7 @@ func getRenderingFunctions() RenderingFunctions {
 		syscall.SYS_FCNTL:    render_fcntl,
 		syscall.SYS_IOCTL:    render_ioctl,
 		syscall.SYS_PRCTL:    render_prctl,
+		syscall.SYS_SETSOCKOPT: render_setsockopt,
 	}
 	return r
 }

@@ -403,7 +403,7 @@ func (d *daemonState) handleAskForwarder(msg *AskForwarderMsg, m *ipc.Message) e
 	if len(sbox.profile.ExternalForwarders) == 0 {
 		return m.Respond(&ErrorMsg{fmt.Sprintf("no listeners configured in sandbox profile.")})
 	}
-	for _, l := range sbox.profile.ExternalForwarders {
+	for _,l := range sbox.profile.ExternalForwarders {
 		if l.Name == msg.Name {
 			hasListenerName = true
 		}
@@ -415,7 +415,7 @@ func (d *daemonState) handleAskForwarder(msg *AskForwarderMsg, m *ipc.Message) e
 	if err != nil {
 		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to create forwarder: %v", err)})
 	}
-	return m.Respond(&ForwarderSuccessMsg{Proto: msg.Name, Addr: forwarder})
+	return m.Respond(&ForwarderSuccessMsg{Proto: msg.Name, Addr:forwarder})
 }
 
 func (d *daemonState) sandboxById(id int) *Sandbox {

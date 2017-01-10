@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-// #include "asm-generic/fcntl.h"
+// #include "linux/fcntl.h"
 import "C"
 
 var whences = map[int16]string{
@@ -43,6 +43,14 @@ var fcntlcmds = map[int32]string{
 	C.F_SETOWN_EX:     "F_SETOWN_EX",
 	C.F_GETOWN_EX:     "F_GETOWN_EX",
 	C.F_GETOWNER_UIDS: "F_GETOWNER_UIDS",
+	C.F_SETLEASE:      "F_SETLEASE",
+	C.F_GETLEASE:      "F_GETLEASE",
+	C.F_CANCELLK:      "F_CANCELLK",
+	C.F_DUPFD_CLOEXEC: "F_DUPFD_CLOEXEC",
+	C.F_NOTIFY:        "F_NOTIFY",
+	C.F_SETPIPE_SZ:    "F_SETPIPE_SZ",
+	C.F_ADD_SEALS:     "F_ADD_SEALS",
+	C.F_GET_SEALS:     "F_GET_SEALS",
 }
 
 var openflags = map[int32]string{

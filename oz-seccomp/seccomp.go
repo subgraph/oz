@@ -8,7 +8,7 @@ import (
 	"path"
 	"syscall"
 
-	"github.com/subgraph/go-seccomp"
+	seccomp "github.com/twtiger/gosecco"
 	"github.com/subgraph/oz"
 
 	"github.com/op/go-logging"
@@ -39,6 +39,8 @@ func Main() {
 	args := flag.Args()
 	cmdArgs := []string{args[0]}
 
+	var settings seccomp.SeccompSettings
+
 	if len(args) < 1 {
 		log.Error("oz-seccomp: no command.")
 		os.Exit(1)
@@ -67,14 +69,22 @@ func Main() {
 		}
 	}
 
+
 	switch *modeptr {
 	case "train":
+
+		settings.DefaultPositiveAction = "allow"
+		settings.DefaultNegativeAction = "trace"
+		settings.DefaultPolicyAction = "trace"
+
 		if *policyptr == "" {
 			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
 		} else {
 			fpath = *policyptr
 		}
-		filter, err := seccomp.Compile(fpath, false)
+
+		filter, err := seccomp.Prepare(fpath, settings)
+
 		if err != nil {
 			log.Error("[FATAL] Seccomp filter compile failed: %v", err)
 			os.Exit(1)
@@ -90,6 +100,12 @@ func Main() {
 			os.Exit(1)
 		}
 	case "whitelist":
+
+		settings.ExtraDefinitions = p.Seccomp.ExtraDefs
+		settings.DefaultPositiveAction = "allow"
+		settings.DefaultNegativeAction = "kill"
+		settings.DefaultPolicyAction = "kill"
+
 		enforce := true
 		fpath := ""
 		if p.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
@@ -106,7 +122,11 @@ func Main() {
 			}
 			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
 		}
-		filter, err := seccomp.Compile(fpath, enforce)
+		if (enforce == false) {
+			settings.DefaultNegativeAction = "trace"
+			settings.DefaultPolicyAction = "trace"
+		}
+		filter, err := seccomp.Prepare(fpath, settings)
 		if err != nil {
 			log.Error("[FATAL] Seccomp filter compile failed: %v", err)
 			os.Exit(1)
@@ -122,10 +142,21 @@ func Main() {
 			os.Exit(1)
 		}
 	case "blacklist":
+
+                settings.ExtraDefinitions = p.Seccomp.ExtraDefs
+                settings.DefaultPositiveAction = "kill"
+                settings.DefaultNegativeAction = "allow"
+                settings.DefaultPolicyAction = "allow"
+		enforce := p.Seccomp.Enforce
+
 		if p.Seccomp.Blacklist == "" {
 			p.Seccomp.Blacklist = path.Join(config.EtcPrefix, "blacklist-generic.seccomp")
 		}
-		filter, err := seccomp.CompileBlacklist(p.Seccomp.Blacklist, p.Seccomp.Enforce)
+
+		if (enforce == false) {
+			settings.DefaultPositiveAction = "trace"
+		}
+		filter, err := seccomp.Prepare(p.Seccomp.Blacklist, settings)
 		if err != nil {
 			log.Error("[FATAL] Seccomp blacklist filter compile failed: %v", err)
 			os.Exit(1)

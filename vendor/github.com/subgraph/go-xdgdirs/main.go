@@ -8,7 +8,6 @@ package xdgdirs
 
 import (
 	"bufio"
-	//"fmt"
 	"os"
 	"path"
 	"regexp"
@@ -18,13 +17,12 @@ import (
 )
 
 const (
-	FILE_DIRS = "user-dirs"
-	SUFFIX_USER = "dirs"
+	FILE_DIRS     = "user-dirs"
+	SUFFIX_USER   = "dirs"
 	SUFFIX_GLOBAL = "defaults"
-	
 )
 
-var xdgVarRegexp = regexp.MustCompile("^(\\${XDG_([A-Z0-9_-]+)_DIR})/?.*") 
+var xdgVarRegexp = regexp.MustCompile("^(\\${XDG_([A-Z0-9_-]+)_DIR})/?.*")
 
 var commentRegexp = regexp.MustCompile("^[ \t]*#")
 
@@ -42,7 +40,7 @@ func (x *Dirs) Load(home string) *Dirs {
 	x.xdgGlobalConf = strings.Join([]string{FILE_DIRS, SUFFIX_GLOBAL}, ".")
 	x.xdgPaths = new(xdg.Paths)
 	x.xdgDirs = make(map[string]string)
-	
+
 	x.xdgHome = home
 	if x.xdgHome == "" {
 		x.xdgHome = os.Getenv("HOME")
@@ -79,7 +77,7 @@ func readCommentedFile(fpath string) (string, error) {
 	return bs, nil
 }
 
-func (x *Dirs)loadUserDirs(fpath string) error {
+func (x *Dirs) loadUserDirs(fpath string) error {
 	bs, err := readCommentedFile(fpath)
 	if err != nil {
 		panic(err)
@@ -108,7 +106,7 @@ func (x *Dirs) GetDirs() map[string]string {
 	return x.xdgDirs
 }
 
-func (x *Dirs)GetDir(name string) string {
+func (x *Dirs) GetDir(name string) string {
 	vn := name
 	if strings.HasPrefix(vn, "XDG_") {
 		vn = strings.Join(strings.Split(vn, "_")[1:], "")
@@ -141,4 +139,3 @@ func (x *Dirs) ResolvePath(xdgPath string) string {
 func IsXDGDir(s string) bool {
 	return xdgVarRegexp.MatchString(s)
 }
-

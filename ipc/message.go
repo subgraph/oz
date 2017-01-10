@@ -24,7 +24,7 @@ type MsgFactory map[string](func() interface{})
 func (mf MsgFactory) create(msgType string) (interface{}, error) {
 	f, ok := mf[msgType]
 	if !ok {
-		return nil, fmt.Errorf("cannot create msg type: %s", msgType)
+		return nil, fmt.Errorf("cannot create msg type: %s %v", msgType, ok)
 	}
 	return f(), nil
 }

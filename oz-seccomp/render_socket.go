@@ -5,6 +5,11 @@ import (
 	"syscall"
 )
 
+// #include "linux/netlink.h"
+import "C"
+
+const SOL_NETLINK = 270 // missing from syscall
+
 var protocols = map[uint]string{
 	syscall.IPPROTO_IP:   "IPPROTO_IP",
 	syscall.IPPROTO_ICMP: "IPPROTO_ICMP",
@@ -73,6 +78,7 @@ var sockoptlevels = map[uint]string{
 	syscall.SOL_SOCKET: "SOL_SOCKET",
 	syscall.SOL_TCP: "SOL_TCP",
 	syscall.SOL_X25: "SOL_X25",
+	SOL_NETLINK: "SOL_NETLINK",
 }
 
 var tcpopts = map[uint]string{
@@ -96,6 +102,19 @@ var tcpopts = map[uint]string{
 	syscall.TCP_WINDOW_CLAMP: "TCP_WINDOW_CLAMP",
 }
 
+
+var netlinkopts = map[uint]string{
+	C.NETLINK_ADD_MEMBERSHIP: "NETLINK_ADD_MEMBERSHIP",
+	C.NETLINK_DROP_MEMBERSHIP: "NETLINK_DROP_MEMBERSHIP",
+	C.NETLINK_PKTINFO: "NETLINK_PKTINFO",
+	C.NETLINK_BROADCAST_ERROR: "NETLINK_BROADCAST_ERROR",
+	C.NETLINK_NO_ENOBUFS: "NETLINK_NO_ENOBUFS",
+	C.NETLINK_RX_RING: "NETLINK_RX_RING",
+	C.NETLINK_TX_RING: "NETLINK_TX_RING",
+	C.NETLINK_LISTEN_ALL_NSID: "NETLINK_LISTEN_ALL_NSID",
+	C.NETLINK_LIST_MEMBERSHIPS: "NETLINK_LIST_MEMBERSHIPS",
+	C.NETLINK_CAP_ACK: "NETLINK_CAP_ACK",
+}
 
 var sockopts = map[uint]string{
 
@@ -210,6 +229,8 @@ func render_setsockopt(pid int, args RegisterArgs) (string, error) {
 			opt = sockopts[uint(args[2])]
 		case syscall.SOL_TCP:
 			opt = tcpopts[uint(args[2])]
+		case SOL_NETLINK:
+			opt = netlinkopts[uint(args[2])]
 		default:
 			opt = fmt.Sprintf("%d", args[2])
 	}

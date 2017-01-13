@@ -8,7 +8,10 @@ import (
 // #include "linux/netlink.h"
 import "C"
 
-const SOL_NETLINK = 270 // missing from syscall
+const (
+	SOL_NETLINK  = 270 // missing from syscall
+	SO_REUSEPORT = 15  // missing from syscall
+)
 
 var protocols = map[uint]string{
 	syscall.IPPROTO_IP:   "IPPROTO_IP",
@@ -66,100 +69,97 @@ var socktypeflags = map[uint]string{
 }
 
 var sockoptlevels = map[uint]string{
-	syscall.SOL_AAL: "SOL_AAL",
+	syscall.SOL_AAL:    "SOL_AAL",
 	syscall.SOL_DECNET: "SOL_DECNET",
-	syscall.SOL_ATM: "SOL_ATM",
+	syscall.SOL_ATM:    "SOL_ATM",
 	syscall.SOL_ICMPV6: "SOL_ICMPV6",
-	syscall.SOL_IRDA: "SOL_IRDA",
-	syscall.SOL_IP: "SOL_IP",
-	syscall.SOL_IPV6: "SOL_IPV6",
+	syscall.SOL_IRDA:   "SOL_IRDA",
+	syscall.SOL_IP:     "SOL_IP",
+	syscall.SOL_IPV6:   "SOL_IPV6",
 	syscall.SOL_PACKET: "SOL_PACKET",
-	syscall.SOL_RAW: "SOL_RAW",
+	syscall.SOL_RAW:    "SOL_RAW",
 	syscall.SOL_SOCKET: "SOL_SOCKET",
-	syscall.SOL_TCP: "SOL_TCP",
-	syscall.SOL_X25: "SOL_X25",
-	SOL_NETLINK: "SOL_NETLINK",
+	syscall.SOL_TCP:    "SOL_TCP",
+	syscall.SOL_X25:    "SOL_X25",
+	SOL_NETLINK:        "SOL_NETLINK",
 }
 
 var tcpopts = map[uint]string{
-	syscall.TCP_CONGESTION: "TCP_CONGESTION",
-	syscall.TCP_CORK: "TCP_CORK",
+	syscall.TCP_CONGESTION:   "TCP_CONGESTION",
+	syscall.TCP_CORK:         "TCP_CORK",
 	syscall.TCP_DEFER_ACCEPT: "TCP_DEFER_ACCEPT",
-	syscall.TCP_INFO: "TCP_INFO",
-	syscall.TCP_KEEPCNT: "TCP_KEEPCNT",
-	syscall.TCP_KEEPIDLE: "TCP_KEEPIDLE",
-	syscall.TCP_KEEPINTVL: "TCP_KEEPINTVL",
-	syscall.TCP_LINGER2: "TCP_LINGER2",
-	syscall.TCP_MAXSEG: "TCP_MAXSEG",
-	syscall.TCP_MAXWIN: "TCP_MAXWIN",
+	syscall.TCP_INFO:         "TCP_INFO",
+	syscall.TCP_KEEPCNT:      "TCP_KEEPCNT",
+	syscall.TCP_KEEPIDLE:     "TCP_KEEPIDLE",
+	syscall.TCP_KEEPINTVL:    "TCP_KEEPINTVL",
+	syscall.TCP_LINGER2:      "TCP_LINGER2",
+	syscall.TCP_MAXSEG:       "TCP_MAXSEG",
+	syscall.TCP_MAXWIN:       "TCP_MAXWIN",
 	syscall.TCP_MAX_WINSHIFT: "TCP_MAX_WINSHIFT", //0xe
-//	syscall.TCP_MD5SIG: "TCP_MD5SIG", // 0xe
-	syscall.TCP_MSS: "TCP_MSS",
+	//	syscall.TCP_MD5SIG: "TCP_MD5SIG", // 0xe
+	syscall.TCP_MSS:              "TCP_MSS",
 	syscall.TCP_MD5SIG_MAXKEYLEN: "TCP_MD5SIG_MAXKEYLEN",
-	syscall.TCP_NODELAY: "TCP_NODELAY",
-	syscall.TCP_QUICKACK: "TCP_QUICKACK",
-	syscall.TCP_SYNCNT: "SYP_SYNCNT",
-	syscall.TCP_WINDOW_CLAMP: "TCP_WINDOW_CLAMP",
+	syscall.TCP_NODELAY:          "TCP_NODELAY",
+	syscall.TCP_QUICKACK:         "TCP_QUICKACK",
+	syscall.TCP_SYNCNT:           "SYP_SYNCNT",
+	syscall.TCP_WINDOW_CLAMP:     "TCP_WINDOW_CLAMP",
 }
 
-
 var netlinkopts = map[uint]string{
-	C.NETLINK_ADD_MEMBERSHIP: "NETLINK_ADD_MEMBERSHIP",
-	C.NETLINK_DROP_MEMBERSHIP: "NETLINK_DROP_MEMBERSHIP",
-	C.NETLINK_PKTINFO: "NETLINK_PKTINFO",
-	C.NETLINK_BROADCAST_ERROR: "NETLINK_BROADCAST_ERROR",
-	C.NETLINK_NO_ENOBUFS: "NETLINK_NO_ENOBUFS",
-	C.NETLINK_RX_RING: "NETLINK_RX_RING",
-	C.NETLINK_TX_RING: "NETLINK_TX_RING",
-	C.NETLINK_LISTEN_ALL_NSID: "NETLINK_LISTEN_ALL_NSID",
+	C.NETLINK_ADD_MEMBERSHIP:   "NETLINK_ADD_MEMBERSHIP",
+	C.NETLINK_DROP_MEMBERSHIP:  "NETLINK_DROP_MEMBERSHIP",
+	C.NETLINK_PKTINFO:          "NETLINK_PKTINFO",
+	C.NETLINK_BROADCAST_ERROR:  "NETLINK_BROADCAST_ERROR",
+	C.NETLINK_NO_ENOBUFS:       "NETLINK_NO_ENOBUFS",
+	C.NETLINK_RX_RING:          "NETLINK_RX_RING",
+	C.NETLINK_TX_RING:          "NETLINK_TX_RING",
+	C.NETLINK_LISTEN_ALL_NSID:  "NETLINK_LISTEN_ALL_NSID",
 	C.NETLINK_LIST_MEMBERSHIPS: "NETLINK_LIST_MEMBERSHIPS",
-	C.NETLINK_CAP_ACK: "NETLINK_CAP_ACK",
+	C.NETLINK_CAP_ACK:          "NETLINK_CAP_ACK",
 }
 
 var sockopts = map[uint]string{
 
-	syscall.SO_ACCEPTCONN: "SO_ACCEPTCONN",
-	syscall.SO_ATTACH_FILTER: "SO_ATTACH_FILTER",
-	syscall.SO_BINDTODEVICE: "BINDTODEVICE",
-	syscall.SO_BROADCAST: "SO_BROADCAST",
-	syscall.SO_BSDCOMPAT: "SO_BSDCOMPAT",
-	syscall.SO_DEBUG: "SO_DEBUG",
-	syscall.SO_DETACH_FILTER: "SO_DETACH_FILTER",
-	syscall.SO_DOMAIN: "SO_DOMAIN",
-	syscall.SO_DONTROUTE: "SO_DONTROUTE",
-	syscall.SO_ERROR: "SO_ERROR",
-	syscall.SO_KEEPALIVE: "SO_KEEPALIVE",
-	syscall.SO_LINGER: "SO_LINGER",
-	syscall.SO_MARK: "SO_MARK",
-	syscall.SO_NO_CHECK: "SO_NO_CHECK",
-	syscall.SO_OOBINLINE: "SO_OOBINLINE",
-	syscall.SO_PASSCRED: "SO_PASSCRED",
-	syscall.SO_PASSSEC: "SO_PASSSEC",
-	syscall.SO_PEERCRED: "SO_PEERCRED",
-	syscall.SO_PEERSEC: "SO_PEERSEC",
-	syscall.SO_PRIORITY: "SO_PRIORITY",
-	syscall.SO_PROTOCOL: "SO_PROTOCOL",
-	syscall.SO_RCVBUF: "SO_RCVBUF",
-	syscall.SO_RCVBUFFORCE: "SO_RCVBUFFORCE",
-	syscall.SO_RCVLOWAT: "SO_RCVLOWAT",
-	syscall.SO_RCVTIMEO: "SO_RCVTIMEO",
-	syscall.SO_REUSEADDR: "SO_REUSEADDR",
-	syscall.SO_RXQ_OVFL: "SO_RXQ_OVFL",
-	syscall.SO_SECURITY_AUTHENTICATION: "SO_SECURITY_AUTHENTICATION",
-	syscall.SO_SECURITY_ENCRYPTION_NETWORK: "SO_SECURITY_ENCRYPTION_NETWORK",
+	syscall.SO_ACCEPTCONN:                    "SO_ACCEPTCONN",
+	syscall.SO_ATTACH_FILTER:                 "SO_ATTACH_FILTER",
+	syscall.SO_BINDTODEVICE:                  "BINDTODEVICE",
+	syscall.SO_BROADCAST:                     "SO_BROADCAST",
+	syscall.SO_BSDCOMPAT:                     "SO_BSDCOMPAT",
+	syscall.SO_DEBUG:                         "SO_DEBUG",
+	syscall.SO_DETACH_FILTER:                 "SO_DETACH_FILTER",
+	syscall.SO_DOMAIN:                        "SO_DOMAIN",
+	syscall.SO_DONTROUTE:                     "SO_DONTROUTE",
+	syscall.SO_ERROR:                         "SO_ERROR",
+	syscall.SO_KEEPALIVE:                     "SO_KEEPALIVE",
+	syscall.SO_LINGER:                        "SO_LINGER",
+	syscall.SO_MARK:                          "SO_MARK",
+	syscall.SO_NO_CHECK:                      "SO_NO_CHECK",
+	syscall.SO_OOBINLINE:                     "SO_OOBINLINE",
+	syscall.SO_PASSCRED:                      "SO_PASSCRED",
+	syscall.SO_PASSSEC:                       "SO_PASSSEC",
+	syscall.SO_PEERCRED:                      "SO_PEERCRED",
+	syscall.SO_PEERSEC:                       "SO_PEERSEC",
+	syscall.SO_PRIORITY:                      "SO_PRIORITY",
+	syscall.SO_PROTOCOL:                      "SO_PROTOCOL",
+	syscall.SO_RCVBUF:                        "SO_RCVBUF",
+	syscall.SO_RCVBUFFORCE:                   "SO_RCVBUFFORCE",
+	syscall.SO_RCVLOWAT:                      "SO_RCVLOWAT",
+	syscall.SO_RCVTIMEO:                      "SO_RCVTIMEO",
+	syscall.SO_REUSEADDR:                     "SO_REUSEADDR",
+	SO_REUSEPORT:                             "SO_REUSEPORT",
+	syscall.SO_RXQ_OVFL:                      "SO_RXQ_OVFL",
+	syscall.SO_SECURITY_AUTHENTICATION:       "SO_SECURITY_AUTHENTICATION",
+	syscall.SO_SECURITY_ENCRYPTION_NETWORK:   "SO_SECURITY_ENCRYPTION_NETWORK",
 	syscall.SO_SECURITY_ENCRYPTION_TRANSPORT: "SO_SECURITY_ENCRYPTION_TRANSPORT",
-	syscall.SO_SNDBUF: "SO_SNDBUF",
-	syscall.SO_SNDBUFFORCE: "SO_SNDBUFFORCE",
-	syscall.SO_SNDLOWAT: "SO_SNDLOWAT",
-	syscall.SO_SNDTIMEO: "SO_SNDTIMEO",
-	syscall.SO_TIMESTAMP: "SO_TIMESTAMP",
-	syscall.SO_TIMESTAMPING: "SO_TIMESTAMPING",
-	syscall.SO_TIMESTAMPNS: "SO_TIMESTAMPNS",
-	syscall.SO_TYPE: "SO_TYPE",
+	syscall.SO_SNDBUF:                        "SO_SNDBUF",
+	syscall.SO_SNDBUFFORCE:                   "SO_SNDBUFFORCE",
+	syscall.SO_SNDLOWAT:                      "SO_SNDLOWAT",
+	syscall.SO_SNDTIMEO:                      "SO_SNDTIMEO",
+	syscall.SO_TIMESTAMP:                     "SO_TIMESTAMP",
+	syscall.SO_TIMESTAMPING:                  "SO_TIMESTAMPING",
+	syscall.SO_TIMESTAMPNS:                   "SO_TIMESTAMPNS",
+	syscall.SO_TYPE:                          "SO_TYPE",
 }
-
-
-
 
 func render_socket(pid int, args RegisterArgs) (string, error) {
 
@@ -224,20 +224,18 @@ func render_setsockopt(pid int, args RegisterArgs) (string, error) {
 	var opt string
 	level := sockoptlevels[uint(args[1])]
 
-	switch uint(args[1]) { 
-		case syscall.SOL_SOCKET:
-			opt = sockopts[uint(args[2])]
-		case syscall.SOL_TCP:
-			opt = tcpopts[uint(args[2])]
-		case SOL_NETLINK:
-			opt = netlinkopts[uint(args[2])]
-		default:
-			opt = fmt.Sprintf("%d", args[2])
+	switch uint(args[1]) {
+	case syscall.SOL_SOCKET:
+		opt = sockopts[uint(args[2])]
+	case syscall.SOL_TCP:
+		opt = tcpopts[uint(args[2])]
+	case SOL_NETLINK:
+		opt = netlinkopts[uint(args[2])]
+	default:
+		opt = fmt.Sprintf("%d", args[2])
 	}
-
 
 	callrep := fmt.Sprintf("setsockopt(%d, %s, %s, 0x%X, %d)", args[0], level, opt, args[3], args[4])
 
 	return callrep, nil
 }
-

@@ -186,7 +186,8 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 			/* Terminate OpenVPN client daemon */
 
 			if sbox.ovpn != nil {
-				pid, err := readOpenVPNPidFromFile(sbox.ovpn.pidfilepath)
+				pidfilepath := path.Join(d.config.OpenVPNRunPath, sbox.ovpn.runtoken + ".pid")
+				pid, err := readOpenVPNPidFromFile(pidfilepath)
 				if err != nil {
 					d.Debug("Failed to retrieve openvpn pid: %v", err)
 				}
@@ -194,16 +195,28 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 				if err != nil {
 					d.Debug("Failed to send openvpn SIGTERM: %v", err)
 				}
-				err = os.Remove(sbox.ovpn.pidfilepath)
-				if err != nil {
-					d.Debug("Failed to remove openvpn pidfile at %s: %v", sbox.ovpn.pidfilepath, err)
-				}
+				removeOpenVPNRunState(d, sbox.ovpn.runtoken)
+				sbox.ovpn = nil
 			}
 
 			return
 		}
 	}
 	d.Notice("No sandbox found with oz-init pid = %d", pid)
+}
+
+func removeOpenVPNRunState(d *daemonState, runtoken string) {
+	statefiles := [...]string{"-key.key","-cert.cert","-ca.cert", ".pid", "-tls-auth.key"}
+	for _, suffix := range statefiles {
+		statefile := path.Join(d.config.OpenVPNRunPath, runtoken + suffix)
+		if _, err := os.Stat(statefile); err == nil {
+			err = os.Remove(statefile)
+			if err != nil {
+				d.Debug("Failed to remove openvpn state artifact at %s: %v", statefile, err)
+			}
+		}
+	}
+
 }
 
 func readOpenVPNPidFromFile(path string) (int, error) {
@@ -335,9 +348,18 @@ func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) err
 				return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
 			}
 			if sb.ovpn != nil {
-				if err := sb.ovpn.cmd.Process.Signal(os.Interrupt); err != nil {
-					return m.Respond(&ErrorMsg{fmt.Sprintf("failedto send openvpn interrupt signal: %v", err)})
-				}
+				pidfilepath := path.Join(d.config.OpenVPNRunPath, sb.ovpn.runtoken + ".pid")
+                                pid, err := readOpenVPNPidFromFile(pidfilepath)
+                                if err != nil {
+                                        d.Debug("Failed to retrieve openvpn pid: %v", err)
+                                }
+                                err = syscall.Kill(pid, syscall.SIGTERM)
+                                if err != nil {
+                                        d.Debug("Failed to send openvpn SIGTERM: %v", err)
+                                }
+				removeOpenVPNRunState(d, sb.ovpn.runtoken)
+				sb.ovpn = nil
+
 			}
 		}
 	} else {
@@ -349,9 +371,17 @@ func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) err
 			return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
 		}
 		if sbox.ovpn != nil {
-			if err := sbox.ovpn.cmd.Process.Signal(os.Interrupt); err != nil {
-				return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send openvpn interrupt signal: %v", err)})
+			pidfilepath := path.Join(d.config.OpenVPNRunPath, sbox.ovpn.runtoken + ".pid")
+			pid, err := readOpenVPNPidFromFile(pidfilepath)
+			if err != nil {
+				d.Debug("Failed to retrieve openvpn pid: %v", err)
 			}
+			err = syscall.Kill(pid, syscall.SIGTERM)
+			if err != nil {
+				d.Debug("Failed to send openvpn SIGTERM: %v", err)
+			}
+			removeOpenVPNRunState(d, sbox.ovpn.runtoken)
+			sbox.ovpn = nil
 		}
 	}
 	return m.Respond(&OkMsg{})

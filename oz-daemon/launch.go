@@ -22,6 +22,7 @@ import (
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/network"
+	"github.com/subgraph/oz/openvpn"
 	"github.com/subgraph/oz/oz-init"
 	"github.com/subgraph/oz/xpra"
 
@@ -52,7 +53,7 @@ type Sandbox struct {
 
 type OpenVPN struct {
 	cmd *exec.Cmd
-	pidfilepath string
+	runtoken string
 }
 
 type ActiveForwarder struct {
@@ -69,6 +70,16 @@ func createPidfilePath(base, prefix string) (string ,error) {
 	}
 
 	return path.Join(base, fmt.Sprintf("%s-%s.pid", prefix, hex.EncodeToString(bs))), nil
+}
+
+func createRunToken(prefix string) (string, error) {
+	bs := make([]byte, 8)
+	_, err := rand.Read(bs)
+	if err != nil {
+		return "", err
+	}
+	
+	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(bs)), nil
 }
 
 func createSocketPath(base, prefix string) (string, error) {
@@ -200,17 +211,16 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		}
 		if p.Networking.VPNConf.VpnType == "openvpn" {
 			var ovpn OpenVPN
+			ovpn.runtoken, err = createRunToken("openvpn")
 			sbox.ovpn = &ovpn
-			pidfilepath, err := createPidfilePath("/var/run/openvpn/", "openvpn")
 			if err != nil {
-				return nil, fmt.Errorf("Unable to create pid file path: %+v", err)
+				return nil, fmt.Errorf("Unable to create run token: %+v", err)
 			}
-			ovpn.cmd, err = sbox.startOpenVPN(pidfilepath)
+			ovpn.cmd, err = sbox.startOpenVPN(ovpn.runtoken)
 			if err != nil {
 				return nil, fmt.Errorf("Unable to start VPN: %+v", err)
-			} 
+			}
 			log.Info("VPN started, pid %n\n", ovpn.cmd.Process.Pid)
-			sbox.ovpn.pidfilepath = pidfilepath
 		}
 
 	}
@@ -281,10 +291,10 @@ func (d *daemonState) sanitizeGroups(p *oz.Profile, username string, gids []uint
 	return groups, nil
 }
 
-func (sbox *Sandbox) startOpenVPN(pidfilepath string) (c *exec.Cmd, err error) {
+func (sbox *Sandbox) startOpenVPN(runtoken string) (c *exec.Cmd, err error) {
 	bname := "oz-"+sbox.getBridgeName()
 	bip :=  sbox.iface.GetVethBridge().GetIP()
-	rtable := fmt.Sprintf("%d",8000+sbox.id)
+	rtable := fmt.Sprintf("%d",sbox.daemon.config.RouteTableBase+sbox.id)
 	conf := sbox.profile.Networking.VPNConf.ConfigPath
 	if conf == "" {
 		sbox.daemon.log.Warning("OpenVPN Conf not specified for %s (id=%d)", sbox.profile.Name, sbox.id)
@@ -295,7 +305,7 @@ func (sbox *Sandbox) startOpenVPN(pidfilepath string) (c *exec.Cmd, err error) {
 		sbox.daemon.log.Warning("OpenVPN credential locations not specified for %s (id=%d)", sbox.profile.Name, sbox.id)
 		return nil, err
 	}
-	return network.StartOpenVPN(conf, bip, rtable, bname, authpath, pidfilepath)
+	return openvpn.StartOpenVPN(sbox.daemon.config, conf, bip, rtable, bname, authpath, runtoken)
 }
 
 

@@ -12,6 +12,10 @@ type Config struct {
 	PrefixPath      string   `json:"prefix_path" desc:"Prefix path containing the oz executables"`
 	EtcPrefix       string   `json:"etc_prefix" desc:"Prefix for configuration files"`
 	SandboxPath     string   `json:"sandbox_path" desc:"Path of the sandboxes base"`
+	OpenVPNRunPath  string   `json:"openvpn_run_path" desc: "Path for OpenVPN run state"`
+	OpenVPNConfDir  string   `json:"openvpn_conf_dir" desc: "Path for OpenVPN conf files"`
+	OpenVPNGID	uint32	 `json:"openvpn_int" desc: "GID for OpenVPN process"`
+	RouteTableBase  int	 `json:"route_table_base" desc: "Base for routing table"`
 	BridgeMACAddr   string   `json:"bridge_mac" desc:"MAC Address of the bridge interface"`
 	DivertSuffix    string   `json:"divert_suffix" desc:"Suffix using for dpkg-divert of application executables, can be left empty when using a divert path"`
 	DivertPath      bool     `json:"divert_path" desc:"Whether the diverted executable should be moved out of the path"`
@@ -33,6 +37,10 @@ func NewDefaultConfig() *Config {
 		PrefixPath:     "/usr/local",
 		EtcPrefix:      "/etc/oz",
 		SandboxPath:    "/srv/oz",
+		OpenVPNRunPath: "/var/run/openvpn",
+		OpenVPNConfDir: "/var/lib/oz/openvpn",
+		OpenVPNGID:     124,
+		RouteTableBase: 8000,
 		DivertPath:     true,
 		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",
 		BridgeMACAddr:  "6A:A8:2E:56:E8:9C",

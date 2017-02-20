@@ -170,7 +170,7 @@ func setupRootfs(fsys *fs.Filesystem, user *user.User, uid, gid uint32, display 
 		if err := os.MkdirAll(smp, 0755); err != nil {
 			return err
 		}
-		if err := syscall.Mount("", smp, "tmpfs", smflags, "mode=755"); err != nil {
+		if err := syscall.Mount("", smp, "tmpfs", smflags, "mode=1777"); err != nil {
 			return err
 		}
 	}

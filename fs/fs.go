@@ -273,7 +273,7 @@ func (fs *Filesystem) BlacklistPath(target string, display int) error {
 }
 
 func (fs *Filesystem) blacklist(target string) error {
-	t, err := filepath.EvalSymlinks(target)
+	t, err := filepath.EvalSymlinks(fs.absPath(target))
 	if err != nil {
 		return fmt.Errorf("symlink evaluation failed while blacklisting path %s: %v", target, err)
 	}
@@ -290,7 +290,7 @@ func (fs *Filesystem) blacklist(target string) error {
 		src = emptyDirPath
 	}
 
-	if err := syscall.Mount(fs.absPath(src), fs.absPath(t), "", syscall.MS_BIND, "mode=400,gid=0"); err != nil {
+	if err := syscall.Mount(fs.absPath(src), t, "", syscall.MS_BIND, "mode=400,gid=0"); err != nil {
 		return fmt.Errorf("failed to bind %s -> %s for blacklist: %v", src, t, err)
 	} else {
 		fs.log.Info("Blacklisted path: %s -> %s", src, t)

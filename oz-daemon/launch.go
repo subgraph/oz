@@ -22,6 +22,7 @@ import (
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/network"
+	"github.com/subgraph/oz/openvpn"
 	"github.com/subgraph/oz/oz-init"
 	"github.com/subgraph/oz/xpra"
 
@@ -47,12 +48,38 @@ type Sandbox struct {
 	mountedFiles []string
 	rawEnv       []string
 	forwarders   []ActiveForwarder
+	ovpn	     *OpenVPN
+}
+
+type OpenVPN struct {
+	cmd *exec.Cmd
+	runtoken string
 }
 
 type ActiveForwarder struct {
 	name string
 	desc string
 	dest string
+}
+
+func createPidfilePath(base, prefix string) (string ,error) {
+	bs := make([]byte, 8)
+	_, err := rand.Read(bs)
+	if err != nil {
+		return "", err
+	}
+
+	return path.Join(base, fmt.Sprintf("%s-%s.pid", prefix, hex.EncodeToString(bs))), nil
+}
+
+func createRunToken(prefix string) (string, error) {
+	bs := make([]byte, 8)
+	_, err := rand.Read(bs)
+	if err != nil {
+		return "", err
+	}
+	
+	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(bs)), nil
 }
 
 func createSocketPath(base, prefix string) (string, error) {
@@ -179,10 +206,23 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
 		if err := sbox.configureBridgedIface(); err != nil {
-			//if err := network.NetAttach(stn, d.network, cmd.Process.Pid); err != nil {
 			cmd.Process.Kill()
 			return nil, fmt.Errorf("Unable to setup bridged networking: %+v", err)
 		}
+		if p.Networking.VPNConf.VpnType == "openvpn" {
+			var ovpn OpenVPN
+			ovpn.runtoken, err = createRunToken("openvpn")
+			sbox.ovpn = &ovpn
+			if err != nil {
+				return nil, fmt.Errorf("Unable to create run token: %+v", err)
+			}
+			ovpn.cmd, err = sbox.startOpenVPN(ovpn.runtoken)
+			if err != nil {
+				return nil, fmt.Errorf("Unable to start VPN: %+v", err)
+			}
+			log.Info("VPN started, pid %n\n", ovpn.cmd.Process.Pid)
+		}
+
 	}
 	cmd.Process.Signal(syscall.SIGUSR1)
 
@@ -250,6 +290,24 @@ func (d *daemonState) sanitizeGroups(p *oz.Profile, username string, gids []uint
 
 	return groups, nil
 }
+
+func (sbox *Sandbox) startOpenVPN(runtoken string) (c *exec.Cmd, err error) {
+	bname := "oz-"+sbox.getBridgeName()
+	bip :=  sbox.iface.GetVethBridge().GetIP()
+	rtable := fmt.Sprintf("%d",sbox.daemon.config.RouteTableBase+sbox.id)
+	conf := sbox.profile.Networking.VPNConf.ConfigPath
+	if conf == "" {
+		sbox.daemon.log.Warning("OpenVPN Conf not specified for %s (id=%d)", sbox.profile.Name, sbox.id)
+		return nil, err
+	}
+	authpath := sbox.profile.Networking.VPNConf.UserPassFilePath
+	if authpath == "" {
+		sbox.daemon.log.Warning("OpenVPN credential locations not specified for %s (id=%d)", sbox.profile.Name, sbox.id)
+		return nil, err
+	}
+	return openvpn.StartOpenVPN(sbox.daemon.config, conf, bip, rtable, bname, authpath, runtoken)
+}
+
 
 func (sbox *Sandbox) configureBridgedIface() error {
 	bname := sbox.getBridgeName()

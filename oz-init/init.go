@@ -390,6 +390,10 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	if st.config.DivertPath {
 		cpath = path.Join(path.Dir(cpath)+"-oz", path.Base(cpath))
 	}
+	if st.profile.RejectUserArgs == true {
+		st.log.Notice("RejectUserArgs true, discarding user supplied command arguments: %v", cmdArgs)
+		cmdArgs = []string{}
+	}
 	if len(st.profile.DefaultParams) > 0 {
 		cmdArgs = append(st.profile.DefaultParams, cmdArgs...)
 	}

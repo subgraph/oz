@@ -24,6 +24,8 @@ type Profile struct {
 	ProfilePath string `json:"-"`
 	// Default parameters to pass to the program
 	DefaultParams []string `json:"default_params"`
+	// Pass command-line arguments
+	RejectUserArgs bool `json:"reject_user_args"`
 	// Autoshutdown the sandbox when the process exits. One of (no, yes, soft), defaults to yes
 	AutoShutdown ShutdownMode `json:"auto_shutdown"`
 	// Optional list of executable names to watch for exit in case initial command spawns and exit

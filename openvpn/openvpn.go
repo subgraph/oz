@@ -5,7 +5,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/user"
 	"net"
+	"strconv"
 	"os/exec"
 	"regexp"
 	"syscall"
@@ -41,9 +43,19 @@ func StartOpenVPN(c *oz.Config, conf string, ip *net.IP, table, dev, auth, runto
 	}()
 	*/
 
+	ovpngroup, err := user.LookupGroup(c.OpenVPNGroup)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[FATAL] OpenVPN group: %v", err)
+		return nil, err
+	}
+	ovpngid, err := strconv.Atoi(ovpngroup.Gid)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "[FATAL] OpenVPN group: %v", err)
+		return nil, err
+	}
 	runcmd.SysProcAttr = &syscall.SysProcAttr{}
 	runcmd.SysProcAttr.Credential = &syscall.Credential{
-		Gid: c.OpenVPNGID,
+		Gid: uint32(ovpngid),
 	}
 	err = runcmd.Start()
 	if err != nil {

@@ -14,7 +14,7 @@ type Config struct {
 	SandboxPath     string   `json:"sandbox_path" desc:"Path of the sandboxes base"`
 	OpenVPNRunPath  string   `json:"openvpn_run_path" desc: "Path for OpenVPN run state"`
 	OpenVPNConfDir  string   `json:"openvpn_conf_dir" desc: "Path for OpenVPN conf files"`
-	OpenVPNGID	uint32	 `json:"openvpn_int" desc: "GID for OpenVPN process"`
+	OpenVPNGroup	string	 `json:"openvpn_group" desc: "GID for OpenVPN process"`
 	RouteTableBase  int	 `json:"route_table_base" desc: "Base for routing table"`
 	BridgeMACAddr   string   `json:"bridge_mac" desc:"MAC Address of the bridge interface"`
 	DivertSuffix    string   `json:"divert_suffix" desc:"Suffix using for dpkg-divert of application executables, can be left empty when using a divert path"`
@@ -39,7 +39,7 @@ func NewDefaultConfig() *Config {
 		SandboxPath:    "/srv/oz",
 		OpenVPNRunPath: "/var/run/openvpn",
 		OpenVPNConfDir: "/var/lib/oz/openvpn",
-		OpenVPNGID:     124,
+		OpenVPNGroup:   "oz-openvpn",
 		RouteTableBase: 8000,
 		DivertPath:     true,
 		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",

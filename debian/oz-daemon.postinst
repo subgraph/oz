@@ -20,7 +20,7 @@ set -e
 
 case "$1" in
     configure)
-        if ! getent group ozz-openvpn ; then
+        if ! getent group oz-openvpn ; then
           echo -n "Adding group oz-openvpn.."
           addgroup --quiet --system oz-openvpn 2>/dev/null ||true
           echo "..done"

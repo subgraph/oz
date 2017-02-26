@@ -20,7 +20,13 @@ set -e
 
 case "$1" in
     configure)
-        mkdir -p /srv/oz
+        if ! getent group ozz-openvpn ; then
+          echo -n "Adding group oz-openvpn.."
+          addgroup --quiet --system oz-openvpn 2>/dev/null ||true
+          echo "..done"
+        fi
+	echo -n "Enabling IP fowarding.."
+        sysctl -p /etc/sysctl.d/15-oz-net.conf
         #for file in /var/lib/oz/cells.d/*.json; do bf=$(basename $file); /usr/sbin/oz-setup install --force ${bf%%.*}; done
         #systemctl restart oz-daemon.service || true
     ;;

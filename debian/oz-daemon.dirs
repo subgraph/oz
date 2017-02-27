@@ -1,4 +1,3 @@
 var/crash
 var/lib/oz/openvpn
-var/lib/sgos/news
 srv/oz

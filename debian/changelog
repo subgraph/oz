@@ -1,3 +1,11 @@
+oz-daemon (0.2.0) testing; urgency=medium
+
+  * Multi-bridge support
+  * Clearnet bridge
+  * OpenVPN experimental / PoC support
+
+ -- Subgraph <info@subgraph.com>  Mon, 27 Feb 2017 21:29:00 +0000
+
 oz-daemon (0.1.1-1) testing; urgency=medium
 
   * Profiles moved to their own repository

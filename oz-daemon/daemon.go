@@ -57,6 +57,7 @@ func Main() {
 		d.handleLogs,
 		d.handleAskForwarder,
 		d.handleListForwarders,
+		d.handleListBridges,
 	)
 	if err != nil {
 		d.log.Error("Error running server: %v", err)
@@ -521,6 +522,14 @@ func (d *daemonState) handleListForwarders(msg *ListForwardersMsg, m *ipc.Messag
 	}
 	for _, f := range sbox.forwarders {
 		r.Forwarders = append(r.Forwarders, Forwarder{Name: f.name, Target: f.dest, Desc: f.desc})
+	}
+	return m.Respond(r)
+}
+
+func (d *daemonState) handleListBridges(msg *ListBridgesMsg, m *ipc.Message) error {
+	r := new(ListBridgesResp)
+	for _, b := range d.bridges.GetBridgeMap() {
+		r.Bridges = append(r.Bridges, b.Name)
 	}
 	return m.Respond(r)
 }

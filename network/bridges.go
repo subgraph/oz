@@ -166,6 +166,10 @@ func (bs *Bridges) ensureInitialized() error {
 	return nil
 }
 
+func (bs *Bridges) GetBridgeMap() (map[string]*OzBridge) {
+	return bs.bridgeMap
+}
+ 
 func (bs *Bridges) GetBridge(name string) (*OzBridge, error) {
 	if err := bs.ensureInitialized(); err != nil {
 		return nil, err

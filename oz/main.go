@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/oz-daemon"
@@ -126,6 +127,11 @@ func runApplication() {
 			},
 		},
 		{
+			Name: "listbridges",
+			Usage: "list configured bridges",
+			Action: handleListBridges,
+		},
+		{
 			Name:   "forward",
 			Usage:  "setup forwarder",
 			Action: handleForward,
@@ -199,6 +205,15 @@ func handleList(c *cli.Context) {
 		fmt.Printf("%2d) %s\n", sb.Id, sb.Profile)
 
 	}
+}
+
+func handleListBridges(c *cli.Context) {
+	bridges, err := daemon.ListBridges()
+	if err != nil {
+		fmt.Printf("Error listing configured bridges: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(strings.Join(bridges,","))
 }
 
 func handleMount(c *cli.Context) {

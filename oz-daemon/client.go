@@ -65,6 +65,18 @@ func ListSandboxes() ([]SandboxInfo, error) {
 	return body.Sandboxes, nil
 }
 
+func ListBridges() ([]string, error) {
+	resp, err := clientSend(&ListBridgesMsg{})
+	if err != nil {
+		return nil, err
+	}
+	body, ok := resp.Body.(*ListBridgesResp)
+	if !ok {
+		return nil, errors.New("ListBridges response was not expected type")
+	}
+	return body.Bridges, nil
+}
+
 func Launch(arg, cpath string, args []string, noexec bool) error {
 	idx, name, err := parseProfileArg(arg)
 	if err != nil {

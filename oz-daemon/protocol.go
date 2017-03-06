@@ -39,6 +39,14 @@ type ListForwardersResp struct {
 	Forwarders []Forwarder "ListForwardersResp"
 }
 
+type ListBridgesMsg struct {
+	_ string "ListBridges"
+}
+
+type ListBridgesResp struct {
+	Bridges []string "ListBridgesResp"
+}
+
 type LaunchMsg struct {
 	Index  int "Launch"
 	Path   string
@@ -136,4 +144,6 @@ var messageFactory = ipc.NewMsgFactory(
 	new(ForwarderSuccessMsg),
 	new(ListForwardersMsg),
 	new(ListForwardersResp),
+	new(ListBridgesMsg),
+	new(ListBridgesResp),
 )

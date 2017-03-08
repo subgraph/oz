@@ -113,7 +113,7 @@ func runApplication() {
 		},
 		{
 			Name:   "relaunchxpra",
-			Usage:  "relaunch xpra client for a running sandbox",
+			Usage:  "relaunch xpra client for a running sandbox (\"all\" for all sandboxes)",
 			Action: handleRelaunchXpraClient,
 		},
 		{

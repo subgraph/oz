@@ -529,7 +529,7 @@ func (d *daemonState) handleListForwarders(msg *ListForwardersMsg, m *ipc.Messag
 func (d *daemonState) handleListBridges(msg *ListBridgesMsg, m *ipc.Message) error {
 	r := new(ListBridgesResp)
 	for _, b := range d.bridges.GetBridgeMap() {
-		r.Bridges = append(r.Bridges, b.Name)
+		r.Bridges = append(r.Bridges, "oz-"+b.Name)
 	}
 	return m.Respond(r)
 }

@@ -48,11 +48,11 @@ type Sandbox struct {
 	mountedFiles []string
 	rawEnv       []string
 	forwarders   []ActiveForwarder
-	ovpn	     *OpenVPN
+	ovpn         *OpenVPN
 }
 
 type OpenVPN struct {
-	cmd *exec.Cmd
+	cmd      *exec.Cmd
 	runtoken string
 }
 
@@ -62,7 +62,7 @@ type ActiveForwarder struct {
 	dest string
 }
 
-func createPidfilePath(base, prefix string) (string ,error) {
+func createPidfilePath(base, prefix string) (string, error) {
 	bs := make([]byte, 8)
 	_, err := rand.Read(bs)
 	if err != nil {
@@ -78,7 +78,7 @@ func createRunToken(prefix string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(bs)), nil
 }
 
@@ -191,7 +191,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		init:    cmd,
 		cred:    &syscall.Credential{Uid: uid, Gid: gid, Groups: msg.Gids},
 		user:    u,
-		fs:      fs.NewFilesystem(d.config, log, u),
+		fs:      fs.NewFilesystem(d.config, log, u, p),
 		//addr:    path.Join(rootfs, ozinit.SocketAddress),
 		addr:   socketPath,
 		stderr: pp,
@@ -292,9 +292,9 @@ func (d *daemonState) sanitizeGroups(p *oz.Profile, username string, gids []uint
 }
 
 func (sbox *Sandbox) startOpenVPN(runtoken string) (c *exec.Cmd, err error) {
-	bname := "oz-"+sbox.getBridgeName()
-	bip :=  sbox.iface.GetVethBridge().GetIP()
-	rtable := fmt.Sprintf("%d",sbox.daemon.config.RouteTableBase+sbox.id)
+	bname := "oz-" + sbox.getBridgeName()
+	bip := sbox.iface.GetVethBridge().GetIP()
+	rtable := fmt.Sprintf("%d", sbox.daemon.config.RouteTableBase+sbox.id)
 	conf := sbox.profile.Networking.VPNConf.ConfigPath
 	if conf == "" {
 		sbox.daemon.log.Warning("OpenVPN Conf not specified for %s (id=%d)", sbox.profile.Name, sbox.id)
@@ -307,7 +307,6 @@ func (sbox *Sandbox) startOpenVPN(runtoken string) (c *exec.Cmd, err error) {
 	}
 	return openvpn.StartOpenVPN(sbox.daemon.config, conf, bip, rtable, bname, authpath, runtoken)
 }
-
 
 func (sbox *Sandbox) configureBridgedIface() error {
 	bname := sbox.getBridgeName()
@@ -421,13 +420,13 @@ func (sbox *Sandbox) SetupDynamicForwarder(name, port string, log *logging.Logge
 		return "", err
 	}
 	sbox.forwarders = append(sbox.forwarders, ActiveForwarder{name: name, desc: desc, dest: dest})
-/*
-	if sbox.forwarders[name] != nil {
-		sbox.forwarders[name] = append(sbox.forwarders[name], desc)
-	} else {
-		sbox.forwarders[name] = []string{desc}
-	}
-*/
+	/*
+		if sbox.forwarders[name] != nil {
+			sbox.forwarders[name] = append(sbox.forwarders[name], desc)
+		} else {
+			sbox.forwarders[name] = []string{desc}
+		}
+	*/
 	return desc, nil
 }
 

@@ -11,8 +11,8 @@ import (
 
 	"github.com/op/go-logging"
 
-	"github.com/subgraph/oz"
 	"github.com/subgraph/go-xdgdirs"
+	"github.com/subgraph/oz"
 )
 
 type Filesystem struct {
@@ -21,13 +21,14 @@ type Filesystem struct {
 	chroot  bool
 	xdgDirs *xdgdirs.Dirs
 	user    *user.User
+	profile *oz.Profile
 }
 
-func NewFilesystem(config *oz.Config, log *logging.Logger, u *user.User) *Filesystem {
+func NewFilesystem(config *oz.Config, log *logging.Logger, u *user.User, p *oz.Profile) *Filesystem {
 	if log == nil {
 		log = logging.MustGetLogger("oz")
 	}
-	
+
 	dirs := new(xdgdirs.Dirs)
 	if u != nil {
 		dirs.Load(u.HomeDir)
@@ -37,6 +38,7 @@ func NewFilesystem(config *oz.Config, log *logging.Logger, u *user.User) *Filesy
 		log:     log,
 		user:    u,
 		xdgDirs: dirs,
+		profile: p,
 	}
 }
 
@@ -109,14 +111,14 @@ func (fs *Filesystem) bindResolve(from string, to string, flags int, display int
 	if isGlobbed(to) {
 		return fmt.Errorf("bind target (%s) cannot have globbed path", to)
 	}
-	t, err := resolveVars(to, display, fs.user, fs.xdgDirs)
+	t, err := resolveVars(to, display, fs.user, fs.xdgDirs, fs.profile)
 	if err != nil {
 		return err
 	}
 	if isGlobbed(from) {
 		return fmt.Errorf("bind src (%s) cannot have globbed path with separate target path (%s)", from, to)
 	}
-	f, err := resolveVars(from, display, fs.user, fs.xdgDirs)
+	f, err := resolveVars(from, display, fs.user, fs.xdgDirs, fs.profile)
 	if err != nil {
 		return err
 	}
@@ -124,7 +126,7 @@ func (fs *Filesystem) bindResolve(from string, to string, flags int, display int
 }
 
 func (fs *Filesystem) bindSame(p string, flags int, display int) error {
-	ps, err := resolvePath(p, display, fs.user, fs.xdgDirs)
+	ps, err := resolvePath(p, display, fs.user, fs.xdgDirs, fs.profile)
 	if err != nil {
 		return err
 	}
@@ -152,7 +154,7 @@ func (fs *Filesystem) bind(from string, to string, flags int) error {
 	if src == "" {
 		src = from
 	}
-	sinfo, err := readSourceInfo(src, cc, fs.user)
+	sinfo, err := readSourceInfo(src, cc, fs)
 	if err != nil {
 		if !ii {
 			return fmt.Errorf("failed to bind path (%s): %v", src, err)
@@ -190,6 +192,7 @@ func (fs *Filesystem) bind(from string, to string, flags int) error {
 	if err := copyPathPermissions(fs.Root(), src); err != nil {
 		return fmt.Errorf("failed to copy path permissions for (%s): %v", src, err)
 	}
+	fs.log.Warning("permissions on %s", src)
 
 	rolog := " "
 	sulog := " "
@@ -227,7 +230,8 @@ func (fs *Filesystem) UnbindPath(to string) error {
 	return os.Remove(to)
 }
 
-func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, error) {
+func readSourceInfo(src string, cancreate bool, fs *Filesystem) (os.FileInfo, error) {
+	u := fs.user
 	if fi, err := os.Stat(src); err == nil {
 		return fi, nil
 	} else if !os.IsNotExist(err) {
@@ -243,7 +247,14 @@ func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, erro
 		return nil, fmt.Errorf("mount item (%s) has flag MountCreateIfAbsent, but is not child of home directory (%s)", src, home)
 	}
 
-	if err := os.MkdirAll(src, 0750); err != nil {
+	hi, err := os.Stat(home)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the tree inside the user's home directory, chown it to the user
+
+	if err := fs.MkdirAllChownParent(src, 0750, hi); err != nil {
 		return nil, err
 	}
 
@@ -251,7 +262,6 @@ func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, erro
 	if err != nil {
 		return nil, err
 	}
-
 	if err := copyFileInfo(pinfo, src); err != nil {
 		return nil, err
 	}
@@ -260,7 +270,7 @@ func readSourceInfo(src string, cancreate bool, u *user.User) (os.FileInfo, erro
 }
 
 func (fs *Filesystem) BlacklistPath(target string, display int) error {
-	ps, err := resolvePath(target, display, fs.user, fs.xdgDirs)
+	ps, err := resolvePath(target, display, fs.user, fs.xdgDirs, fs.profile)
 	if err != nil {
 		return nil
 	}
@@ -486,5 +496,73 @@ func copyFileInfo(info os.FileInfo, target string) error {
 	st := info.Sys().(*syscall.Stat_t)
 	os.Chown(target, int(st.Uid), int(st.Gid))
 	os.Chmod(target, info.Mode().Perm())
+	return nil
+}
+
+func (fs *Filesystem) GetUser() *user.User {
+	return fs.user
+}
+
+func (fs *Filesystem) GetProfile() *oz.Profile {
+	return fs.profile
+}
+
+func (fs *Filesystem) GetXDGDirs() *xdgdirs.Dirs {
+	return fs.xdgDirs
+}
+
+func (fs *Filesystem) MkdirAllChownParent(pathstr string, perm os.FileMode, parent os.FileInfo) error {
+
+	/*
+		Function borrowed from golang src and modified to chown all created subdirs to
+		parent FileInfo passed as arg
+	*/
+
+	// Fast path: if we can tell whether path is a directory or file, stop with success or error.
+	dir, err := os.Stat(pathstr)
+	if err == nil {
+		if dir.IsDir() {
+			return nil
+		}
+		return &os.PathError{"mkdir", pathstr, syscall.ENOTDIR}
+	}
+
+	// Slow path: make sure parent exists and then call Mkdir for path.
+	i := len(pathstr)
+	for i > 0 && os.IsPathSeparator(pathstr[i-1]) { // Skip trailing path separator.
+		i--
+	}
+
+	j := i
+	for j > 0 && !os.IsPathSeparator(pathstr[j-1]) { // Scan backward over element.
+		j--
+	}
+
+	if j > 1 {
+		// Create parent
+		err = fs.MkdirAllChownParent(pathstr[0:j-1], perm, parent)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Parent now exists; invoke Mkdir and use its result.
+	err = os.Mkdir(pathstr, perm)
+	if err != nil {
+		// Handle arguments like "foo/." by
+		// double-checking that directory doesn't exist.
+		dir, err1 := os.Lstat(pathstr)
+		if err1 == nil && dir.IsDir() {
+			return nil
+		}
+		return err
+	}
+	st := parent.Sys().(*syscall.Stat_t)
+	os.Chown(pathstr, int(st.Uid), int(st.Gid))
+	os.Chmod(pathstr, parent.Mode().Perm())
+
+	if err != nil {
+		return err
+	}
 	return nil
 }

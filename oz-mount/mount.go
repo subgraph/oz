@@ -45,7 +45,7 @@ func Main(mode int) {
 		log.Error("Could not load configuration: %s (%+v)", oz.DefaultConfigPath, err)
 		os.Exit(1)
 	}
-	fsys := fs.NewFilesystem(config, log, nil)
+	fsys := fs.NewFilesystem(config, log, nil, nil)
 	homedir := os.Getenv("_OZ_HOMEDIR")
 	if homedir == "" {
 		log.Error("Homedir must be set!")

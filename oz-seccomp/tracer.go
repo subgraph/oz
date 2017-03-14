@@ -938,13 +938,13 @@ func Tracer() {
 				resolvedpath = *trainingoutput
 			} else {
 				if *noprofile == false {
-					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.TrainOutput, -1, u, nil)
+					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.TrainOutput, -1, u, nil,p)
 					if e != nil {
 						log.Error("resolveVars(): %v", e)
 					}
 				} else {
 					s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(os.Args[2]), cpid)
-					resolvedpath, e = fs.ResolvePathNoGlob(s, -1, u, nil)
+					resolvedpath, e = fs.ResolvePathNoGlob(s, -1, u, nil,nil)
 				}
 			}
 			policyout := ""

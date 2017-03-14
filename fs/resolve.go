@@ -11,24 +11,26 @@ import (
 	"strings"
 
 	"github.com/subgraph/go-xdgdirs"
+	"github.com/subgraph/oz"
 )
 
-func ResolvePathNoGlob(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs) (string, error) {
-	return resolveVars(p, d, u, xdgDirs)
+func ResolvePathNoGlob(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs, profile *oz.Profile) (string, error) {
+	return resolveVars(p, d, u, xdgDirs, profile)
 }
 
-func resolvePath(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs) ([]string, error) {
-	p, err := resolveVars(p, d, u, xdgDirs)
+func resolvePath(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs, profile *oz.Profile) ([]string, error) {
+	p, err := resolveVars(p, d, u, xdgDirs, profile)
 	if err != nil {
 		return nil, err
 	}
 	return resolveGlob(p)
 }
 
-func resolveVars(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs) (string, error) {
+func resolveVars(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs, profile *oz.Profile) (string, error) {
 	const pathVar = "${PATH}/"
 	const homeVar = "${HOME}"
 	const uidVar = "${UID}"
+	const sandboxVar = "${SANDBOXNAME}"
 	const userVar = "${USER}"
 	const displayVar = "${DISPLAY}"
 
@@ -61,6 +63,12 @@ func resolveVars(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs) (string, 
 			return p, nil
 		}
 		return strings.Replace(p, displayVar, strconv.Itoa(d), -1), nil
+
+	case strings.Contains(p, sandboxVar):
+		if profile == nil {
+			return p, nil
+		}
+		return strings.Replace(p, sandboxVar, profile.Name, -1), nil
 
 	case strings.Contains(p, uidVar):
 		if u == nil {

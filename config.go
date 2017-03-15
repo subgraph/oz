@@ -16,7 +16,6 @@ type Config struct {
 	OpenVPNConfDir  string   `json:"openvpn_conf_dir" desc: "Path for OpenVPN conf files"`
 	OpenVPNGroup    string   `json:"openvpn_group" desc: "GID for OpenVPN process"`
 	RouteTableBase  int      `json:"route_table_base" desc: "Base for routing table"`
-	BridgeMACAddr   string   `json:"bridge_mac" desc:"MAC Address of the bridge interface"`
 	DivertSuffix    string   `json:"divert_suffix" desc:"Suffix using for dpkg-divert of application executables, can be left empty when using a divert path"`
 	DivertPath      bool     `json:"divert_path" desc:"Whether the diverted executable should be moved out of the path"`
 	NMIgnoreFile    string   `json:"nm_ignore_file" desc:"Path to the NetworkManager ignore config file, disables the warning if empty"`
@@ -43,7 +42,6 @@ func NewDefaultConfig() *Config {
 		RouteTableBase: 8000,
 		DivertPath:     true,
 		NMIgnoreFile:   "/etc/NetworkManager/conf.d/oz.conf",
-		BridgeMACAddr:  "6A:A8:2E:56:E8:9C",
 		DivertSuffix:   "",
 		UseFullDev:     false,
 		AllowRootShell: false,

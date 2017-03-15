@@ -2,16 +2,16 @@ package daemon
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
 	"strconv"
 	"strings"
 	"syscall"
-	"io/ioutil"
-	"bytes"
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/ipc"
@@ -187,7 +187,7 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 			/* Terminate OpenVPN client daemon */
 
 			if sbox.ovpn != nil {
-				pidfilepath := path.Join(d.config.OpenVPNRunPath, sbox.ovpn.runtoken + ".pid")
+				pidfilepath := path.Join(d.config.OpenVPNRunPath, sbox.ovpn.runtoken+".pid")
 				pid, err := readOpenVPNPidFromFile(pidfilepath)
 				if err != nil {
 					d.Debug("Failed to retrieve openvpn pid: %v", err)
@@ -207,9 +207,9 @@ func (d *daemonState) handleChildExit(pid int, wstatus syscall.WaitStatus) {
 }
 
 func removeOpenVPNRunState(d *daemonState, runtoken string) {
-	statefiles := [...]string{"-key.key","-cert.cert","-ca.cert", ".pid", "-tls-auth.key"}
+	statefiles := [...]string{"-key.key", "-cert.cert", "-ca.cert", ".pid", "-tls-auth.key"}
 	for _, suffix := range statefiles {
-		statefile := path.Join(d.config.OpenVPNRunPath, runtoken + suffix)
+		statefile := path.Join(d.config.OpenVPNRunPath, runtoken+suffix)
 		if _, err := os.Stat(statefile); err == nil {
 			err = os.Remove(statefile)
 			if err != nil {
@@ -349,15 +349,15 @@ func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) err
 				return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
 			}
 			if sb.ovpn != nil {
-				pidfilepath := path.Join(d.config.OpenVPNRunPath, sb.ovpn.runtoken + ".pid")
-                                pid, err := readOpenVPNPidFromFile(pidfilepath)
-                                if err != nil {
-                                        d.Debug("Failed to retrieve openvpn pid: %v", err)
-                                }
-                                err = syscall.Kill(pid, syscall.SIGTERM)
-                                if err != nil {
-                                        d.Debug("Failed to send openvpn SIGTERM: %v", err)
-                                }
+				pidfilepath := path.Join(d.config.OpenVPNRunPath, sb.ovpn.runtoken+".pid")
+				pid, err := readOpenVPNPidFromFile(pidfilepath)
+				if err != nil {
+					d.Debug("Failed to retrieve openvpn pid: %v", err)
+				}
+				err = syscall.Kill(pid, syscall.SIGTERM)
+				if err != nil {
+					d.Debug("Failed to send openvpn SIGTERM: %v", err)
+				}
 				removeOpenVPNRunState(d, sb.ovpn.runtoken)
 				sb.ovpn = nil
 
@@ -372,7 +372,7 @@ func (d *daemonState) handleKillSandbox(msg *KillSandboxMsg, m *ipc.Message) err
 			return m.Respond(&ErrorMsg{fmt.Sprintf("failed to send interrupt signal: %v", err)})
 		}
 		if sbox.ovpn != nil {
-			pidfilepath := path.Join(d.config.OpenVPNRunPath, sbox.ovpn.runtoken + ".pid")
+			pidfilepath := path.Join(d.config.OpenVPNRunPath, sbox.ovpn.runtoken+".pid")
 			pid, err := readOpenVPNPidFromFile(pidfilepath)
 			if err != nil {
 				d.Debug("Failed to retrieve openvpn pid: %v", err)
@@ -434,7 +434,7 @@ func (d *daemonState) handleAskForwarder(msg *AskForwarderMsg, m *ipc.Message) e
 	if len(sbox.profile.ExternalForwarders) == 0 {
 		return m.Respond(&ErrorMsg{fmt.Sprintf("no listeners configured in sandbox profile.")})
 	}
-	for _,l := range sbox.profile.ExternalForwarders {
+	for _, l := range sbox.profile.ExternalForwarders {
 		if l.Name == msg.Name {
 			hasListenerName = true
 		}
@@ -446,7 +446,7 @@ func (d *daemonState) handleAskForwarder(msg *AskForwarderMsg, m *ipc.Message) e
 	if err != nil {
 		return m.Respond(&ErrorMsg{fmt.Sprintf("Unable to create forwarder: %v", err)})
 	}
-	return m.Respond(&ForwarderSuccessMsg{Proto: msg.Name, Addr:forwarder})
+	return m.Respond(&ForwarderSuccessMsg{Proto: msg.Name, Addr: forwarder})
 }
 
 func (d *daemonState) sandboxById(id int) *Sandbox {

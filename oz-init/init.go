@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"golang.org/x/sys/unix"
 	"io"
 	"io/ioutil"
 	"net"
@@ -19,7 +20,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"golang.org/x/sys/unix"
 	//"time"
 
 	"github.com/subgraph/oz"
@@ -791,7 +791,6 @@ func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_b
 		return err
 	}
 
-
 	if st.profile.XServer.Enabled {
 		xprapath, err := xpra.CreateDir(st.user, st.profile.Name)
 		if err != nil {
@@ -847,20 +846,20 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		}
 		if err := fsys.BindTo(wl.Path, wl.Target, flags, st.display); err != nil {
 			return err
-		}/*
-		if wl.Symlink != "" {
-			dest := wl.Target
-			if wl.Target == "" {
-				dest = wl.Path
-			}
-			if err := fsys.CreateSymlink(dest, wl.Symlink); err != nil {
-				return err
-			}
-		        if err := os.Chown(wl.Symlink, int(st.uid), int(st.gid)); err != nil {
-               			 st.log.Warning("Failed to chown symbolic link: %v", err)
-        		}
+		} /*
+				if wl.Symlink != "" {
+					dest := wl.Target
+					if wl.Target == "" {
+						dest = wl.Path
+					}
+					if err := fsys.CreateSymlink(dest, wl.Symlink); err != nil {
+						return err
+					}
+				        if err := os.Chown(wl.Symlink, int(st.uid), int(st.gid)); err != nil {
+		               			 st.log.Warning("Failed to chown symbolic link: %v", err)
+		        		}
 
-		}*/
+				}*/
 	}
 	return nil
 }
@@ -892,7 +891,7 @@ func (st *initState) bindSharedFolders(fsys *fs.Filesystem, shared []oz.SharedIt
 			if s.Target == "" {
 				dest = ppath
 			} else {
-	                        dest, err = fs.ResolvePathNoGlob(s.Target, -1, st.user, fsys.GetXDGDirs(),st.profile)
+				dest, err = fs.ResolvePathNoGlob(s.Target, -1, st.user, fsys.GetXDGDirs(), st.profile)
 
 				if err != nil {
 					return err
@@ -900,13 +899,13 @@ func (st *initState) bindSharedFolders(fsys *fs.Filesystem, shared []oz.SharedIt
 			}
 
 			if err := fsys.CreateSymlink(dest, symlink); err != nil {
-			return err
+				return err
 			}
 			err = unix.Fchownat(C.AT_FDCWD, symlink, int(st.uid), int(st.gid), C.AT_SYMLINK_NOFOLLOW)
 			if err != nil {
 				st.log.Warning("Failed to chown symobolic link: %v", err)
 			}
-			
+
 		}
 	}
 	return nil

@@ -1,22 +1,21 @@
 package openvpn
 
 import (
-	"path"
 	"bufio"
 	"fmt"
-	"os"
-	"os/user"
 	"net"
-	"strconv"
+	"os"
 	"os/exec"
+	"os/user"
+	"path"
 	"regexp"
+	"strconv"
 	"syscall"
 
 	"github.com/subgraph/oz"
 )
 
 func StartOpenVPN(c *oz.Config, conf string, ip *net.IP, table, dev, auth, runtoken string) (cmd *exec.Cmd, err error) {
-
 
 	confFile := path.Join(c.OpenVPNConfDir, conf)
 	cmdArgs, err := parseOpenVPNConf(c, confFile, ip, table, dev, auth, runtoken)
@@ -29,18 +28,18 @@ func StartOpenVPN(c *oz.Config, conf string, ip *net.IP, table, dev, auth, runto
 	runcmd.Stdin = os.Stdin
 	runcmd.Stderr = os.Stderr
 
-	/* 
-	cmdReader, err := runcmd.StdoutPipe()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error runcmd.StdoutPipe(): %v\n", err)
-	}
-	scanner := bufio.NewScanner(cmdReader)
-
-	go func() {
-		for scanner.Scan() {
-			fmt.Printf("Output: %s\n", scanner.Text())
+	/*
+		cmdReader, err := runcmd.StdoutPipe()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error runcmd.StdoutPipe(): %v\n", err)
 		}
-	}()
+		scanner := bufio.NewScanner(cmdReader)
+
+		go func() {
+			for scanner.Scan() {
+				fmt.Printf("Output: %s\n", scanner.Text())
+			}
+		}()
 	*/
 
 	ovpngroup, err := user.LookupGroup(c.OpenVPNGroup)
@@ -70,7 +69,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 
 	var cmd []string
 	var certpath, capath, keypath, tlsauthpath string
-	pidfilepath := path.Join(c.OpenVPNRunPath, runtoken + ".pid")
+	pidfilepath := path.Join(c.OpenVPNRunPath, runtoken+".pid")
 
 	file, err := os.Open(filename)
 	if err != nil {
@@ -119,7 +118,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			}
 			continue
 		case "<cert>":
-			certpath = path.Join(c.OpenVPNRunPath, runtoken + "-cert.cert")
+			certpath = path.Join(c.OpenVPNRunPath, runtoken+"-cert.cert")
 			f, err := os.Create(certpath)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error writing cert to file: %v", err)
@@ -140,7 +139,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			cmd = append(cmd, []string{"--cert", certpath}...)
 			continue
 		case "<ca>":
-			capath = path.Join(c.OpenVPNRunPath, runtoken + "-ca.cert")
+			capath = path.Join(c.OpenVPNRunPath, runtoken+"-ca.cert")
 			f, err := os.Create(capath)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error writing cert to file: %v", err)
@@ -161,7 +160,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			cmd = append(cmd, []string{"--ca", capath}...)
 			continue
 		case "<key>":
-			keypath = path.Join(c.OpenVPNRunPath, runtoken + "-key.key")
+			keypath = path.Join(c.OpenVPNRunPath, runtoken+"-key.key")
 			f, err := os.Create(keypath)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error writing key to file: %v", err)
@@ -182,7 +181,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			cmd = append(cmd, []string{"--key", keypath}...)
 			continue
 		case "<tls-auth>":
-			tlsauthpath = path.Join(c.OpenVPNRunPath, runtoken + "-tls-auth.key")
+			tlsauthpath = path.Join(c.OpenVPNRunPath, runtoken+"-tls-auth.key")
 			f, err := os.Create(tlsauthpath)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error writing tls-auth to file: %v", err)
@@ -213,7 +212,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			}
 		}
 	}
-	extra := []string{"--writepid", pidfilepath,"--daemon","--auth-retry", "nointeract", "--route-noexec", "--route-up", "/usr/bin/oz-ovpn-route-up", "--route-pre-down", "/usr/bin/oz-ovpn-route-down", "--script-security", "2", "--setenv", "bridge_addr", ip.String(), "--setenv", "routing_table", table, "--setenv", "bridge_dev", dev}
+	extra := []string{"--writepid", pidfilepath, "--daemon", "--auth-retry", "nointeract", "--route-noexec", "--route-up", "/usr/bin/oz-ovpn-route-up", "--route-pre-down", "/usr/bin/oz-ovpn-route-down", "--script-security", "2", "--setenv", "bridge_addr", ip.String(), "--setenv", "routing_table", table, "--setenv", "bridge_dev", dev}
 	cmd = append(cmd, extra...)
 
 	for _, x := range cmd {

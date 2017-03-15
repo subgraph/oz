@@ -127,8 +127,8 @@ func runApplication() {
 			},
 		},
 		{
-			Name: "listbridges",
-			Usage: "list configured bridges",
+			Name:   "listbridges",
+			Usage:  "list configured bridges",
 			Action: handleListBridges,
 		},
 		{
@@ -152,12 +152,12 @@ func runApplication() {
 			},
 		},
 		{
-			Name: "listforwarders",
-			Usage: "list forwarders",
+			Name:   "listforwarders",
+			Usage:  "list forwarders",
 			Action: handleListForwarders,
 			Flags: []cli.Flag{
 				cli.IntFlag{
-					Name: "sandbox",
+					Name:  "sandbox",
 					Usage: "Sandbox number, e.g. 1",
 					Value: -1,
 				},
@@ -213,7 +213,7 @@ func handleListBridges(c *cli.Context) {
 		fmt.Printf("Error listing configured bridges: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Println(strings.Join(bridges,","))
+	fmt.Println(strings.Join(bridges, ","))
 }
 
 func handleMount(c *cli.Context) {
@@ -388,7 +388,7 @@ func handleForward(c *cli.Context) {
 		fmt.Fprintf(os.Stderr, "Fowarder command failed: %s.\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("Listener established: "+out)
+	fmt.Println("Listener established: " + out)
 }
 
 func handleListForwarders(c *cli.Context) {
@@ -398,17 +398,17 @@ func handleListForwarders(c *cli.Context) {
 		os.Exit(1)
 	}
 	forwarders, err := daemon.ListForwarders(id)
-	if (err != nil) {
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "List forwarders failed: %+v %+v", err, forwarders)
 		os.Exit(1)
 	}
-	
+
 	fmt.Printf("Listeners for sandbox %d:\n", id)
 	for _, r := range forwarders {
 		fmt.Printf("  %s: %s => %s\n", r.Name, r.Desc, r.Target)
 	}
 }
-	
+
 func checkRecursingSandbox() error {
 	hostname, _ := os.Hostname()
 	fsbox := path.Join("/tmp", "oz-sandbox")

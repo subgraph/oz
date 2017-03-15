@@ -37,7 +37,7 @@ type OzVeth struct {
 
 func (b *OzBridge) configure() error {
 	ip := b.ipr.FirstIP()
-	b.ip = &ip 
+	b.ip = &ip
 	b.log.Infof("Configuring bridge %s with IP address %v", b.Name, ip)
 	if err := b.SetLinkDown(); err != nil {
 		return fmt.Errorf("error bringing interface down: %v", err)
@@ -92,7 +92,7 @@ func (b *OzBridge) newVeth(id int, peerPid int) (*OzVeth, error) {
 	}, nil
 }
 
-func (b *OzBridge) GetIP() (*net.IP) {
+func (b *OzBridge) GetIP() *net.IP {
 	return b.ip
 }
 
@@ -166,10 +166,10 @@ func (bs *Bridges) ensureInitialized() error {
 	return nil
 }
 
-func (bs *Bridges) GetBridgeMap() (map[string]*OzBridge) {
+func (bs *Bridges) GetBridgeMap() map[string]*OzBridge {
 	return bs.bridgeMap
 }
- 
+
 func (bs *Bridges) GetBridge(name string) (*OzBridge, error) {
 	if err := bs.ensureInitialized(); err != nil {
 		return nil, err

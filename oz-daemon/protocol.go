@@ -35,7 +35,7 @@ type ListProfilesResp struct {
 }
 
 type ListForwardersResp struct {
-	Name string "ListForwardersResp"
+	Name       string      "ListForwardersResp"
 	Forwarders []Forwarder "ListForwardersResp"
 }
 
@@ -106,22 +106,22 @@ type ListForwardersMsg struct {
 }
 
 type AskForwarderMsg struct {
-	Id int "AskForwarder"
+	Id   int "AskForwarder"
 	Name string
 	Addr string
 	Port string
 }
 
 type Forwarder struct {
-	Name string "Forwarder"
-	Desc string
+	Name   string "Forwarder"
+	Desc   string
 	Target string
 }
 
 type ForwarderSuccessMsg struct {
-        Proto string "ForwarderSuccess"
-        Addr string
-	Port string
+	Proto string "ForwarderSuccess"
+	Addr  string
+	Port  string
 }
 
 var messageFactory = ipc.NewMsgFactory(

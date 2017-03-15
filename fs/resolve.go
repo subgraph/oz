@@ -34,7 +34,6 @@ func resolveVars(p string, d int, u *user.User, xdgDirs *xdgdirs.Dirs, profile *
 	const userVar = "${USER}"
 	const displayVar = "${DISPLAY}"
 
-
 	fmt.Println("IS XDG: %s => %b", p, xdgdirs.IsXDGDir(p))
 	switch {
 	case strings.HasPrefix(p, pathVar):

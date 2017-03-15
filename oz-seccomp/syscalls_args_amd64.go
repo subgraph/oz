@@ -58,15 +58,15 @@ var syscalls = []SystemCall{
 		args: SystemCallArgs{INTARG, INTARG, INTARG, 0, 0, 0},
 	},
 	SystemCall{
-		name: "mmap",
-		num:  9,
-		args: SystemCallArgs{INTARG, INTARG, INTARG, INTARG, INTARG, INTARG},
+		name:        "mmap",
+		num:         9,
+		args:        SystemCallArgs{INTARG, INTARG, INTARG, INTARG, INTARG, INTARG},
 		captureArgs: SystemCallArgs{0, 0, STRINGARG, STRINGARG, 0, 0},
 	},
 	SystemCall{
-		name: "mprotect",
-		num:  10,
-		args: SystemCallArgs{INTARG, INTARG, INTARG, 0, 0, 0},
+		name:        "mprotect",
+		num:         10,
+		args:        SystemCallArgs{INTARG, INTARG, INTARG, 0, 0, 0},
 		captureArgs: SystemCallArgs{0, 0, STRINGARG, 0, 0, 0},
 	},
 	SystemCall{

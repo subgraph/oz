@@ -194,7 +194,7 @@ func UnmountFile(id int, file string) error {
 
 func AskForwarder(id int, name, port string) (string, error) {
 	askForwarderMsg := AskForwarderMsg{
-		Id: id,
+		Id:   id,
 		Name: name,
 		Port: port,
 	}
@@ -202,9 +202,9 @@ func AskForwarder(id int, name, port string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-        body, ok := resp.Body.(*ForwarderSuccessMsg)
+	body, ok := resp.Body.(*ForwarderSuccessMsg)
 	if !ok {
-                return "", fmt.Errorf("Unexpected message received %+v", body)
+		return "", fmt.Errorf("Unexpected message received %+v", body)
 	} else {
 		return body.Addr, nil
 	}

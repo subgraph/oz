@@ -25,9 +25,9 @@ type RunProgramMsg struct {
 }
 
 type ForwarderSuccessMsg struct {
-	Port string "ForwarderSuccess"
+	Port  string "ForwarderSuccess"
 	Proto string
-	Addr string
+	Addr  string
 }
 
 var messageFactory = ipc.NewMsgFactory(

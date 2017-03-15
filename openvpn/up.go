@@ -1,8 +1,8 @@
 package openvpn
 
 import (
-	"net"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 )
@@ -28,7 +28,7 @@ func Up() {
 	table := os.Getenv("routing_table")
 
 	/* Need to decide how to exit if params from
-	   OpenVPN server missing or invalid 
+	   OpenVPN server missing or invalid
 	*/
 
 	i = net.ParseIP(ipgwstr)
@@ -98,7 +98,7 @@ func Up() {
 
 	cmd = exec.Command("/bin/ip", "rule", "add", "from", "all", "to", bn.String(), "lookup", table)
 	if ozdebug != "" {
-		fmt.Fprintf(os.Stderr,s)
+		fmt.Fprintf(os.Stderr, s)
 	}
 	cmd.Run()
 }

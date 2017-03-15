@@ -8,8 +8,8 @@ import (
 	"path"
 	"syscall"
 
-	seccomp "github.com/twtiger/gosecco"
 	"github.com/subgraph/oz"
+	seccomp "github.com/twtiger/gosecco"
 
 	"github.com/op/go-logging"
 )
@@ -69,7 +69,6 @@ func Main() {
 		}
 	}
 
-
 	switch *modeptr {
 	case "train":
 
@@ -122,7 +121,7 @@ func Main() {
 			}
 			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
 		}
-		if (enforce == false) {
+		if enforce == false {
 			settings.DefaultNegativeAction = "trace"
 			settings.DefaultPolicyAction = "trace"
 		}
@@ -143,17 +142,17 @@ func Main() {
 		}
 	case "blacklist":
 
-                settings.ExtraDefinitions = p.Seccomp.ExtraDefs
-                settings.DefaultPositiveAction = "kill"
-                settings.DefaultNegativeAction = "allow"
-                settings.DefaultPolicyAction = "allow"
+		settings.ExtraDefinitions = p.Seccomp.ExtraDefs
+		settings.DefaultPositiveAction = "kill"
+		settings.DefaultNegativeAction = "allow"
+		settings.DefaultPolicyAction = "allow"
 		enforce := p.Seccomp.Enforce
 
 		if p.Seccomp.Blacklist == "" {
 			p.Seccomp.Blacklist = path.Join(config.EtcPrefix, "blacklist-generic.seccomp")
 		}
 
-		if (enforce == false) {
+		if enforce == false {
 			settings.DefaultPositiveAction = "trace"
 		}
 		filter, err := seccomp.Prepare(p.Seccomp.Blacklist, settings)

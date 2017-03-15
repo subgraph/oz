@@ -142,8 +142,8 @@ type WhitelistItem struct {
 }
 
 type SharedItem struct {
-	Path	string
-	Target	string
+	Path    string
+	Target  string
 	Symlink string
 }
 

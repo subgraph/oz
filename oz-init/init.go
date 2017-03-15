@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"golang.org/x/sys/unix"
 	//"time"
 
 	"github.com/subgraph/oz"
@@ -30,6 +31,9 @@ import (
 	"github.com/kr/pty"
 	"github.com/op/go-logging"
 )
+
+// #include "linux/fcntl.h"
+import "C"
 
 type procState struct {
 	cmd   *exec.Cmd
@@ -880,13 +884,11 @@ func (st *initState) bindSharedFolders(fsys *fs.Filesystem, shared []oz.SharedIt
 			if err != nil {
 				return err
 			}
-			st.log.Warning(symlink)
 			dest := s.Target
 			ppath, err := fs.ResolvePathNoGlob(s.Path, -1, st.user, fsys.GetXDGDirs(), st.profile)
 			if err != nil {
 				return err
 			}
-			st.log.Warning(ppath)
 			if s.Target == "" {
 				dest = ppath
 			} else {
@@ -900,9 +902,11 @@ func (st *initState) bindSharedFolders(fsys *fs.Filesystem, shared []oz.SharedIt
 			if err := fsys.CreateSymlink(dest, symlink); err != nil {
 			return err
 			}
-			if err := os.Chown(symlink, int(st.uid), int(st.gid)); err != nil {
+			err = unix.Fchownat(C.AT_FDCWD, symlink, int(st.uid), int(st.gid), C.AT_SYMLINK_NOFOLLOW)
+			if err != nil {
 				st.log.Warning("Failed to chown symobolic link: %v", err)
 			}
+			
 		}
 	}
 	return nil

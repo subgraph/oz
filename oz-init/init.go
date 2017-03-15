@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/sys/unix"
 	"io"
 	"io/ioutil"
 	"net"
@@ -31,9 +30,6 @@ import (
 	"github.com/kr/pty"
 	"github.com/op/go-logging"
 )
-
-// #include "linux/fcntl.h"
-import "C"
 
 type procState struct {
 	cmd   *exec.Cmd
@@ -846,20 +842,7 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		}
 		if err := fsys.BindTo(wl.Path, wl.Target, flags, st.display); err != nil {
 			return err
-		} /*
-				if wl.Symlink != "" {
-					dest := wl.Target
-					if wl.Target == "" {
-						dest = wl.Path
-					}
-					if err := fsys.CreateSymlink(dest, wl.Symlink); err != nil {
-						return err
-					}
-				        if err := os.Chown(wl.Symlink, int(st.uid), int(st.gid)); err != nil {
-		               			 st.log.Warning("Failed to chown symbolic link: %v", err)
-		        		}
-
-				}*/
+		}
 	}
 	return nil
 }
@@ -898,11 +881,11 @@ func (st *initState) bindSharedFolders(fsys *fs.Filesystem, shared []oz.SharedIt
 				}
 			}
 
-			if err := fsys.CreateSymlink(dest, symlink); err != nil {
+			spath, err := fsys.CreateSymlink(dest, symlink)
+			if err != nil {
 				return err
 			}
-			err = unix.Fchownat(C.AT_FDCWD, symlink, int(st.uid), int(st.gid), C.AT_SYMLINK_NOFOLLOW)
-			if err != nil {
+			if err = os.Lchown(spath, int(st.uid), int(st.gid)); err != nil {
 				st.log.Warning("Failed to chown symobolic link: %v", err)
 			}
 

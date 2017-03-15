@@ -80,11 +80,11 @@ func (fs *Filesystem) CreateDevice(devpath string, dev int, mode uint32, gid int
 	return nil
 }
 
-func (fs *Filesystem) CreateSymlink(oldpath, newpath string) error {
+func (fs *Filesystem) CreateSymlink(oldpath, newpath string) (string, error) {
 	if err := syscall.Symlink(oldpath, fs.absPath(newpath)); err != nil {
-		return fmt.Errorf("failed to symlink %s to %s: %v", fs.absPath(newpath), oldpath, err)
+		return "", fmt.Errorf("failed to symlink %s to %s: %v", fs.absPath(newpath), oldpath, err)
 	}
-	return nil
+	return fs.absPath(newpath), nil
 }
 
 func (fs *Filesystem) BindPath(from string, flags int, display int) error {

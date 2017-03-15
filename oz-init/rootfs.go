@@ -182,7 +182,7 @@ func setupRootfs(fsys *fs.Filesystem, user *user.User, uid, gid uint32, display 
 	}
 
 	for _, sl := range append(basicSymlinks, deviceSymlinks...) {
-		if err := fsys.CreateSymlink(sl[0], sl[1]); err != nil {
+		if _, err := fsys.CreateSymlink(sl[0], sl[1]); err != nil {
 			return err
 		}
 	}

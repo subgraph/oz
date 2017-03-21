@@ -48,7 +48,7 @@ type Profile struct {
 	// List of paths to blacklist inside jail
 	Blacklist []BlacklistItem
 	// Shared Folders
-	SharedFolders []SharedItem `json:"shared_folders"`
+	SharedFolders []string `json:"shared_folders"`
 	// Optional XServer config
 	XServer XServerConf
 	// List of environment variables
@@ -132,19 +132,13 @@ type ExternalForwarder struct {
 type WhitelistItem struct {
 	Path        string
 	Target      string
-	Symlink     string `json:symlink"`
+	Symlink     string `json:-"`
 	ReadOnly    bool   `json:"read_only"`
 	CanCreate   bool   `json:"can_create"`
 	Ignore      bool   `json:"ignore"`
 	Force       bool
 	NoFollow    bool `json:"no_follow"`
 	AllowSetuid bool `json:"allow_suid"`
-}
-
-type SharedItem struct {
-	Path    string
-	Target  string
-	Symlink string
 }
 
 type BlacklistItem struct {

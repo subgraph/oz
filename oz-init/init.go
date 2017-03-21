@@ -187,6 +187,10 @@ func (st *initState) runInit() {
 		wlExtras = append(wlExtras, oz.WhitelistItem{Path: "/dev/shm/pulse-shm-*", Ignore: true})
 	}
 
+	if len(st.profile.SharedFolders) > 0 {
+		wlExtras = st.addSharedFolders(wlExtras)
+	}
+
 	if err := st.setupFilesystem(wlExtras, blExtras); err != nil {
 		st.log.Error("Failed to setup filesytem: %v", err)
 		os.Exit(1)
@@ -250,6 +254,29 @@ func (st *initState) runInit() {
 		st.log.Warning("MsgServer.Run() return err: %v", err)
 	}
 	st.log.Info("oz-init exiting...")
+}
+
+func (st *initState) addSharedFolders(wlExtras []oz.WhitelistItem) []oz.WhitelistItem {
+	for _, sf := range st.profile.SharedFolders {
+		spath, err := fs.ResolvePathNoGlob(sf, -1, st.user, st.fs.GetXDGDirs(), st.profile)
+		if err != nil {
+			st.log.Warning("Failed to resolve path for symliunk: " + sf)
+			continue
+		}
+		if strings.HasPrefix(spath, st.user.HomeDir) {
+			spath = strings.Replace(spath, st.user.HomeDir, "", 1)
+		}
+		dname := strings.Replace(spath, "/", "-", -1)
+		if strings.HasPrefix(dname, "-") {
+			dname = strings.Replace(dname, "-", "", 1)
+		}
+		wlExtras = append(wlExtras, oz.WhitelistItem{
+			Path:      path.Join("${HOME}/OZ", strings.Title(st.profile.Name), dname),
+			Target:    path.Join("${HOME}/.shared/", dname),
+			Symlink:   path.Join("${HOME}", spath),
+			CanCreate: true})
+	}
+	return wlExtras
 }
 
 func (st *initState) needsDbus() bool {
@@ -775,7 +802,7 @@ func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_b
 		return err
 	}
 
-	if err := st.bindSharedFolders(st.fs, st.profile.SharedFolders); err != nil {
+	if err := st.createBindSymlinks(st.fs, append(st.profile.Whitelist, extra_whitelist...)); err != nil {
 		return err
 	}
 
@@ -812,6 +839,41 @@ func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_b
 	return mo.run()
 }
 
+func (st *initState) createBindSymlinks(fsys *fs.Filesystem, wlist []oz.WhitelistItem) error {
+	for _, wl := range wlist {
+		if wl.Symlink == "" {
+			continue
+		}
+		symlink, err := fs.ResolvePathNoGlob(wl.Symlink, -1, st.user, fsys.GetXDGDirs(), st.profile)
+		if err != nil {
+			return err
+		}
+		dest := wl.Target
+		ppath, err := fs.ResolvePathNoGlob(wl.Path, -1, st.user, fsys.GetXDGDirs(), st.profile)
+		if err != nil {
+			return err
+		}
+		if wl.Target == "" {
+			dest = ppath
+		} else {
+			dest, err = fs.ResolvePathNoGlob(wl.Target, -1, st.user, fsys.GetXDGDirs(), st.profile)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		spath, err := st.fs.CreateSymlink(dest, symlink)
+		if err != nil {
+			return err
+		}
+		if err = os.Lchown(spath, int(st.uid), int(st.gid)); err != nil {
+			st.log.Warning("Failed to chown symbolic link: %v", err)
+		}
+	}
+	return nil
+}
+
 func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem) error {
 	if wlist == nil {
 		return nil
@@ -842,53 +904,6 @@ func (st *initState) bindWhitelist(fsys *fs.Filesystem, wlist []oz.WhitelistItem
 		}
 		if err := fsys.BindTo(wl.Path, wl.Target, flags, st.display); err != nil {
 			return err
-		}
-	}
-	return nil
-}
-
-func (st *initState) bindSharedFolders(fsys *fs.Filesystem, shared []oz.SharedItem) error {
-
-	if shared == nil {
-		return nil
-	}
-	for _, s := range shared {
-		flags := fs.BindCanCreate
-		if s.Path == "" {
-			continue
-		}
-		if err := fsys.BindTo(s.Path, s.Target, flags, st.display); err != nil {
-			return err
-		}
-		if s.Symlink != "" {
-
-			symlink, err := fs.ResolvePathNoGlob(s.Symlink, -1, st.user, fsys.GetXDGDirs(), st.profile)
-			if err != nil {
-				return err
-			}
-			dest := s.Target
-			ppath, err := fs.ResolvePathNoGlob(s.Path, -1, st.user, fsys.GetXDGDirs(), st.profile)
-			if err != nil {
-				return err
-			}
-			if s.Target == "" {
-				dest = ppath
-			} else {
-				dest, err = fs.ResolvePathNoGlob(s.Target, -1, st.user, fsys.GetXDGDirs(), st.profile)
-
-				if err != nil {
-					return err
-				}
-			}
-
-			spath, err := fsys.CreateSymlink(dest, symlink)
-			if err != nil {
-				return err
-			}
-			if err = os.Lchown(spath, int(st.uid), int(st.gid)); err != nil {
-				st.log.Warning("Failed to chown symobolic link: %v", err)
-			}
-
 		}
 	}
 	return nil

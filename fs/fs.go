@@ -192,7 +192,6 @@ func (fs *Filesystem) bind(from string, to string, flags int) error {
 	if err := copyPathPermissions(fs.Root(), src); err != nil {
 		return fmt.Errorf("failed to copy path permissions for (%s): %v", src, err)
 	}
-	fs.log.Warning("permissions on %s", src)
 
 	rolog := " "
 	sulog := " "

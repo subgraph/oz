@@ -343,6 +343,15 @@ func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, lo
 	err := ozinit.RunProgram(sbox.addr, cpath, pwd, args)
 	if err != nil {
 		log.Error("run program command failed: %v", err)
+		pid := sbox.init.Process.Pid
+		err = syscall.Kill(pid, syscall.SIGTERM)
+
+		if err == nil {
+			log.Error("Attempted to self-destruct sandbox...")
+		} else {
+			log.Error("Attempt to kill sandbox failed: %v", err)
+		}
+
 	}
 }
 

@@ -20,6 +20,8 @@ import (
 	"github.com/op/go-logging"
 )
 
+var bSockName = SocketName
+
 type groupEntry struct {
 	Name    string
 	Gid     uint32
@@ -41,6 +43,22 @@ type daemonState struct {
 }
 
 func Main() {
+	oz.CheckSettingsOverRide()
+	bSockName = os.Getenv("SOCKET_NAME")
+
+        if bSockName != "" {
+                fmt.Println("Attempting to connect on custom socket provided through environment: ", bSockName)
+
+                if bSockName[0:1] != "@" {
+                        fmt.Println("Environment variable specified invalid socket name... prepending @")
+                        bSockName = "@" + bSockName
+                }
+
+        } else {
+                bSockName = SocketName
+        }
+
+
 	d := initialize()
 
 	err := runServer(
@@ -137,7 +155,7 @@ func (d *daemonState) processSignals(c <-chan os.Signal) {
 			ps, err := d.loadProfiles(d.config.ProfileDir)
 			if err != nil {
 				d.log.Error("Failed to reload profiles: %v", err)
-				return
+				continue
 			}
 			d.profiles = ps
 		case syscall.SIGUSR2:
@@ -239,7 +257,7 @@ func readOpenVPNPidFromFile(path string) (int, error) {
 }
 
 func runServer(log *logging.Logger, args ...interface{}) error {
-	s, err := ipc.NewServer(SocketName, messageFactory, log, args...)
+	s, err := ipc.NewServer(bSockName, messageFactory, log, args...)
 	if err != nil {
 		return err
 	}
@@ -273,6 +291,15 @@ func (d *daemonState) handleListProfiles(msg *ListProfilesMsg, m *ipc.Message) e
 
 func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 	d.Debug("Launch message received. Path: %s Name: %s Pwd: %s Args: %+v", msg.Path, msg.Name, msg.Pwd, msg.Args)
+
+	if m.Ucred.Uid == 0 || m.Ucred.Gid == 0  {
+		errmsg := fmt.Sprintf("Rejected launch request for %s by privileged user uid %d, gid %d", msg.Name, m.Ucred.Uid, m.Ucred.Gid)
+		d.Warning(errmsg)
+		return m.Respond(&ErrorMsg{errmsg})
+	}
+
+	d.log.Info("Execution request from uid %d, gid %d", m.Ucred.Uid, m.Ucred.Gid)
+
 	p, err := d.getProfileFromLaunchMsg(msg)
 	if err != nil {
 		return m.Respond(&ErrorMsg{err.Error()})

@@ -43,6 +43,8 @@ type Profile struct {
 	// Allow bind mounting of files passed as arguments inside the sandbox
 	AllowFiles    bool     `json:"allow_files"`
 	AllowedGroups []string `json:"allowed_groups"`
+	// Optional directory where per-process logs will be output
+	LogDir string `json:"log_dir"`
 	// List of paths to bind mount inside jail
 	Whitelist []WhitelistItem
 	// List of paths to blacklist inside jail

@@ -37,7 +37,6 @@ func Main() {
 	flag.Parse()
 
 	args := flag.Args()
-	cmdArgs := []string{args[0]}
 
 	var settings seccomp.SeccompSettings
 
@@ -47,9 +46,10 @@ func Main() {
 	}
 
 	cmd := args[0]
-	cmdArgs = args
+	cmdArgs := args
 	fpath := ""
 
+	oz.CheckSettingsOverRide()
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
 		if os.IsNotExist(err) {

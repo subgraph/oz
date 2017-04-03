@@ -41,6 +41,7 @@ const (
 func Main(mode int) {
 	log := createLogger()
 	config, err := loadConfig()
+	oz.CheckSettingsOverRide()
 	if err != nil {
 		log.Error("Could not load configuration: %s (%+v)", oz.DefaultConfigPath, err)
 		os.Exit(1)

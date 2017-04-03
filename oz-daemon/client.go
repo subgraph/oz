@@ -10,7 +10,21 @@ import (
 )
 
 func clientConnect() (*ipc.MsgConn, error) {
-	return ipc.Connect(SocketName, messageFactory, nil)
+        bSockName = os.Getenv("SOCKET_NAME")
+
+        if bSockName != "" {
+                fmt.Println("Attempting to connect on custom socket provided through environment: ", bSockName)
+
+		if bSockName[0:1] != "@" {
+	                fmt.Println("Environment variable specified invalid socket name... prepending @")
+			bSockName = "@" + bSockName
+		}
+
+        } else {
+                bSockName = SocketName
+        }
+
+	return ipc.Connect(bSockName, messageFactory, nil)
 }
 
 func clientSend(msg interface{}) (*ipc.Message, error) {
@@ -108,7 +122,7 @@ func Launch(arg, cpath string, args []string, noexec bool) error {
 	case *ErrorMsg:
 		fmt.Printf("error was %s\n", body.Msg)
 	case *OkMsg:
-		fmt.Println("ok received")
+		fmt.Println("ok received from application launch request")
 	default:
 		fmt.Printf("Unexpected message received %+v", body)
 	}

@@ -28,20 +28,6 @@ func StartOpenVPN(c *oz.Config, conf string, ip *net.IP, table, dev, auth, runto
 	runcmd.Stdin = os.Stdin
 	runcmd.Stderr = os.Stderr
 
-	/*
-		cmdReader, err := runcmd.StdoutPipe()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error runcmd.StdoutPipe(): %v\n", err)
-		}
-		scanner := bufio.NewScanner(cmdReader)
-
-		go func() {
-			for scanner.Scan() {
-				fmt.Printf("Output: %s\n", scanner.Text())
-			}
-		}()
-	*/
-
 	ovpngroup, err := user.LookupGroup(c.OpenVPNGroup)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "[FATAL] OpenVPN group: %v", err)
@@ -82,6 +68,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 	reader := bufio.NewReader(file)
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanLines)
+	cmd = append(cmd, "--client")
 	for scanner.Scan() {
 		x := r.FindAllString(scanner.Text(), -1)
 		if len(x) == 0 {
@@ -95,7 +82,11 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 		case "auth-user-pass":
 			cmd = append(cmd, []string{"--auth-user-pass", path.Join(c.OpenVPNConfDir, auth)}...)
 			continue
+		case "iproute":
+			continue
 		case "route-up":
+			continue
+		case "config":
 			continue
 		case "route-pre-down":
 			continue
@@ -111,7 +102,17 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			continue
 		case "chroot":
 			continue
+		case "setenv":
+			continue
+		case "setenv-safe":
+			continue
 		case "group":
+			continue
+		case "user":
+			continue
+		case "daemon":
+			continue
+		case "syslog":
 			continue
 		case "log":
 			continue
@@ -120,6 +121,12 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 		case "echo":
 			continue
 		case "status":
+			continue
+		case "mode":
+			continue
+		case "client":
+			continue
+		case "server":
 			continue
 		case "management":
 			continue

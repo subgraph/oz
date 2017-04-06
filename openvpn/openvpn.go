@@ -103,6 +103,28 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			continue
 		case "script-security":
 			continue
+		case "ipchange":
+			continue
+		case "up":
+			continue
+		case "cd":
+			continue
+		case "chroot":
+			continue
+		case "group":
+			continue
+		case "log":
+			continue
+		case "log-append":
+			continue
+		case "echo":
+			continue
+		case "status":
+			continue
+		case "management":
+			continue
+		case "plugin":
+			continue
 		case "ifconfig":
 			continue
 		case "ca":
@@ -219,6 +241,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 		fmt.Fprintf(os.Stderr, "%s", x)
 		fmt.Fprintf(os.Stderr, " ")
 	}
+
 	return cmd, nil
 
 }

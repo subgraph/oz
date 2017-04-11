@@ -19,11 +19,17 @@ Please note that Oz is currently under major development and still at a very alp
 
 You can easily build a debian package from the latest tagged release:
 
-	$ sudo apt-get install golang xpra bridge-utils ebtables libacl1
+	$ sudo apt-get install golang xpra bridge-utils ebtables libacl1 libacl1-dev dh-golang dh-systemd git-buildpackage
 	$ git clone -b debian https://github.com/subgraph/oz.git
 	$ cd oz
+	### To Build from stable
 	$ gbp buildpackage -us -uc
+	### To Build from strict-etc
+	$ gbp buildpackage -us -uc --git-upstream-branch=strict-etc
+	### Once you are ready to install and have no important unsaved content in Oz windows
 	$ sudo dpkg -i /tmp/build-area/oz-daemon_<version>.deb
+	$ sudo paxrat
+	$ sudo systemctl restart oz-daemon.service
 
 Or to build it manually:
 

@@ -1,4 +1,4 @@
-oz-daemon (0.2.0) testing; urgency=medium
+oz-daemon (0.2.0-1) testing; urgency=medium
 
   * Multi-bridge support
   * Clearnet bridge

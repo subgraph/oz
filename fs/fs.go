@@ -171,6 +171,7 @@ func (fs *Filesystem) bind(from string, to string, flags int) error {
 	if to == "" {
 		to = from
 	}
+	oto := to
 	to = path.Join(fs.Root(), to)
 
 	s, err := os.Stat(to)
@@ -189,7 +190,7 @@ func (fs *Filesystem) bind(from string, to string, flags int) error {
 		}
 	}
 
-	if err := copyPathPermissions(fs.Root(), src); err != nil {
+	if err := copyPathPermissions(fs.Root(), src, oto); err != nil {
 		return fmt.Errorf("failed to copy path permissions for (%s): %v", src, err)
 	}
 
@@ -468,15 +469,21 @@ func createEmptyFile(name string, mode os.FileMode) error {
 	return nil
 }
 
-func copyPathPermissions(root, src string) error {
+func copyPathPermissions(root, src, target string) error {
 	current := "/"
-	for _, part := range strings.Split(src, "/") {
+	sparts := strings.Split(src, "/")
+	scurrent := "/"
+	for ii, part := range strings.Split(target, "/") {
 		if part == "" {
 			continue
 		}
 		current = path.Join(current, part)
 		target := path.Join(root, current)
-		if err := copyFilePermissions(current, target); err != nil {
+		nc := path.Join(scurrent, sparts[ii])
+		if _, err := os.Stat(nc); err == nil {
+			scurrent = nc
+		}
+		if err := copyFilePermissions(scurrent, target); err != nil {
 			return err
 		}
 	}

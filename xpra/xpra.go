@@ -98,7 +98,7 @@ func CreateDir(u *user.User, name string) (string, error) {
 		return "", err
 	}
 	dir := GetPath(u, name)
-	if err := createSubdirs(u.HomeDir, uid, gid, 0755, ".Xoz", name); err != nil {
+	if err := createSubdirs(u.HomeDir, uid, gid, 0750, ".Xoz", name); err != nil {
 		return "", fmt.Errorf("failed to create xpra directory (%s): %v", dir, err)
 	}
 	return dir, nil

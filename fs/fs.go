@@ -479,9 +479,11 @@ func copyPathPermissions(root, src, target string) error {
 		}
 		current = path.Join(current, part)
 		target := path.Join(root, current)
-		nc := path.Join(scurrent, sparts[ii])
-		if _, err := os.Stat(nc); err == nil {
-			scurrent = nc
+		if ii < len(sparts) {
+			nc := path.Join(scurrent, sparts[ii])
+			if _, err := os.Stat(nc); err == nil {
+				scurrent = nc
+			}
 		}
 		if err := copyFilePermissions(scurrent, target); err != nil {
 			return err

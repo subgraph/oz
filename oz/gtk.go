@@ -82,7 +82,7 @@ func promptWindowWidget(chanb chan bool, sandbox string, id int, win *gtk.Window
 		fmt.Printf("Unable to create label: %v\n", err)
 		os.Exit(1)
 	}
-	topLabel.SetMarkup(topMsg)
+	topLabel.SetMarkup("<span size=\"large\">" + topMsg + "</span>")
 
 	sid := strconv.Itoa(id)
 	nameLabel, err := gtk.LabelNew("#" + sid + ": " + sandbox)
@@ -90,7 +90,7 @@ func promptWindowWidget(chanb chan bool, sandbox string, id int, win *gtk.Window
 		fmt.Printf("Unable to create label: %v\n", err)
 		os.Exit(1)
 	}
-	nameLabel.SetMarkup("<b>#" + sid + ": " + sandbox + "</b>")
+	nameLabel.SetMarkup("<span size=\"large\" weight=\"bold\">#" + sid + ": " + sandbox + "</span>")
 
 	btnGrid, err := gtk.GridNew()
 	if err != nil {

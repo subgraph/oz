@@ -279,7 +279,7 @@ func handleShell(c *cli.Context) {
 
 	chanb := make(chan bool, 1)
 	go promptConfirmShell(chanb, sb.Profile, id)
-	prompt := <- chanb
+	prompt := <-chanb
 	if !prompt {
 		fmt.Printf("Denied shell execution... \n")
 		os.Exit(0)

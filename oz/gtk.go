@@ -75,7 +75,6 @@ func promptWindowWidget(chanb chan bool, sandbox string, id int, win *gtk.Window
 		fmt.Printf("Unable to create label: %v\n", err)
 		os.Exit(1)
 	}
-	//warnIcon.SetFromIconName("dialog-warning")
 
 	topMsg := "Do you really want to open a shell?"
 	topLabel, err := gtk.LabelNew(topMsg)
@@ -83,7 +82,7 @@ func promptWindowWidget(chanb chan bool, sandbox string, id int, win *gtk.Window
 		fmt.Printf("Unable to create label: %v\n", err)
 		os.Exit(1)
 	}
-	topLabel.SetMarkup(topMsg)//"<b>" + topMsg + "</b>")
+	topLabel.SetMarkup(topMsg)
 
 	sid := strconv.Itoa(id)
 	nameLabel, err := gtk.LabelNew("#" + sid + ": " + sandbox)

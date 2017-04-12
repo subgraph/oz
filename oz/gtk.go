@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/gotk3/gotk3/gtk"
 )
 
-func promptConfirmShell(chanb chan bool, sandbox string) {
+func promptConfirmShell(chanb chan bool, sandbox string, id int) {
 	gtk.Init(nil)
 
 	win, err := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
@@ -33,13 +34,13 @@ func promptConfirmShell(chanb chan bool, sandbox string) {
 		fmt.Printf("Unable to create headerbar: %v\n", err)
 		os.Exit(1)
 	}
-	headerbar.SetTitle("OZ Launch Shell")
+	headerbar.SetTitle("OZ: Launch Shell")
 	headerbar.SetSubtitle(sandbox)
 	headerbar.SetShowCloseButton(false)
 
 	win.SetTitlebar(headerbar)
 
-	win.Add(promptWindowWidget(chanb, sandbox, win))
+	win.Add(promptWindowWidget(chanb, sandbox, id, win))
 
 	win.ShowAll()
 	gtk.Main()
@@ -47,7 +48,7 @@ func promptConfirmShell(chanb chan bool, sandbox string) {
 	chanb <- false
 }
 
-func promptWindowWidget(chanb chan bool, sandbox string, win *gtk.Window) *gtk.Widget {
+func promptWindowWidget(chanb chan bool, sandbox string, id int, win *gtk.Window) *gtk.Widget {
 	grid, err := gtk.GridNew()
 	if err != nil {
 		fmt.Printf("Unable to create grid: %v\n", err)
@@ -55,20 +56,42 @@ func promptWindowWidget(chanb chan bool, sandbox string, win *gtk.Window) *gtk.W
 	}
 	grid.SetOrientation(gtk.ORIENTATION_VERTICAL)
 
-	topMsg := "Do you really want to launch a shell in:"
+	outerGrid, err := gtk.GridNew()
+	if err != nil {
+		fmt.Printf("Unable to create grid: %v\n", err)
+		os.Exit(1)
+	}
+	outerGrid.SetOrientation(gtk.ORIENTATION_HORIZONTAL)
+
+	innerGrid, err := gtk.GridNew()
+	if err != nil {
+		fmt.Printf("Unable to create grid: %v\n", err)
+		os.Exit(1)
+	}
+	innerGrid.SetOrientation(gtk.ORIENTATION_VERTICAL)
+
+	warnIcon, err := gtk.ImageNewFromIconName("dialog-warning", gtk.ICON_SIZE_DIALOG)
+	if err != nil {
+		fmt.Printf("Unable to create label: %v\n", err)
+		os.Exit(1)
+	}
+	//warnIcon.SetFromIconName("dialog-warning")
+
+	topMsg := "Do you really want to open a shell?"
 	topLabel, err := gtk.LabelNew(topMsg)
 	if err != nil {
 		fmt.Printf("Unable to create label: %v\n", err)
 		os.Exit(1)
 	}
-	topLabel.SetMarkup("<b>" + topMsg + "</b>")
+	topLabel.SetMarkup(topMsg)//"<b>" + topMsg + "</b>")
 
-	nameLabel, err := gtk.LabelNew(sandbox)
+	sid := strconv.Itoa(id)
+	nameLabel, err := gtk.LabelNew("#" + sid + ": " + sandbox)
 	if err != nil {
 		fmt.Printf("Unable to create label: %v\n", err)
 		os.Exit(1)
 	}
-	nameLabel.SetMarkup("<u>" + sandbox + "</u>")
+	nameLabel.SetMarkup("<b>#" + sid + ": " + sandbox + "</b>")
 
 	btnGrid, err := gtk.GridNew()
 	if err != nil {
@@ -83,7 +106,7 @@ func promptWindowWidget(chanb chan bool, sandbox string, win *gtk.Window) *gtk.W
 		fmt.Printf("Unable to create btnCancel: %v\n", err)
 		os.Exit(1)
 	}
-	//btnCancel.SetHAlign(gtk.ALIGN_START)
+	btnCancel.SetCanDefault(true)
 
 	btnYes, err := gtk.ButtonNewWithLabel("Yes")
 	if err != nil {
@@ -96,19 +119,26 @@ func promptWindowWidget(chanb chan bool, sandbox string, win *gtk.Window) *gtk.W
 		chanb <- true
 		win.Destroy()
 	})
-	//btnYes.SetHAlign(gtk.ALIGN_END)
 
 	btnGrid.Add(btnCancel)
 	btnGrid.Add(btnYes)
 	btnGrid.SetColumnSpacing(25)
+	btnGrid.Container.Widget.SetMarginTop(25)
 
-	grid.SetRowSpacing(25)
+	innerGrid.SetRowSpacing(10)
+	innerGrid.Add(topLabel)
+	innerGrid.Add(nameLabel)
+
+	//outerGrid.SetRowSpacing(25)
+	outerGrid.Add(warnIcon)
+	outerGrid.Add(innerGrid)
+
+	grid.SetRowSpacing(10)
 	grid.Container.Widget.SetMarginStart(15)
 	grid.Container.Widget.SetMarginEnd(15)
-	grid.Container.Widget.SetMarginTop(15)
+	grid.Container.Widget.SetMarginTop(25)
 	grid.Container.Widget.SetMarginBottom(15)
-	grid.Add(topLabel)
-	grid.Add(nameLabel)
+	grid.Add(outerGrid)
 	grid.Add(btnGrid)
 
 	topLabel.SetHExpand(true)

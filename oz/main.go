@@ -258,6 +258,7 @@ func handleUmount(c *cli.Context) {
 }
 
 var canLaunchShell bool
+
 func handleShell(c *cli.Context) {
 	canLaunchShell = false
 	if len(c.Args()) == 0 {
@@ -280,22 +281,12 @@ func handleShell(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	promptConfirmShell(sb.Profile+" ("+c.Args()[0]+")")
+	promptConfirmShell(sb.Profile + " (" + c.Args()[0] + ")")
 	if !canLaunchShell {
 		fmt.Printf("Denied shell execution... \n")
 		os.Exit(0)
 	}
-	/*select {
-	case prompt := <- chanb:
-		switch {
-			case prompt == true:
-				fmt.Printf("Launching shell... \n")
-			default:
-				fmt.Printf("Denied shell execution... \n")
-				os.Exit(0)
-		}
-	}
-*/
+
 	term := os.Getenv("TERM")
 	fd, err := ozinit.RunShell(sb.Address, term)
 	if err != nil {

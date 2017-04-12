@@ -23,7 +23,7 @@ func promptConfirmShell(chanb chan bool, sandbox string, id int) {
 	win.SetUrgencyHint(true)
 	win.SetDeletable(false)
 	win.SetResizable(false)
-	win.SetIconName("dialog-question")
+	win.SetIconName("utilities-terminal")
 
 	win.Connect("destroy", func() {
 		gtk.MainQuit()

@@ -1,7 +1,6 @@
 {
 	"ImportPath": "github.com/subgraph/oz",
-	"GoVersion": "go1.6",
-	"GodepVersion": "v74",
+	"GoVersion": "go1.7",
 	"Packages": [
 		"./..."
 	],
@@ -24,6 +23,31 @@
 			"ImportPath": "github.com/docker/libcontainer/system",
 			"Comment": "v2.2.1-23-g83a102c",
 			"Rev": "83a102cc68a09d890cce3b6c2e5c14c49e6373a0"
+		},
+		{
+			"ImportPath": "github.com/gotk3/gotk3/cairo",
+			"Comment": "GOTK3_0_2_0-522-g656b5d8",
+			"Rev": "656b5d8e33b8d1768e516139726c2bb61781b254"
+		},
+		{
+			"ImportPath": "github.com/gotk3/gotk3/gdk",
+			"Comment": "GOTK3_0_2_0-522-g656b5d8",
+			"Rev": "656b5d8e33b8d1768e516139726c2bb61781b254"
+		},
+		{
+			"ImportPath": "github.com/gotk3/gotk3/glib",
+			"Comment": "GOTK3_0_2_0-522-g656b5d8",
+			"Rev": "656b5d8e33b8d1768e516139726c2bb61781b254"
+		},
+		{
+			"ImportPath": "github.com/gotk3/gotk3/gtk",
+			"Comment": "GOTK3_0_2_0-522-g656b5d8",
+			"Rev": "656b5d8e33b8d1768e516139726c2bb61781b254"
+		},
+		{
+			"ImportPath": "github.com/gotk3/gotk3/pango",
+			"Comment": "GOTK3_0_2_0-522-g656b5d8",
+			"Rev": "656b5d8e33b8d1768e516139726c2bb61781b254"
 		},
 		{
 			"ImportPath": "github.com/j-keck/arping",
@@ -50,10 +74,6 @@
 		{
 			"ImportPath": "github.com/subgraph/constants",
 			"Rev": "979abf7df6e07f4ad41530affaf0f1b3810128f5"
-		},
-		{
-			"ImportPath": "github.com/subgraph/go-seccomp",
-			"Rev": "93f4f357204b56af6737c2cbb6352e39ebedbe48"
 		},
 		{
 			"ImportPath": "github.com/subgraph/go-xdgdirs",

@@ -174,9 +174,9 @@ func (fs *Filesystem) bind(from string, to string, flags int) error {
 	oto := to
 	to = path.Join(fs.Root(), to)
 
-	s, err := os.Stat(to)
+	_, err = os.Stat(to)
 	if !ff && (err == nil || !os.IsNotExist(err)) {
-		fs.log.Warning("Target (%s > %s) already exists, ignoring: %v %v", src, to, err, s)
+		fs.log.Warning("Target (%s > %s) already exists, ignoring!", src, to)
 		return nil
 	}
 

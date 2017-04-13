@@ -106,6 +106,8 @@ func promptWindowWidget(chanb chan bool, sandbox string, id int, win *gtk.Window
 		os.Exit(1)
 	}
 	btnCancel.SetCanDefault(true)
+	btnCancelStyle, _ := btnCancel.Container.Widget.GetStyleContext()
+	btnCancelStyle.AddClass("suggested-action")
 
 	btnYes, err := gtk.ButtonNewWithLabel("Yes")
 	if err != nil {

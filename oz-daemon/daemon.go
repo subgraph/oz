@@ -137,7 +137,7 @@ func (d *daemonState) processSignals(c <-chan os.Signal) {
 			ps, err := d.loadProfiles(d.config.ProfileDir)
 			if err != nil {
 				d.log.Error("Failed to reload profiles: %v", err)
-				return
+				continue
 			}
 			d.profiles = ps
 		case syscall.SIGUSR2:

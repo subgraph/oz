@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/subgraph/oz",
 	"GoVersion": "go1.7",
+	"GodepVersion": "v79",
 	"Packages": [
 		"./..."
 	],
@@ -73,7 +74,7 @@
 		},
 		{
 			"ImportPath": "github.com/subgraph/constants",
-			"Rev": "979abf7df6e07f4ad41530affaf0f1b3810128f5"
+			"Rev": "f6b3f372e9576a74d68c8779ced011d3ae367300"
 		},
 		{
 			"ImportPath": "github.com/subgraph/go-xdgdirs",

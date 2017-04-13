@@ -4,13 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/subgraph/oz/ipc"
 )
 
 func clientConnect() (*ipc.MsgConn, error) {
-	return ipc.Connect(SocketName, messageFactory, nil)
+	return ipc.Connect(GetSocketName(), messageFactory, nil)
 }
 
 func clientSend(msg interface{}) (*ipc.Message, error) {
@@ -249,4 +250,29 @@ func dumpLogs(out chan<- string, rr ipc.ResponseReader) {
 			out <- fmt.Sprintf("Unexpected response type (%T)", body)
 		}
 	}
+}
+
+var isSocketName = regexp.MustCompile(`^@[A-Za-z0-9_-]+$`).MatchString
+var sSocketName = ""
+
+func GetSocketName() string {
+	if sSocketName != "" {
+		return sSocketName
+	}
+	bSockName := os.Getenv("SOCKET_NAME")
+
+	if bSockName != "" {
+		fmt.Println("Attempting to connect on custom socket provided through environment: ", bSockName)
+		if bSockName[0:1] != "@" {
+			bSockName = "@" + bSockName
+		}
+		if !isSocketName(bSockName) {
+			fmt.Fprintf(os.Stderr, "Invalid socket name `%s`, reverting to `%s`\n", bSockName, SocketName)
+			bSockName = SocketName
+		}
+	} else {
+		bSockName = SocketName
+	}
+	sSocketName = bSockName
+	return sSocketName
 }

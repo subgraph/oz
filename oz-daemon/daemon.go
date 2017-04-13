@@ -239,7 +239,7 @@ func readOpenVPNPidFromFile(path string) (int, error) {
 }
 
 func runServer(log *logging.Logger, args ...interface{}) error {
-	s, err := ipc.NewServer(SocketName, messageFactory, log, args...)
+	s, err := ipc.NewServer(GetSocketName(), messageFactory, log, args...)
 	if err != nil {
 		return err
 	}

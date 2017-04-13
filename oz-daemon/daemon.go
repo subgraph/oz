@@ -41,6 +41,7 @@ type daemonState struct {
 }
 
 func Main() {
+	oz.CheckSettingsOverRide()
 	d := initialize()
 
 	err := runServer(

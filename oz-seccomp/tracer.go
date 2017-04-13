@@ -668,6 +668,7 @@ func Tracer() {
 		os.Exit(-1)
 	}
 
+	oz.CheckSettingsOverRide()
 	OzConfig, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
 		log.Error("unable to load oz config")

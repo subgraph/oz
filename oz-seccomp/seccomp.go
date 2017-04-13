@@ -50,6 +50,7 @@ func Main() {
 	cmdArgs = args
 	fpath := ""
 
+	oz.CheckSettingsOverRide()
 	config, err := oz.LoadConfig(oz.DefaultConfigPath)
 	if err != nil {
 		if os.IsNotExist(err) {

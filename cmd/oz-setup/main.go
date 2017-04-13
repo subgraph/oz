@@ -92,6 +92,7 @@ func main() {
 		},
 	}
 
+	oz.CheckSettingsOverRide()
 	app.Run(os.Args)
 }
 

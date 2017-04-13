@@ -108,7 +108,7 @@ func Launch(arg, cpath string, args []string, noexec bool) error {
 	case *ErrorMsg:
 		fmt.Printf("error was %s\n", body.Msg)
 	case *OkMsg:
-		fmt.Println("ok received")
+		fmt.Println("ok received from application launch request")
 	default:
 		fmt.Printf("Unexpected message received %+v", body)
 	}

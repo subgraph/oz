@@ -148,7 +148,7 @@ func (st *initState) waitForParentReady() *initState {
 	signal.Notify(c, syscall.SIGUSR1)
 
 	sig := <-c
-	st.log.Info("Recieved SIGUSR1 from parent (%v), ready to init.", sig)
+	st.log.Info("Received SIGUSR1 from parent (%v), ready to init.", sig)
 	signal.Stop(c)
 
 	return st
@@ -734,7 +734,7 @@ func (st *initState) getProcessExists(pnames []string) bool {
 func (st *initState) processSignals(c <-chan os.Signal, s *ipc.MsgServer) {
 	for {
 		sig := <-c
-		st.log.Info("Recieved signal (%v)", sig)
+		st.log.Info("Received signal (%v)", sig)
 		st.shutdown()
 	}
 }

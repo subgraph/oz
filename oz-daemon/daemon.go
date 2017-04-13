@@ -275,7 +275,7 @@ func (d *daemonState) handleListProfiles(msg *ListProfilesMsg, m *ipc.Message) e
 func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 	d.Debug("Launch message received. Path: %s Name: %s Pwd: %s Args: %+v", msg.Path, msg.Name, msg.Pwd, msg.Args)
 
-	if m.Ucred.Uid == 0 || m.Ucred.Gid == 0  {
+	if m.Ucred.Uid == 0 || m.Ucred.Gid == 0 {
 		errmsg := fmt.Sprintf("Rejected launch request for %s by privileged user uid %d, gid %d", msg.Name, m.Ucred.Uid, m.Ucred.Gid)
 		d.Warning(errmsg)
 		return m.Respond(&ErrorMsg{errmsg})

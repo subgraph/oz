@@ -27,14 +27,15 @@ type Config struct {
 }
 
 const OzVersion = "0.0.1"
+
 var DefaultConfigPath = "/etc/oz/oz.conf"
 
 func CheckSettingsOverRide() {
-       nConfPath := os.Getenv("OZ_CONFIG_PATH")
+	nConfPath := os.Getenv("OZ_CONFIG_PATH")
 
-        if nConfPath != "" {
-                DefaultConfigPath = nConfPath
-        }
+	if nConfPath != "" {
+		DefaultConfigPath = nConfPath
+	}
 }
 
 func NewDefaultConfig() *Config {

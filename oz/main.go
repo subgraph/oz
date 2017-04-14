@@ -31,11 +31,17 @@ func init() {
 	}
 }
 
+var OzConfig *oz.Config
+
 func main() {
-	if err := checkRecursingSandbox(); err != nil {
+	var err error
+	if err = checkRecursingSandbox(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
+
+	oz.CheckSettingsOverRide()
+	OzConfig, err = oz.LoadConfig(oz.DefaultConfigPath)
 
 	runFunc()
 }
@@ -50,7 +56,27 @@ func runSandboxed() {
 			os.Exit(1)
 		}
 	}
-	if err := daemon.Launch("0", apath, os.Args[1:], false); err != nil {
+	ephemeral := false
+	if OzConfig.EnableEphemerals {
+		running, err := daemon.IsRunning(apath, os.Args[1:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error communicating with daemon: %v\n", err)
+			os.Exit(1)
+		}
+		if running == false {
+			profile, err := daemon.GetProfile(apath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error fetching profile: %v\n", err)
+				os.Exit(1)
+			}
+			if ozinit.ProfileHasEphemerals(profile) == true {
+				chanb := make(chan bool, 1)
+				go promptEphemeralLaunch(chanb, profile.Name)
+				ephemeral = <-chanb
+			}
+		}
+	}
+	if err := daemon.Launch("0", apath, os.Args[1:], false, ephemeral); err != nil {
 		fmt.Fprintf(os.Stderr, "launch command failed: %v.\n", err)
 		os.Exit(1)
 	}
@@ -78,6 +104,9 @@ func runApplication() {
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name: "noexec, n",
+				},
+				cli.BoolFlag{
+					Name: "ephemeral, e",
 				},
 			},
 		},
@@ -180,11 +209,15 @@ func handleProfiles(c *cli.Context) {
 
 func handleLaunch(c *cli.Context) {
 	noexec := c.Bool("noexec")
+	ephemeral := c.Bool("ephemeral")
+	if !OzConfig.EnableEphemerals {
+		ephemeral = false
+	}
 	if len(c.Args()) == 0 {
 		fmt.Println("Argument needed to launch command")
 		os.Exit(1)
 	}
-	err := daemon.Launch(c.Args()[0], "", c.Args()[1:], noexec)
+	err := daemon.Launch(c.Args()[0], "", c.Args()[1:], noexec, ephemeral)
 	if err != nil {
 		fmt.Printf("launch command failed: %v\n", err)
 		os.Exit(1)
@@ -202,7 +235,11 @@ func handleList(c *cli.Context) {
 		return
 	}
 	for _, sb := range sboxes {
-		fmt.Printf("%2d) %s\n", sb.Id, sb.Profile)
+		ephemeral := ""
+		if sb.Ephemeral {
+			ephemeral = " [ephemeral]"
+		}
+		fmt.Printf("%2d) %s%s\n", sb.Id, sb.Profile, ephemeral)
 
 	}
 }

@@ -49,6 +49,7 @@ type Sandbox struct {
 	rawEnv       []string
 	forwarders   []ActiveForwarder
 	ovpn         *OpenVPN
+	ephemeral    bool
 }
 
 type OpenVPN struct {
@@ -115,8 +116,7 @@ func createInitCommand(initPath string, cloneNet bool) *exec.Cmd {
 	return cmd
 }
 
-func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid, gid uint32, log *logging.Logger) (*Sandbox, error) {
-
+func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid, gid uint32, ephemeral bool, log *logging.Logger) (*Sandbox, error) {
 	/*
 		u, err := user.LookupId(fmt.Sprintf("%d", uid))
 		if err != nil {
@@ -171,6 +171,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		Config:    *d.config,
 		Sockaddr:  socketPath,
 		LaunchEnv: msg.Env,
+		Ephemeral: ephemeral,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Unable to marshal init state: %+v", err)
@@ -193,9 +194,10 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		user:    u,
 		fs:      fs.NewFilesystem(d.config, log, u, p),
 		//addr:    path.Join(rootfs, ozinit.SocketAddress),
-		addr:   socketPath,
-		stderr: pp,
-		rawEnv: rawEnv,
+		addr:      socketPath,
+		stderr:    pp,
+		rawEnv:    rawEnv,
+		ephemeral: ephemeral,
 	}
 
 	sbox.ready.Add(1)

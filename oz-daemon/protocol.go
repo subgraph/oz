@@ -8,6 +8,10 @@ type OkMsg struct {
 	_ string "Ok"
 }
 
+type NotOkMsg struct {
+	_ string "NotOk"
+}
+
 type ErrorMsg struct {
 	Msg string "Error"
 }
@@ -47,15 +51,33 @@ type ListBridgesResp struct {
 	Bridges []string "ListBridgesResp"
 }
 
+type IsRunningMsg struct {
+	Path string "IsRunning"
+	Gids []uint32
+	Args []string
+	Env  []string
+}
+
+type GetProfileMsg struct {
+	Path string "GetProfile"
+	Gids []uint32
+	Env  []string
+}
+
+type GetProfileResp struct {
+	Profile string "Profile"
+}
+
 type LaunchMsg struct {
-	Index  int "Launch"
-	Path   string
-	Name   string
-	Pwd    string
-	Gids   []uint32
-	Args   []string
-	Env    []string
-	Noexec bool
+	Index     int "Launch"
+	Path      string
+	Name      string
+	Pwd       string
+	Gids      []uint32
+	Args      []string
+	Env       []string
+	Noexec    bool
+	Ephemeral bool
 }
 
 type ListSandboxesMsg struct {
@@ -63,10 +85,11 @@ type ListSandboxesMsg struct {
 }
 
 type SandboxInfo struct {
-	Id      int
-	Address string
-	Profile string
-	Mounts  []string
+	Id        int
+	Address   string
+	Profile   string
+	Mounts    []string
+	Ephemeral bool
 }
 
 type ListSandboxesResp struct {
@@ -127,11 +150,15 @@ type ForwarderSuccessMsg struct {
 var messageFactory = ipc.NewMsgFactory(
 	new(PingMsg),
 	new(OkMsg),
+	new(NotOkMsg),
 	new(ErrorMsg),
 	new(GetConfigMsg),
 	new(ListProfilesMsg),
 	new(ListProfilesResp),
 	new(LaunchMsg),
+	new(IsRunningMsg),
+	new(GetProfileMsg),
+	new(GetProfileResp),
 	new(ListSandboxesMsg),
 	new(ListSandboxesResp),
 	new(KillSandboxMsg),

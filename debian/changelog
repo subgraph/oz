@@ -1,3 +1,16 @@
+oz-daemon (0.2.1-1) testing; urgency=medium
+
+  * Added strict(er) /etc feature
+  * Added client enter shell prompt
+  * Added experimental ephemeral mode (activate via config)
+  * Added shared folders feature
+  * Added oz listbridges feature
+  * Added suid option for whitelist (always read-only)
+  * Fixed NM exclude config
+  * Fixed various small bugs affecting the client
+
+ -- Subgraph <info@subgraph.com>  Fri, 14 Apr 2017 04:30:00 +0000
+
 oz-daemon (0.2.0-1) testing; urgency=medium
 
   * Multi-bridge support

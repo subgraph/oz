@@ -2,7 +2,7 @@ Source: oz-daemon
 Section: security
 Priority: optional
 Maintainer: Subgraph <info@subgraph.com>
-Build-Depends: debhelper (>= 9), libacl1-dev, golang-go (>= 1.6), dh-golang, dh-systemd
+Build-Depends: debhelper (>= 9), libacl1-dev, libgtk-3-dev (>= 3.20), golang-go (>= 1.6), dh-golang, dh-systemd
 Standards-Version: 3.9.6
 Homepage: https://github.com/subgraph/oz
 Vcs-Git: https://github.com/subgraph/oz.git
@@ -11,6 +11,6 @@ Vcs-Browser: https://github.com/subgraph/oz
 
 Package: oz-daemon
 Architecture: amd64
-Depends: oz-profiles, xpra, python-rencode, python-gst-1.0, python-opengl, libgtkgl2.0-1, arping, libacl1, xdg-user-dirs, ${shlibs:Depends}, ${misc:Depends}
+Depends: oz-profiles, xpra, python-rencode, python-gst-1.0, python-opengl, libgtkgl2.0-1, libgtk-3 (>= 3.20), arping, libacl1, xdg-user-dirs, ${shlibs:Depends}, ${misc:Depends}
 Description: oz-daemon binary package
  OZ desktop application sandbox.

@@ -181,6 +181,9 @@ type NetworkProfile struct {
 	// DNS Mode one of: pass, none, dhcp
 	//  Applies to Nettype: bridge only
 	DNSMode DNSMode `json:"dns_mode"`
+
+	// Additional data for the hosts file
+	Hosts string
 }
 
 const defaultProfileDirectory = "/var/lib/oz/cells.d"

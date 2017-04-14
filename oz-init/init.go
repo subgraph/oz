@@ -224,6 +224,8 @@ func (st *initState) runInit() {
 		os.Exit(1)
 	}
 
+	st.setupEtcFiles()
+
 	oz.ReapChildProcs(st.log, st.handleChildExit)
 
 	if st.profile.XServer.Enabled {
@@ -277,6 +279,39 @@ func (st *initState) addSharedFolders(wlExtras []oz.WhitelistItem) []oz.Whitelis
 			CanCreate: true})
 	}
 	return wlExtras
+}
+
+const hostsfile = `127.0.0.1	localhost
+127.0.1.1	%HOSTNAME% %HOSTNAME%.%DOMAINNAME%
+::1     localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+%ADDITIONAL%`
+
+const domainname = "local"
+
+func (st *initState) setupEtcFiles() {
+	phosts := st.profile.Networking.Hosts
+	if len(phosts) > 0 {
+		phosts = "\n\n" + phosts
+	}
+	hosts := hostsfile
+	hosts = strings.Replace(hosts, "%HOSTNAME%", st.profile.Name, -1)
+	hosts = strings.Replace(hosts, "%DOMAINNAME%", domainname, -1)
+	hosts = strings.Replace(hosts, "\n%ADDITIONAL%", phosts, -1)
+	etcfiles := map[string]string{
+		"hostname":   st.profile.Name,
+		"domainname": domainname,
+		"hosts":      hosts,
+		"machine-id": st.dbusUuid,
+		"fstab":      "# This fstab file is empty",
+	}
+	for fpath, fcontents := range etcfiles {
+		fpath = path.Join("/etc", fpath)
+		if err := ioutil.WriteFile(fpath, []byte(fcontents+"\n"), 0644); err != nil {
+			st.log.Warning("Unable to setup etc file item: %v", err)
+		}
+	}
 }
 
 func (st *initState) needsDbus() bool {
@@ -790,7 +825,7 @@ func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_b
 
 	//	fs := fs.NewFilesystem(st.config, st.log)
 
-	if err := setupRootfs(st.fs, st.user, st.uid, st.gid, st.display, st.config.UseFullDev, st.log); err != nil {
+	if err := setupRootfs(st.fs, st.user, st.uid, st.gid, st.display, st.config.UseFullDev, st.log, st.config.EtcIncludes); err != nil {
 		return err
 	}
 
@@ -833,7 +868,7 @@ func (st *initState) setupFilesystem(extra_whitelist []oz.WhitelistItem, extra_b
 		mo.add(st.fs.MountFullDev, st.fs.MountShm)
 	}
 	mo.add( /*st.fs.MountTmp, */ st.fs.MountPts)
-	if !st.profile.NoSysProc {
+	if st.profile.NoSysProc != true {
 		mo.add(st.fs.MountProc, st.fs.MountSys)
 	}
 	return mo.run()
@@ -857,7 +892,6 @@ func (st *initState) createBindSymlinks(fsys *fs.Filesystem, wlist []oz.Whitelis
 			dest = ppath
 		} else {
 			dest, err = fs.ResolvePathNoGlob(wl.Target, -1, st.user, fsys.GetXDGDirs(), st.profile)
-
 			if err != nil {
 				return err
 			}

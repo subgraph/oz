@@ -24,6 +24,7 @@ type Config struct {
 	LogXpra         bool     `json:"log_xpra" desc:"Log output of Xpra"`
 	EnvironmentVars []string `json:"environment_vars" desc:"Default environment variables passed to sandboxes"`
 	DefaultGroups   []string `json:"default_groups" desc:"List of default group names that can be used inside the sandbox"`
+	EtcIncludes     []string `json:"etc_includes" desc:"Elements to include in the etc directory in the sandbox"`
 }
 
 const OzVersion = "0.0.1"
@@ -36,6 +37,50 @@ func CheckSettingsOverRide() {
 	if nConfPath != "" {
 		DefaultConfigPath = nConfPath
 	}
+}
+
+var DefaultEtcIncludes = []string{
+	"/etc/alternatives/",
+	"/etc/ssl/certs/",
+	"/etc/console-setup/",
+	"/etc/dbus-1/",
+	"/etc/default/locale",
+	"/etc/fonts/",
+	"/etc/gnome/defaults.list",
+	"/etc/group",
+	//"/etc/group-",
+	"/etc/gtk-2.0/",
+	"/etc/gtk-3.0/",
+	"/etc/host.conf",
+	"/etc/inputrc",
+	"/etc/locale.alias",
+	"/etc/localtime",
+	"/etc/magic",
+	"/etc/magic.mime",
+	"/etc/mailcap",
+	"/etc/mailcap.order",
+	"/etc/mime.types",
+	"/etc/oz",
+	"/etc/passwd",
+	//"/etc/passwd-",
+	"/etc/protocols",
+	"/etc/pulse/",
+	"/etc/resolvconf/run/resolv.conf",
+	"/etc/services",
+	"/etc/shells",
+	"/etc/terminfo/",
+	"/etc/timezone",
+	"/etc/vconsole.conf",
+	"/etc/xdg/-mimeapps.list",
+	"/etc/xdg/user-dirs.conf",
+	"/etc/xdg/user-dirs.defaults",
+	"/etc/xpra/",
+	"/etc/X11/",
+
+	//"/etc/debian_version",
+	//"/etc/os-release",
+	//"/etc/issue",
+	//"/etc/issue.net",
 }
 
 func NewDefaultConfig() *Config {
@@ -86,6 +131,12 @@ func LoadConfig(cpath string) (*Config, error) {
 
 	if c.DivertSuffix == "" && c.DivertPath == false {
 		c.DivertSuffix = "unsafe"
+	}
+
+	if len(c.EtcIncludes) == 0 {
+		c.EtcIncludes = DefaultEtcIncludes
+	} else {
+		c.EtcIncludes = append(c.EtcIncludes, DefaultEtcIncludes...)
 	}
 
 	return c, nil

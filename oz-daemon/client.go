@@ -321,7 +321,7 @@ func GetSocketName() string {
 	if sSocketName != "" {
 		return sSocketName
 	}
-	bSockName := os.Getenv("SOCKET_NAME")
+	bSockName := os.Getenv("OZ_SOCKET_NAME")
 
 	if bSockName != "" {
 		fmt.Println("Attempting to connect on custom socket provided through environment: ", bSockName)

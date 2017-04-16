@@ -334,7 +334,10 @@ func handleShell(c *cli.Context) {
 	f := os.NewFile(uintptr(fd), "")
 	go io.Copy(f, os.Stdin)
 	io.Copy(os.Stdout, f)
-	RestoreTerminal(0, st)
+	if err := RestoreTerminal(0, st); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
 	fmt.Println("done..")
 }
 

@@ -678,7 +678,13 @@ func setupFWRule(add, whitelist bool, src, dst string, port uint16) (bool, error
 		reqstr += "blacklist"
 	}
 
-	reqstr += " " + src + " " + dst + " " + strconv.Itoa(int(port)) + "\n"
+	pstr := strconv.Itoa(int(port))
+
+	if port == 0 {
+		pstr = "*"
+	}
+
+	reqstr += " " + src + " " + dst + " " + pstr + "\n"
 	c.Write([]byte(reqstr))
 
 	buf := make([]byte, 1024)

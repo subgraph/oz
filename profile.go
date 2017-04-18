@@ -57,6 +57,8 @@ type Profile struct {
 	Environment []EnvVar
 	// Networking
 	Networking NetworkProfile
+	// Firewall
+	Firewall []FWRule
 	// Seccomp
 	Seccomp SeccompConf
 	// External Forwarders
@@ -146,6 +148,12 @@ type WhitelistItem struct {
 type BlacklistItem struct {
 	Path     string
 	NoFollow bool `json:"no_follow"`
+}
+
+type FWRule struct {
+	Whitelist  bool `json:"whitelist"`
+	DstHost    string `json:"dst_host"`
+	DstPort    int `json:"dst_port"`
 }
 
 type EnvVar struct {

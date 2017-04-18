@@ -32,6 +32,7 @@ type OzVeth struct {
 	id           int       // The id of the sandbox this veth pair is associated with
 	peerPid      int       // The process id of the init process of the sandbox this veth pair belongs to
 	bridge       *OzBridge // The bridge this veth pair is attached to
+	sbip          net.IP   // The sandbox's IP through the bridge
 	log          *logging.Logger
 }
 
@@ -139,8 +140,27 @@ func (v *OzVeth) AssignIP() error {
 func (v *OzVeth) SetIP(ip net.IP) error {
 	ipnet := v.bridge.ipr
 	gw := v.bridge.ip
-	return v.SetPeerLinkNetInNs(v.peerPid, ip, ipnet.IPNet, gw)
+	err := v.SetPeerLinkNetInNs(v.peerPid, ip, ipnet.IPNet, gw)
+
+	if err == nil {
+		if v.sbip != nil {
+			err2 := v.RemoveFWRules()
+
+			if err2 != nil {
+				v.log.Warning("Error: could not remove firewall rules for reconfigured interface: ", err2.Error())
+			}
+		}
+		v.sbip = ip
+	}
+
+	return err
+//	return v.SetPeerLinkNetInNs(v.peerPid, ip, ipnet.IPNet, gw)
 }
+
+func (v *OzVeth) GetSandboxIP() net.IP {
+	return v.sbip
+}
+
 
 func (v *OzVeth) Delete() error {
 	return v.DeleteLink()
@@ -245,4 +265,38 @@ func (bs *Bridges) Reconfigure() error {
 
 func (v *OzVeth) GetVethBridge() *OzBridge {
 	return v.bridge
+}
+
+
+const ReceiverSocketPath = "/tmp/fwoz.sock"
+
+func (v *OzVeth) RemoveFWRules() error {
+	src := v.sbip
+fmt.Println("--------------- removing all rules by if = ", src.String())
+	if src == nil {
+		return errors.New("Could not remove firewall rules from null interface")
+	}
+        c, err := net.Dial("unix", ReceiverSocketPath)
+        if err != nil {
+                return err
+        }
+
+        defer c.Close()
+
+        reqstr := "removeall " + src.String() + "\n"
+        c.Write([]byte(reqstr))
+
+        buf := make([]byte, 1024)
+
+        for {
+                n, err := c.Read(buf[:])
+                if err != nil {
+                        return err
+                }
+                fmt.Println(string(buf[0:n]))
+        }
+
+
+        fmt.Println("Done.")
+        return nil
 }

@@ -357,7 +357,9 @@ func (fs *Filesystem) MountTmp() error {
 }
 
 func (fs *Filesystem) MountPts() error {
-	return fs.mountSpecial("/dev/pts", "devpts", 0, "newinstance,mode=620,gid=5,ptmxmode=0600")
+	//ma := "newinstance,mode=620,gid=5,ptmxmode=0600"
+	ma := "newinstance,mode=620,gid=5,ptmxmode=0666"
+	return fs.mountSpecial("/dev/pts", "devpts", 0, ma)
 }
 
 func (fs *Filesystem) MountShm() error {

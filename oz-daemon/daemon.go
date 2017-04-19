@@ -42,6 +42,7 @@ type daemonState struct {
 
 func Main() {
 	oz.CheckSettingsOverRide()
+	GetSocketName()
 	d := initialize()
 
 	err := runServer(

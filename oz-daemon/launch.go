@@ -160,6 +160,7 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		//fs.Cleanup()
 		return nil, fmt.Errorf("error creating stdin pipe for init process: %v", err)
 	}
+	cmd.Env = append(cmd.Env, d.envOverrides...)
 
 	jdata, err := json.Marshal(ozinit.InitData{
 		Display:   display,

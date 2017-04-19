@@ -38,6 +38,7 @@ type daemonState struct {
 	bridges     *network.Bridges
 	// openvpns     *network.OpenVPNs
 	systemGroups map[string]groupEntry
+	envOverrides []string
 }
 
 func Main() {
@@ -98,6 +99,12 @@ func initialize() *daemonState {
 	sockets := path.Join(config.SandboxPath, "sockets")
 	if err := os.MkdirAll(sockets, 0755); err != nil {
 		d.log.Fatalf("Failed to create sockets directory: %v", err)
+	}
+
+	for _, env := range os.Environ() {
+		if strings.HasPrefix(env, "OZ_") {
+			d.envOverrides = append(d.envOverrides, env)
+		}
 	}
 
 	os.Clearenv()

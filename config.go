@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path"
 )
 
 type Config struct {
@@ -61,7 +62,6 @@ var DefaultEtcIncludes = []string{
 	"/etc/mailcap",
 	"/etc/mailcap.order",
 	"/etc/mime.types",
-	"/etc/oz",
 	"/etc/passwd",
 	//"/etc/passwd-",
 	"/etc/protocols",
@@ -140,6 +140,9 @@ func LoadConfig(cpath string) (*Config, error) {
 	} else {
 		c.EtcIncludes = append(c.EtcIncludes, DefaultEtcIncludes...)
 	}
-
+	c.EtcIncludes = append(c.EtcIncludes, c.EtcPrefix)
+	if c.EtcPrefix !=  path.Dir(DefaultConfigPath) {
+		c.EtcIncludes = append(c.EtcIncludes, path.Dir(DefaultConfigPath))
+	}
 	return c, nil
 }

@@ -211,7 +211,7 @@ func dumpSyscallsTrackedRaw() string {
 				ruleString += "   " + "arg" + strconv.Itoa(int(j)) + " == " + strconv.Itoa(int(getSyscallTrackerRegVal(SyscallsTracked[i], j)))
 				var valArr = []uint{0}
 				valArr[0] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
-				argStr := genArgs(scn.name, j, valArr, true, false)
+				argStr := genArgs(scn.name, j, valArr, false, false)
 
 				if len(argStr) > 0 {
 					ruleString += "[" + argStr + "]"
@@ -259,7 +259,7 @@ func getSyscallsTracked(scname string) string {
 				if len(ruleStr) == 0 {
 					ruleStr = genArgs(scn.name, j, valArr, false, false)
 					commentStr = fmt.Sprintf("# Suppressed tracking of syscall %s, arg%d == %x[%s]\n", scn.name, j, valArr[0], ruleStr)
-					ruleStringTmp += condPrefix
+//					ruleStringTmp += condPrefix
 					condPrefix = ""
 					continue
 				}
@@ -1049,7 +1049,7 @@ func TMain(ctx *cli.Context) {
 			policyout += fmt.Sprintf("execve:1")
 
 			if ctx.Bool("verbose") {
-				policyout += "\n# Raw system call data:\n" + dumpSyscallsTrackedRaw() + "\n"
+				policyout += "\n\n# Raw system call data:\n" + dumpSyscallsTrackedRaw() + "\n"
 			}
 
 			if ctx.Bool("vtrain") == true {

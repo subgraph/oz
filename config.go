@@ -141,7 +141,7 @@ func LoadConfig(cpath string) (*Config, error) {
 		c.EtcIncludes = append(c.EtcIncludes, DefaultEtcIncludes...)
 	}
 	c.EtcIncludes = append(c.EtcIncludes, c.EtcPrefix)
-	if c.EtcPrefix !=  path.Dir(DefaultConfigPath) {
+	if c.EtcPrefix != path.Dir(DefaultConfigPath) {
 		c.EtcIncludes = append(c.EtcIncludes, path.Dir(DefaultConfigPath))
 	}
 	return c, nil

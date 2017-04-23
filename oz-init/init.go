@@ -555,8 +555,8 @@ func (st *initState) launchTerminalServer(cname string) (*exec.Cmd, error) {
 	}
 	st.addChildProcess(cmd, true)
 
-	go st.readApplicationOutput(stdout, "stdout")
-	go st.readApplicationOutput(stderr, "stderr")
+	go st.readApplicationOutput(stdout, "stdout", true)
+	go st.readApplicationOutput(stderr, "stderr", true)
 
 	return cmd, nil
 }
@@ -567,7 +567,7 @@ func (st *initState) waitTerminalServerReady() (*exec.Cmd, error) {
 	//dbus-send --session --dest=org.gnome.Terminal --type=method_call --print-reply /org/gnome/Terminal2 org.freedesktop.DBus.Peer.GetMachineId
 	dbusPath := "/org/freedesktop/DBus"
 	dbusSender := "org.freedesktop.DBus"
-	dbusQuery := "type='signal',sender='"+dbusSender+"',path='"+ dbusPath +"',interface='"+dbusSender+"',member='NameAcquired'"
+	dbusQuery := "type='signal',sender='" + dbusSender + "',path='" + dbusPath + "',interface='" + dbusSender + "',member='NameAcquired'"
 	args := []string{
 		"--session",
 		dbusQuery,
@@ -663,7 +663,7 @@ func (st *initState) launchTerminalApplication(cpath, pwd string, cmdArgs []stri
 		Gid:    st.gid,
 		Groups: groups,
 	}
-	tcmd.Env = append(tcmd.Env, "PS1=[\\h] $ ")//fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
+	tcmd.Env = append(tcmd.Env, "PS1=[\\h] $ ") //fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
 	tcmd.Env = append(tcmd.Env, st.launchEnv...)
 
 	if !noexec {
@@ -686,8 +686,8 @@ func (st *initState) launchTerminalApplication(cpath, pwd string, cmdArgs []stri
 	}
 	st.addChildProcess(tcmd, false)
 
-	go st.readApplicationOutput(tstdout, "stdout")
-	go st.readApplicationOutput(tstderr, "stderr")
+	go st.readApplicationOutput(tstdout, "stdout", false)
+	go st.readApplicationOutput(tstderr, "stderr", false)
 
 	return tcmd, nil
 }
@@ -709,12 +709,12 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	if len(st.profile.DefaultParams) > 0 {
 		cmdArgs = append(st.profile.DefaultParams, cmdArgs...)
 	}
-/*
-	if st.profile.IsSandboxedTerminal {
-		cmdArgs = append([]string{"/usr/bin/gnome-terminal", "--hide-menubar", "--maximize", "--", cpath}, cmdArgs...)
-		cpath = "/usr/bin/dbus-launch"
-	}
-*/
+	/*
+		if st.profile.IsSandboxedTerminal {
+			cmdArgs = append([]string{"/usr/bin/gnome-terminal", "--hide-menubar", "--maximize", "--", cpath}, cmdArgs...)
+			cpath = "/usr/bin/dbus-launch"
+		}
+	*/
 	switch st.profile.Seccomp.Mode {
 	case oz.PROFILE_SECCOMP_TRAIN:
 		st.log.Notice("Enabling seccomp training mode for : %s", cpath)
@@ -796,8 +796,8 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 	}
 	st.addChildProcess(cmd, true)
 
-	go st.readApplicationOutput(stdout, "stdout")
-	go st.readApplicationOutput(stderr, "stderr")
+	go st.readApplicationOutput(stdout, "stdout", false)
+	go st.readApplicationOutput(stderr, "stderr", false)
 
 	return cmd, nil
 }
@@ -811,10 +811,13 @@ func setEnvironOverrides(env []string) []string {
 	return env
 }
 
-func (st *initState) readApplicationOutput(r io.ReadCloser, label string) {
+func (st *initState) readApplicationOutput(r io.ReadCloser, label string, stripempty bool) {
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line := sc.Text()
+		if stripempty == true && line == "" {
+			continue
+		}
 		st.log.Debug("(%s) %s", label, line)
 	}
 }
@@ -930,7 +933,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 			cmd.Dir = st.user.HomeDir
 		}
 	}
-	cmd.Env = append(cmd.Env, "PS1=[\\h] $ ")//fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
+	cmd.Env = append(cmd.Env, "PS1=[\\h] $ ") //fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
 	st.log.Info("Executing shell...")
 	f, err := ptyStart(cmd)
 	defer f.Close()

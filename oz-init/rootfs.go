@@ -62,8 +62,8 @@ var basicBlacklist = []string{
 	"${PATH}/kmod", "${PATH}/mknod", "${PATH}/udevadm",
 	"${PATH}/systemd", "${PATH}/systemd-*",
 
-//	"/usr/share/dbus-1/services",
-//	"/usr/local/share/dbus-1/services",
+	//"/usr/share/dbus-1/services",
+	//"/usr/local/share/dbus-1/services",
 }
 
 var basicWhiteList = []string{

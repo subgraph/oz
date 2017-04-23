@@ -338,13 +338,13 @@ func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 	}
 
 	if sbox := d.getRunningSandboxByName(p.Name); sbox != nil {
-		if msg.Noexec {
+		if msg.NoExec {
 			errmsg := "Asked to launch program but sandbox is running and noexec is set!"
 			d.Notice(errmsg)
 			return m.Respond(&ErrorMsg{errmsg})
 		} else {
 			d.Info("Found running sandbox for `%s`, running program there", p.Name)
-			sbox.launchProgram(d.config.PrefixPath, msg.Path, msg.Pwd, msg.Args, d.log)
+			sbox.launchProgram(d.config.PrefixPath, msg.Path, msg.Pwd, msg.Args, msg.NoExec, d.log)
 		}
 	} else {
 		d.Debug("Would launch %s (ephemeral: %b)", p.Name, msg.Ephemeral)

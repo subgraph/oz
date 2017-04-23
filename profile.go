@@ -59,6 +59,8 @@ type Profile struct {
 	Seccomp SeccompConf
 	// External Forwarders
 	ExternalForwarders []ExternalForwarder `json:"external_forwarders"`
+	// Indicates this profile runs inside a sandboxed terminal
+	IsSandboxedTerminal bool `json:"is_sandboxed_terminal"`
 }
 
 type ShutdownMode string

@@ -19,7 +19,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	//"time"
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
@@ -53,6 +52,7 @@ type initState struct {
 	ipcServer         *ipc.MsgServer
 	xpra              *xpra.Xpra
 	xpraReady         sync.WaitGroup
+	termReady         sync.WaitGroup
 	dbusUuid          string
 	shutdownRequested bool
 	ephemeral         bool
@@ -256,6 +256,26 @@ func (st *initState) runInit() {
 	fsbx := path.Join("/tmp", "oz-sandbox")
 	err = ioutil.WriteFile(fsbx, []byte(st.profile.Name), 0644)
 
+	if st.profile.IsSandboxedTerminal {
+		cmdtw, err := st.waitTerminalServerReady()
+		if err != nil {
+			st.log.Error("Failed to launch terminal server: %v", err)
+			os.Exit(1)
+		}
+		if _, err := st.launchTerminalServer(st.profile.Name); err != nil {
+			st.log.Error("Unable to launch terminal server: %v", err)
+			os.Exit(1)
+		}
+
+		st.termReady.Wait()
+
+		if err := cmdtw.Process.Kill(); err != nil {
+			st.log.Debug("Failed to kill dbus-monitor... %v", err)
+		}
+
+		st.log.Info("Terminal server ready")
+	}
+
 	// Signal the daemon we are ready
 	os.Stderr.WriteString("OK\n")
 
@@ -328,7 +348,8 @@ func (st *initState) setupEtcFiles() {
 func (st *initState) needsDbus() bool {
 	return (st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_FULL ||
 		st.profile.XServer.AudioMode == oz.PROFILE_AUDIO_SPEAKER ||
-		st.profile.XServer.EnableNotifications == true)
+		st.profile.XServer.EnableNotifications == true ||
+		st.profile.IsSandboxedTerminal == true)
 }
 
 func (st *initState) setupDbus() error {
@@ -344,8 +365,7 @@ func (st *initState) setupDbus() error {
 
 func (st *initState) getDbusSession() error {
 	args := []string{
-		"--autolaunch",
-		st.dbusUuid,
+		"--autolaunch=" + st.dbusUuid,
 		"--sh-syntax",
 		"--close-stderr",
 	}
@@ -367,17 +387,12 @@ func (st *initState) getDbusSession() error {
 	senvs = strings.Replace(senvs, "export ", "", -1)
 	senvs = strings.Replace(senvs, ";", "", -1)
 	senvs = strings.Replace(senvs, "'", "", -1)
-	dbusenv := ""
 	for _, line := range strings.Split(senvs, "\n") {
-		if dbusValidVar.MatchString(line) {
-			dbusenv = line
-			break
+		if line != "" && strings.Contains(line, "=") && strings.HasPrefix(line, "DBUS_") {
+			st.launchEnv = append(st.launchEnv, line)
+			vv := strings.Split(line, "=")
+			os.Setenv(vv[0], strings.Join(vv[1:], "="))
 		}
-	}
-	if dbusenv != "" {
-		st.launchEnv = append(st.launchEnv, dbusenv)
-		vv := strings.Split(dbusenv, "=")
-		os.Setenv(vv[0], strings.Join(vv[1:], "="))
 	}
 	return nil
 }
@@ -391,7 +406,6 @@ func (st *initState) startXpraServer() {
 	st.log.Info("xpra work dir is %s", workdir)
 	spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
 	xpra := xpra.NewServer(&st.profile.XServer, uint64(st.display), spath, workdir)
-	//st.log.Debug("%s %s", strings.Join(xpra.Process.Env, " "), strings.Join(xpra.Process.Args, " "))
 	if xpra == nil {
 		st.log.Error("Error creating xpra server command")
 		os.Exit(1)
@@ -454,7 +468,161 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 	}
 }
 
-func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*exec.Cmd, error) {
+func (st *initState) launchTerminalServer(cname string) (*exec.Cmd, error) {
+	tspath := "/usr/bin/dbus-launch"
+	dbArgs := []string{"--close-stderr", "--autolaunch=" + st.dbusUuid, "--"}
+	tscmdArgs := []string{}
+
+	switch st.profile.Seccomp.Mode {
+	case oz.PROFILE_SECCOMP_TRAIN:
+		st.log.Notice("Enabling seccomp training mode for : %s", cname)
+		spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+		tscmdArgs = []string{spath, "-mode=whitelist", tspath}
+		tspath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
+	case oz.PROFILE_SECCOMP_WHITELIST:
+		st.log.Notice("Enabling seccomp whitelist for: %s", cname)
+		if st.profile.Seccomp.Enforce == false {
+			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+			tscmdArgs = []string{spath, "-mode=whitelist", tspath}
+			tspath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
+		} else {
+			tscmdArgs = []string{"-mode=whitelist", tspath}
+			tspath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+		}
+	case oz.PROFILE_SECCOMP_BLACKLIST:
+		st.log.Notice("Enabling seccomp blacklist for: %s", cname)
+		if st.profile.Seccomp.Enforce == false {
+			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+			tscmdArgs = []string{spath, "-mode=blacklist", tspath}
+			tspath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
+		} else {
+			tscmdArgs = []string{"-mode=blacklist", tspath}
+			tspath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
+		}
+	}
+	tscmdArgs = append(tscmdArgs, dbArgs...)
+
+	cmd := exec.Command(tspath)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		st.log.Warning("Failed to create stdout pipe: %v", err)
+		return nil, err
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		st.log.Warning("Failed to create stderr pipe: %v", err)
+		return nil, err
+	}
+	groups := append([]uint32{}, st.gid)
+	for _, gid := range st.gids {
+		groups = append(groups, gid)
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{}
+	cmd.SysProcAttr.Credential = &syscall.Credential{
+		Uid:    st.uid,
+		Gid:    st.gid,
+		Groups: groups,
+	}
+	cmd.Env = setEnvironOverrides(cmd.Env)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
+	cmd.Env = append(cmd.Env, st.launchEnv...)
+
+	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST ||
+		st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST || st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
+		pi, err := cmd.StdinPipe()
+		if err != nil {
+			return nil, fmt.Errorf("error creating stdin pipe for seccomp process: %v", err)
+		}
+		jdata, err := json.Marshal(st.profile)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to marshal seccomp state: %+v", err)
+		}
+		io.Copy(pi, bytes.NewBuffer(jdata))
+		pi.Close()
+	}
+
+	cmd.Args = append(cmd.Args, tscmdArgs...)
+	cmd.Args = append(cmd.Args, "/usr/lib/gnome-terminal/gnome-terminal-server")
+
+	pwd := st.user.HomeDir
+	if _, err := os.Stat(pwd); err == nil {
+		cmd.Dir = pwd
+	}
+
+	if err := cmd.Start(); err != nil {
+		st.log.Warning("Failed to start terminal server (%s): %v", st.profile.Path, err)
+		return nil, err
+	}
+	st.addChildProcess(cmd, true)
+
+	go st.readApplicationOutput(stdout, "stdout")
+	go st.readApplicationOutput(stderr, "stderr")
+
+	return cmd, nil
+}
+
+func (st *initState) waitTerminalServerReady() (*exec.Cmd, error) {
+	//dbus-monitor --session "type='signal',sender='org.freedesktop.DBus',path='/org/freedesktop/DBus',interface='org.freedesktop.DBus',member='NameAcquired'"
+	//dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames
+	//dbus-send --session --dest=org.gnome.Terminal --type=method_call --print-reply /org/gnome/Terminal2 org.freedesktop.DBus.Peer.GetMachineId
+	dbusPath := "/org/freedesktop/DBus"
+	dbusSender := "org.freedesktop.DBus"
+	dbusQuery := "type='signal',sender='"+dbusSender+"',path='"+ dbusPath +"',interface='"+dbusSender+"',member='NameAcquired'"
+	args := []string{
+		"--session",
+		dbusQuery,
+	}
+	cmd := exec.Command("/usr/bin/dbus-monitor", args...)
+	cmd.Env = append(cmd.Env, st.launchEnv...)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		st.log.Warning("Failed to create stdout pipe: %v", err)
+		return nil, err
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		st.log.Warning("Failed to create stderr pipe: %v", err)
+		return nil, err
+	}
+
+	groups := append([]uint32{}, st.gid)
+	for _, gid := range st.gids {
+		groups = append(groups, gid)
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{}
+	cmd.SysProcAttr.Credential = &syscall.Credential{
+		Uid:    st.uid,
+		Gid:    st.gid,
+		Groups: groups,
+	}
+	cmd.Env = append(cmd.Env, st.launchEnv...)
+
+	if err := cmd.Start(); err != nil {
+		st.log.Warning("Failed to start terminal server (%s): %v", st.profile.Path, err)
+		return nil, err
+	}
+
+	st.termReady.Add(2)
+	go st.readTerminalServerCheck(stdout)
+	go st.readTerminalServerCheck(stderr)
+
+	return cmd, nil
+}
+
+func (st *initState) readTerminalServerCheck(r io.ReadCloser) {
+	defer st.termReady.Done()
+	defer r.Close()
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := sc.Text()
+		if strings.Contains(line, "\"org.gnome.Terminal\"") {
+			break
+		}
+	}
+}
+
+func (st *initState) launchTerminalApplication(cpath, pwd string, cmdArgs []string, noexec bool) (*exec.Cmd, error) {
 	if cpath == "" {
 		cpath = st.profile.Path
 	}
@@ -472,6 +640,81 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		cmdArgs = append(st.profile.DefaultParams, cmdArgs...)
 	}
 
+	groups := append([]uint32{}, st.gid)
+	for _, gid := range st.gids {
+		groups = append(groups, gid)
+	}
+
+	tcmd := exec.Command("/usr/bin/gnome-terminal", "--hide-menubar", "--")
+	tstdout, err := tcmd.StdoutPipe()
+	if err != nil {
+		st.log.Warning("Failed to create stdout pipe: %v", err)
+		return nil, err
+	}
+	tstderr, err := tcmd.StderrPipe()
+	if err != nil {
+		st.log.Warning("Failed to create stderr pipe: %v", err)
+		return nil, err
+	}
+
+	tcmd.SysProcAttr = &syscall.SysProcAttr{}
+	tcmd.SysProcAttr.Credential = &syscall.Credential{
+		Uid:    st.uid,
+		Gid:    st.gid,
+		Groups: groups,
+	}
+	tcmd.Env = append(tcmd.Env, "PS1=[\\h] $ ")//fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
+	tcmd.Env = append(tcmd.Env, st.launchEnv...)
+
+	if !noexec {
+		tcmd.Args = append(tcmd.Args, cpath)
+		tcmd.Args = append(tcmd.Args, cmdArgs...)
+	} else {
+		tcmd.Args = append(tcmd.Args, st.config.ShellPath)
+	}
+
+	if pwd == "" {
+		pwd = st.user.HomeDir
+	}
+	if _, err := os.Stat(pwd); err == nil {
+		tcmd.Dir = pwd
+	}
+
+	if err := tcmd.Start(); err != nil {
+		st.log.Warning("Failed to start terminal server (%s): %v", st.profile.Path, err)
+		return nil, err
+	}
+	st.addChildProcess(tcmd, false)
+
+	go st.readApplicationOutput(tstdout, "stdout")
+	go st.readApplicationOutput(tstderr, "stderr")
+
+	return tcmd, nil
+}
+
+func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*exec.Cmd, error) {
+	if cpath == "" {
+		cpath = st.profile.Path
+	}
+	if st.config.DivertSuffix != "" {
+		cpath += "." + st.config.DivertSuffix
+	}
+	if st.config.DivertPath {
+		cpath = path.Join(path.Dir(cpath)+"-oz", path.Base(cpath))
+	}
+	if st.profile.RejectUserArgs == true {
+		st.log.Notice("RejectUserArgs true, discarding user supplied command arguments: %v", cmdArgs)
+		cmdArgs = []string{}
+	}
+	if len(st.profile.DefaultParams) > 0 {
+		cmdArgs = append(st.profile.DefaultParams, cmdArgs...)
+	}
+/*
+	if st.profile.IsSandboxedTerminal {
+		cmdArgs = append([]string{"/usr/bin/gnome-terminal", "--hide-menubar", "--maximize", "--", cpath}, cmdArgs...)
+		cpath = "/usr/bin/dbus-launch"
+	}
+*/
 	switch st.profile.Seccomp.Mode {
 	case oz.PROFILE_SECCOMP_TRAIN:
 		st.log.Notice("Enabling seccomp training mode for : %s", cpath)
@@ -641,7 +884,13 @@ func proxyForwarder(conn *net.Conn, proto string, rAddr string) error {
 
 func (st *initState) handleRunProgram(rp *RunProgramMsg, msg *ipc.Message) error {
 	st.log.Info("Run program message received: %+v", rp)
-	_, err := st.launchApplication(rp.Path, rp.Pwd, rp.Args)
+
+	var err error
+	if st.profile.IsSandboxedTerminal {
+		_, err = st.launchTerminalApplication(rp.Path, rp.Pwd, rp.Args, rp.NoExec)
+	} else if rp.NoExec == false {
+		_, err = st.launchApplication(rp.Path, rp.Pwd, rp.Args)
+	}
 	if err != nil {
 		err := msg.Respond(&ErrorMsg{Msg: err.Error()})
 		return err
@@ -681,7 +930,7 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 			cmd.Dir = st.user.HomeDir
 		}
 	}
-	cmd.Env = append(cmd.Env, fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
+	cmd.Env = append(cmd.Env, "PS1=[\\h] $ ")//fmt.Sprintf("PS1=[%s] $ ", st.profile.Name))
 	st.log.Info("Executing shell...")
 	f, err := ptyStart(cmd)
 	defer f.Close()

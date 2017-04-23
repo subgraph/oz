@@ -76,7 +76,7 @@ type LaunchMsg struct {
 	Gids      []uint32
 	Args      []string
 	Env       []string
-	Noexec    bool
+	NoExec    bool
 	Ephemeral bool
 }
 

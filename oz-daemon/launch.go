@@ -144,6 +144,11 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 		d.nextDisplay += 1
 	}
 
+	if p.IsSandboxedTerminal {
+		p.XServer.Enabled = true
+		//p.XServer.EnableNotifications = true
+	}
+
 	socketPath, err := createSocketPath(path.Join(d.config.SandboxPath, "sockets"), "oz-init-control")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create random socket path: %v", err)
@@ -243,13 +248,12 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 			}
 		}()
 	}
-	if !msg.Noexec {
-		go func() {
-			sbox.ready.Wait()
-			wgNet.Wait()
-			go sbox.launchProgram(d.config.PrefixPath, msg.Path, msg.Pwd, msg.Args, log)
-		}()
-	}
+
+	go func() {
+		sbox.ready.Wait()
+		wgNet.Wait()
+		go sbox.launchProgram(d.config.PrefixPath, msg.Path, msg.Pwd, msg.Args, msg.NoExec, log)
+	}()
 
 	if sbox.profile.XServer.Enabled {
 		go func() {
@@ -339,11 +343,11 @@ func (sbox *Sandbox) getBridgeName() string {
 	return "default"
 }
 
-func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, log *logging.Logger) {
+func (sbox *Sandbox) launchProgram(binpath, cpath, pwd string, args []string, noexec bool, log *logging.Logger) {
 	if sbox.profile.AllowFiles {
 		sbox.whitelistArgumentFiles(binpath, pwd, args, log)
 	}
-	err := ozinit.RunProgram(sbox.addr, cpath, pwd, args)
+	err := ozinit.RunProgram(sbox.addr, cpath, pwd, args, noexec)
 	if err != nil {
 		log.Error("run program command failed: %v", err)
 		pid := sbox.init.Process.Pid

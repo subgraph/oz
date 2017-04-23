@@ -41,12 +41,12 @@ func Ping(addr string) error {
 	}
 }
 
-func RunProgram(addr, cpath, pwd string, args []string) error {
+func RunProgram(addr, cpath, pwd string, args []string, noexec bool) error {
 	c, err := clientConnect(addr)
 	if err != nil {
 		return err
 	}
-	rr, err := c.ExchangeMsg(&RunProgramMsg{Path: cpath, Args: args, Pwd: pwd})
+	rr, err := c.ExchangeMsg(&RunProgramMsg{Path: cpath, Args: args, Pwd: pwd, NoExec: noexec})
 	resp := <-rr.Chan()
 	rr.Done()
 	c.Close()

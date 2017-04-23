@@ -19,9 +19,10 @@ type RunShellMsg struct {
 }
 
 type RunProgramMsg struct {
-	Args []string "RunProgram"
-	Pwd  string
-	Path string
+	Args   []string "RunProgram"
+	Pwd    string
+	Path   string
+	NoExec bool
 }
 
 type ForwarderSuccessMsg struct {

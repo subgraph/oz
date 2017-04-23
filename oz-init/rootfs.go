@@ -61,6 +61,9 @@ var basicBlacklist = []string{
 	"${PATH}/fusermount", "${PATH}/fuser",
 	"${PATH}/kmod", "${PATH}/mknod", "${PATH}/udevadm",
 	"${PATH}/systemd", "${PATH}/systemd-*",
+
+//	"/usr/share/dbus-1/services",
+//	"/usr/local/share/dbus-1/services",
 }
 
 var basicWhiteList = []string{

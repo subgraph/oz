@@ -161,7 +161,7 @@ func Launch(arg, cpath string, args []string, noexec, ephemeral bool) error {
 		Gids:      gg,
 		Args:      args,
 		Env:       os.Environ(),
-		Noexec:    noexec,
+		NoExec:    noexec,
 		Ephemeral: ephemeral,
 	})
 	if err != nil {

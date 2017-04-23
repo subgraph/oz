@@ -469,8 +469,10 @@ func (st *initState) readXpraOutput(r io.ReadCloser) {
 }
 
 func (st *initState) launchTerminalServer(cname string) (*exec.Cmd, error) {
-	tspath := "/usr/bin/dbus-launch"
-	dbArgs := []string{"--close-stderr", "--autolaunch=" + st.dbusUuid, "--"}
+	//tspath := "/usr/bin/dbus-launch"
+	//dbArgs := []string{"--close-stderr", "--autolaunch=" + st.dbusUuid, "--"}
+	tspath := "/usr/lib/gnome-terminal/gnome-terminal-server"
+	dbArgs := []string{}
 	tscmdArgs := []string{}
 
 	switch st.profile.Seccomp.Mode {
@@ -528,7 +530,8 @@ func (st *initState) launchTerminalServer(cname string) (*exec.Cmd, error) {
 	cmd.Env = append(cmd.Env, st.launchEnv...)
 
 	if st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST ||
-		st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST || st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
+		st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_BLACKLIST ||
+		st.profile.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
 		pi, err := cmd.StdinPipe()
 		if err != nil {
 			return nil, fmt.Errorf("error creating stdin pipe for seccomp process: %v", err)
@@ -542,7 +545,7 @@ func (st *initState) launchTerminalServer(cname string) (*exec.Cmd, error) {
 	}
 
 	cmd.Args = append(cmd.Args, tscmdArgs...)
-	cmd.Args = append(cmd.Args, "/usr/lib/gnome-terminal/gnome-terminal-server")
+	//cmd.Args = append(cmd.Args, "/usr/lib/gnome-terminal/gnome-terminal-server")
 
 	pwd := st.user.HomeDir
 	if _, err := os.Stat(pwd); err == nil {
@@ -561,6 +564,8 @@ func (st *initState) launchTerminalServer(cname string) (*exec.Cmd, error) {
 	return cmd, nil
 }
 
+// XXXX We could rewrite this to do it all natively, however this will
+//		require a dbus policy file since we can't setuid...
 func (st *initState) waitTerminalServerReady() (*exec.Cmd, error) {
 	//dbus-monitor --session "type='signal',sender='org.freedesktop.DBus',path='/org/freedesktop/DBus',interface='org.freedesktop.DBus',member='NameAcquired'"
 	//dbus-send --session --dest=org.freedesktop.DBus --type=method_call --print-reply /org/freedesktop/DBus org.freedesktop.DBus.ListNames

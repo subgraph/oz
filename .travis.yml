@@ -1,0 +1,15 @@
+sudo: required
+language: generic
+
+services:
+  - docker
+
+env:
+  - TRAVIS_DEBIAN_DISTRIBUTION=testing TRAVIS_DEBIAN_EXTRA_REPOSITORY="https://devrepo.subgraph.com/subgraph/ aaron main" TRAVIS_DEBIAN_EXTRA_REPOSITORY_GPG_URL="https://subgraph.com/DA11364B4760E444.asc"
+
+script:
+  - wget -O- https://raw.githubusercontent.com/subgraph/travis.debian.net/gh-pages/script.sh | sh -
+
+branches:
+  except:
+    - /^debian\/\d/

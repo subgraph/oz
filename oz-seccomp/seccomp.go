@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"syscall"
@@ -30,9 +31,10 @@ func init() {
 }
 
 func Main() {
-
 	modeptr := flag.String("mode", "whitelist", "Mode: whitelist, blacklist, train")
-	policyptr := flag.String("policy", "", "Policy path")
+	policyptr := flag.String("policy", "", "seccomp policy path")
+	profilepath := flag.String("profile", "", "optional seccomp profile path")
+	newprivs := flag.Bool("allow-new-privs", false, "allow traced program to set new seccomp filters")
 
 	flag.Parse()
 
@@ -41,8 +43,7 @@ func Main() {
 	var settings seccomp.SeccompSettings
 
 	if len(args) < 1 {
-		log.Error("oz-seccomp: no command.")
-		os.Exit(1)
+		log.Fatal("oz-seccomp: must specify a command to be traced.")
 	}
 
 	cmd := args[0]
@@ -63,9 +64,19 @@ func Main() {
 
 	p := new(oz.Profile)
 	if *modeptr != "train" {
-		if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
-			log.Error("unable to decode profile data: %v", err)
-			os.Exit(1)
+
+		if *profilepath != "" && *profilepath != "-" {
+			fbytes, err := ioutil.ReadFile(*profilepath)
+			if err != nil {
+				log.Fatal("unable to read profile data from file: ", err)
+			}
+			if err := json.Unmarshal(fbytes, &p); err != nil {
+				log.Fatal("unable to decode profile data from file: ", err)
+			}
+		} else {
+			if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
+				log.Fatal("unable to decode profile data: ", err)
+			}
 		}
 	}
 
@@ -85,18 +96,23 @@ func Main() {
 		filter, err := seccomp.Prepare(fpath, settings)
 
 		if err != nil {
-			log.Error("[FATAL] Seccomp filter compile failed: %v", err)
-			os.Exit(1)
+			log.Fatal("[FATAL] Seccomp filter compile failed: ", err)
 		}
-		err = seccomp.Install(filter)
+		if *newprivs {
+			err = seccomp.LockedLoad(filter)
+		} else {
+			err = seccomp.Install(filter)
+		}
 		if err != nil {
-			log.Error("[FATAL] Error (seccomp): %v", err)
-			os.Exit(1)
+			if *newprivs {
+				log.Fatal("[FATAL] Error loading seccomp filter: ", err)
+			} else {
+				log.Fatal("[FATAL] Error installing seccomp filter: ", err)
+			}
 		}
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
-			log.Error("[FATAL] Error (exec): %v %s", err, cmd)
-			os.Exit(1)
+			log.Fatal("[FATAL] Error (exec): ", err, " / ", cmd)
 		}
 	case "whitelist":
 
@@ -109,8 +125,7 @@ func Main() {
 		fpath := ""
 		if p.Seccomp.Mode == oz.PROFILE_SECCOMP_WHITELIST {
 			if p.Seccomp.Whitelist == "" {
-				log.Error("[FATAL] No seccomp policy file.")
-				os.Exit(1)
+				log.Fatal("[FATAL] profile referenced no seccomp whitelist policy file.")
 			}
 			fpath = p.Seccomp.Whitelist
 			enforce = p.Seccomp.Enforce
@@ -120,25 +135,33 @@ func Main() {
 				enforce = false
 			}
 			fpath = path.Join(config.EtcPrefix, "training-generic.seccomp")
+		} else if p.Seccomp.Mode == oz.PROFILE_SECCOMP_DISABLED {
+			log.Fatal("Cannot run seccomp in whitelist mode if seccomp is disabled in profile.")
 		}
+
 		if enforce == false {
 			settings.DefaultNegativeAction = "trace"
 			settings.DefaultPolicyAction = "trace"
 		}
 		filter, err := seccomp.Prepare(fpath, settings)
 		if err != nil {
-			log.Error("[FATAL] Seccomp filter compile failed: %v", err)
-			os.Exit(1)
+			log.Fatal("[FATAL] Seccomp filter compile failed: ", err)
 		}
-		err = seccomp.Install(filter)
+		if *newprivs {
+			err = seccomp.LockedLoad(filter)
+		} else {
+			err = seccomp.Install(filter)
+		}
 		if err != nil {
-			log.Error("[FATAL] Error (seccomp): %v", err)
-			os.Exit(1)
+			if *newprivs {
+				log.Fatal("[FATAL] Error loading seccomp filter: ", err)
+			} else {
+				log.Fatal("[FATAL] Error installing seccomp filter: ", err)
+			}
 		}
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
-			log.Error("[FATAL] Error (exec): %v %s", err, cmd)
-			os.Exit(1)
+			log.Fatal("[FATAL] Error (exec): ", err, " / ", cmd)
 		}
 	case "blacklist":
 
@@ -157,24 +180,21 @@ func Main() {
 		}
 		filter, err := seccomp.Prepare(p.Seccomp.Blacklist, settings)
 		if err != nil {
-			log.Error("[FATAL] Seccomp blacklist filter compile failed: %v", err)
-			os.Exit(1)
+			log.Fatal("[FATAL] Seccomp blacklist filter compile failed: ", err)
 		}
 		err = seccomp.InstallBlacklist(filter)
 		if err != nil {
-			log.Error("[FATAL] Error (seccomp): %v", err)
-			os.Exit(1)
+			log.Fatal("[FATAL] Error installing seccomp blacklist: ", err)
 		}
 		log.Info("%s %v\n", cmd, cmdArgs)
 		err = syscall.Exec(cmd, cmdArgs, os.Environ())
 		if err != nil {
-			log.Error("[FATAL] Error (exec): %v %s", err, cmd)
-			os.Exit(1)
+			log.Fatal("[FATAL] Error (exec): ", err, " / ", cmd)
 		}
 	default:
-		fmt.Println("Bad switch.")
-		os.Exit(1)
+		log.Fatal("Invalid mode specified (must be whitelist, blacklist, or train)")
 	}
+
 
 }
 

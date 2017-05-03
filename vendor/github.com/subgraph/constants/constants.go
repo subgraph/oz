@@ -10,13 +10,25 @@ type ConstTableEntry struct {
 
 type ConstTable struct {
         Name string
-        entries []ConstTableEntry
+        Entries []ConstTableEntry
+}
+
+var ConstNameOverrides = map[string]string {
+	"EAGAIN": "EWOULDBLOCK",
+	"EDEADLK": "EDEADLOCK",
+}
+
+var ConstValOverrides = map[string]uint {
+	"F_GETLK64": 5,
+	"F_SETLK64": 6,
+	"F_SETLKW64": 7,
+	"O_LARGEFILE": 0,
 }
 
 var AllConstants = []ConstTable { 
 
 
-{ Name: "arp_hardware", entries: []ConstTableEntry {
+{ Name: "arp_hardware", Entries: []ConstTableEntry {
      { Name: "ARPHRD_NETROM", Val: 0 },
      { Name: "ARPHRD_ETHER", Val: 1 },
      { Name: "ARPHRD_EETHER", Val: 2 },
@@ -81,7 +93,7 @@ var AllConstants = []ConstTable {
      { Name: "ARPHRD_6LOWPAN", Val: 825 },
      { Name: "ARPHRD_VOID", Val: 0xFFFF },
      { Name: "ARPHRD_NONE", Val: 0xFFFE } } },
-{ Name: "bpf", entries: []ConstTableEntry {
+{ Name: "bpf", Entries: []ConstTableEntry {
      { Name: "BPF_LD", Val: 0x00 },
      { Name: "BPF_LDX", Val: 0x01 },
      { Name: "BPF_ST", Val: 0x02 },
@@ -124,7 +136,7 @@ var AllConstants = []ConstTable {
      { Name: "BPF_TAX", Val: 0x00 },
      { Name: "BPF_TXA", Val: 0x80 },
      { Name: "BPF_MEMWORDS", Val: 16 } } },
-{ Name: "clone", entries: []ConstTableEntry {
+{ Name: "clone", Entries: []ConstTableEntry {
      { Name: "CLONE_VM", Val: 0x00000100 },
      { Name: "CLONE_FS", Val: 0x00000200 },
      { Name: "CLONE_FILES", Val: 0x00000400 },
@@ -141,13 +153,14 @@ var AllConstants = []ConstTable {
      { Name: "CLONE_DETACHED", Val: 0x00400000 },
      { Name: "CLONE_UNTRACED", Val: 0x00800000 },
      { Name: "CLONE_CHILD_SETTID", Val: 0x01000000 },
+     { Name: "CLONE_NEWCGROUP", Val: 0x02000000 },
      { Name: "CLONE_NEWUTS", Val: 0x04000000 },
      { Name: "CLONE_NEWIPC", Val: 0x08000000 },
      { Name: "CLONE_NEWUSER", Val: 0x10000000 },
      { Name: "CLONE_NEWPID", Val: 0x20000000 },
      { Name: "CLONE_NEWNET", Val: 0x40000000 },
      { Name: "CLONE_IO", Val: 0x80000000 } } },
-{ Name: "epoll", entries: []ConstTableEntry {
+{ Name: "epoll", Entries: []ConstTableEntry {
      { Name: "EPOLL_CTL_ADD", Val: 1 },
      { Name: "EPOLL_CTL_DEL", Val: 2 },
      { Name: "EPOLL_CTL_MOD", Val: 3 },
@@ -162,7 +175,7 @@ var AllConstants = []ConstTable {
      { Name: "EPOLLERR", Val: 0x008 },
      { Name: "EPOLLHUP", Val: 0x010 },
      { Name: "EPOLLRDHUP", Val: 0x2000 } } },
-{ Name: "errno", entries: []ConstTableEntry {
+{ Name: "errno", Entries: []ConstTableEntry {
      { Name: "EPERM", Val: 1 },
      { Name: "ENOENT", Val: 2 },
      { Name: "ESRCH", Val: 3 },
@@ -294,7 +307,7 @@ var AllConstants = []ConstTable {
      { Name: "ENOTRECOVERABLE", Val: 131 },
      { Name: "ERFKILL", Val: 132 },
      { Name: "EHWPOISON", Val: 133 } } },
-{ Name: "eth_prot_id", entries: []ConstTableEntry {
+{ Name: "eth_prot_id", Entries: []ConstTableEntry {
      { Name: "ETH_P_LOOP", Val: 0x0060 },
      { Name: "ETH_P_PUP", Val: 0x0200 },
      { Name: "ETH_P_PUPAT", Val: 0x0201 },
@@ -336,14 +349,17 @@ var AllConstants = []ConstTable {
      { Name: "ETH_P_8021AD", Val: 0x88A8 },
      { Name: "ETH_P_802_EX1", Val: 0x88B5 },
      { Name: "ETH_P_TIPC", Val: 0x88CA },
+     { Name: "ETH_P_MACSEC", Val: 0x88E5 },
      { Name: "ETH_P_8021AH", Val: 0x88E7 },
      { Name: "ETH_P_MVRP", Val: 0x88F5 },
      { Name: "ETH_P_1588", Val: 0x88F7 },
+     { Name: "ETH_P_NCSI", Val: 0x88F8 },
      { Name: "ETH_P_PRP", Val: 0x88FB },
      { Name: "ETH_P_FCOE", Val: 0x8906 },
      { Name: "ETH_P_TDLS", Val: 0x890D },
      { Name: "ETH_P_FIP", Val: 0x8914 },
      { Name: "ETH_P_80221", Val: 0x8917 },
+     { Name: "ETH_P_HSR", Val: 0x892F },
      { Name: "ETH_P_LOOPBACK", Val: 0x9000 },
      { Name: "ETH_P_QINQ1", Val: 0x9100 },
      { Name: "ETH_P_QINQ2", Val: 0x9200 },
@@ -376,7 +392,7 @@ var AllConstants = []ConstTable {
      { Name: "ETH_P_IEEE802154", Val: 0x00F6 },
      { Name: "ETH_P_CAIF", Val: 0x00F7 },
      { Name: "ETH_P_XDSA", Val: 0x00F8 } } },
-{ Name: "fcntl", entries: []ConstTableEntry {
+{ Name: "fcntl", Entries: []ConstTableEntry {
      { Name: "F_DUPFD", Val: 0 },
      { Name: "F_GETFD", Val: 1 },
      { Name: "F_SETFD", Val: 2 },
@@ -406,7 +422,7 @@ var AllConstants = []ConstTable {
      { Name: "F_UNLCK", Val: 2 },
      { Name: "F_EXLCK", Val: 4 },
      { Name: "F_SHLCK", Val: 8 } } },
-{ Name: "futex", entries: []ConstTableEntry {
+{ Name: "futex", Entries: []ConstTableEntry {
      { Name: "FUTEX_WAIT", Val: 0 },
      { Name: "FUTEX_WAKE", Val: 1 },
      { Name: "FUTEX_FD", Val: 2 },
@@ -422,7 +438,7 @@ var AllConstants = []ConstTable {
      { Name: "FUTEX_CMP_REQUEUE_PI", Val: 12 },
      { Name: "FUTEX_PRIVATE_FLAG", Val: 128 },
      { Name: "FUTEX_CLOCK_REALTIME", Val: 256 } } },
-{ Name: "ifa", entries: []ConstTableEntry {
+{ Name: "ifa", Entries: []ConstTableEntry {
      { Name: "IFA_F_SECONDARY", Val: 0x01 },
      { Name: "IFA_F_NODAD", Val: 0x02 },
      { Name: "IFA_F_OPTIMISTIC", Val: 0x04 },
@@ -435,7 +451,7 @@ var AllConstants = []ConstTable {
      { Name: "IFA_F_NOPREFIXROUTE", Val: 0x200 },
      { Name: "IFA_F_MCAUTOJOIN", Val: 0x400 },
      { Name: "IFA_F_STABLE_PRIVACY", Val: 0x800 } } },
-{ Name: "iff_net_device_flags", entries: []ConstTableEntry {
+{ Name: "iff_net_device_flags", Entries: []ConstTableEntry {
      { Name: "IFF_UP", Val: 1<<0 },
      { Name: "IFF_BROADCAST", Val: 1<<1 },
      { Name: "IFF_DEBUG", Val: 1<<2 },
@@ -455,7 +471,7 @@ var AllConstants = []ConstTable {
      { Name: "IFF_LOWER_UP", Val: 1<<16 },
      { Name: "IFF_DORMANT", Val: 1<<17 },
      { Name: "IFF_ECHO", Val: 1<<18 } } },
-{ Name: "inotify_flags", entries: []ConstTableEntry {
+{ Name: "inotify_flags", Entries: []ConstTableEntry {
      { Name: "IN_ACCESS", Val: 0x00000001 },
      { Name: "IN_MODIFY", Val: 0x00000002 },
      { Name: "IN_ATTRIB", Val: 0x00000004 },
@@ -477,7 +493,7 @@ var AllConstants = []ConstTable {
      { Name: "IN_MASK_ADD", Val: 0x20000000 },
      { Name: "IN_ISDIR", Val: 0x40000000 },
      { Name: "IN_ONESHOT", Val: 0x80000000 } } },
-{ Name: "ioctl_code", entries: []ConstTableEntry {
+{ Name: "ioctl_code", Entries: []ConstTableEntry {
      { Name: "TCGETS", Val: 0x5401 },
      { Name: "TCSETS", Val: 0x5402 },
      { Name: "TCSETSW", Val: 0x5403 },
@@ -547,7 +563,7 @@ var AllConstants = []ConstTable {
      { Name: "TIOCPKT_NOSTOP", Val: 16 },
      { Name: "TIOCPKT_DOSTOP", Val: 32 },
      { Name: "TIOCPKT_IOCTL", Val: 64 } } },
-{ Name: "ioctl_socket", entries: []ConstTableEntry {
+{ Name: "ioctl_socket", Entries: []ConstTableEntry {
      { Name: "SIOCADDRT", Val: 0x890B },
      { Name: "SIOCDELRT", Val: 0x890C },
      { Name: "SIOCRTMSG", Val: 0x890D },
@@ -621,7 +637,7 @@ var AllConstants = []ConstTable {
      { Name: "SIOCGHWTSTAMP", Val: 0x89b1 },
      { Name: "SIOCDEVPRIVATE", Val: 0x89F0 },
      { Name: "SIOCPROTOPRIVATE", Val: 0x89E0 } } },
-{ Name: "ioctl_termios", entries: []ConstTableEntry {
+{ Name: "ioctl_termios", Entries: []ConstTableEntry {
      { Name: "TIOCM_LE", Val: 0x001 },
      { Name: "TIOCM_DTR", Val: 0x002 },
      { Name: "TIOCM_RTS", Val: 0x004 },
@@ -634,7 +650,7 @@ var AllConstants = []ConstTable {
      { Name: "TIOCM_OUT1", Val: 0x2000 },
      { Name: "TIOCM_OUT2", Val: 0x4000 },
      { Name: "TIOCM_LOOP", Val: 0x8000 } } },
-{ Name: "ip_proto", entries: []ConstTableEntry {
+{ Name: "ip_proto", Entries: []ConstTableEntry {
      { Name: "IPPROTO_IP", Val: 0 },
      { Name: "IPPROTO_ICMP", Val: 1 },
      { Name: "IPPROTO_IGMP", Val: 2 },
@@ -666,7 +682,7 @@ var AllConstants = []ConstTable {
      { Name: "IPPROTO_NONE", Val: 59 },
      { Name: "IPPROTO_DSTOPTS", Val: 60 },
      { Name: "IPPROTO_MH", Val: 135 } } },
-{ Name: "ipv6_socket_options", entries: []ConstTableEntry {
+{ Name: "ipv6_socket_options", Entries: []ConstTableEntry {
      { Name: "IPV6_ADDRFORM", Val: 1 },
      { Name: "IPV6_2292PKTINFO", Val: 2 },
      { Name: "IPV6_2292HOPOPTS", Val: 3 },
@@ -732,7 +748,7 @@ var AllConstants = []ConstTable {
      { Name: "IPV6_ORIGDSTADDR", Val: 74 },
      { Name: "IPV6_TRANSPARENT", Val: 75 },
      { Name: "IPV6_UNICAST_IF", Val: 76 } } },
-{ Name: "madvise_advice", entries: []ConstTableEntry {
+{ Name: "madvise_advice", Entries: []ConstTableEntry {
      { Name: "MADV_NORMAL", Val: 0 },
      { Name: "MADV_RANDOM", Val: 1 },
      { Name: "MADV_SEQUENTIAL", Val: 2 },
@@ -750,7 +766,7 @@ var AllConstants = []ConstTable {
      { Name: "MADV_NOHUGEPAGE", Val: 15 },
      { Name: "MADV_DONTDUMP", Val: 16 },
      { Name: "MADV_DODUMP", Val: 17 } } },
-{ Name: "mmap_flags", entries: []ConstTableEntry {
+{ Name: "mmap_flags", Entries: []ConstTableEntry {
      { Name: "MAP_32BIT", Val: 0x40 },
      { Name: "MAP_GROWSDOWN", Val: 0x00100 },
      { Name: "MAP_DENYWRITE", Val: 0x00800 },
@@ -769,7 +785,7 @@ var AllConstants = []ConstTable {
      { Name: "MAP_ANONYMOUS", Val: 0x20 },
      { Name: "MAP_HUGE_SHIFT", Val: 26 },
      { Name: "MAP_HUGE_MASK", Val: 0x3f } } },
-{ Name: "mmap_prot", entries: []ConstTableEntry {
+{ Name: "mmap_prot", Entries: []ConstTableEntry {
      { Name: "PROT_READ", Val: 0x1 },
      { Name: "PROT_WRITE", Val: 0x2 },
      { Name: "PROT_EXEC", Val: 0x4 },
@@ -777,7 +793,7 @@ var AllConstants = []ConstTable {
      { Name: "PROT_NONE", Val: 0x0 },
      { Name: "PROT_GROWSDOWN", Val: 0x01000000 },
      { Name: "PROT_GROWSUP", Val: 0x02000000 } } },
-{ Name: "mount_flags", entries: []ConstTableEntry {
+{ Name: "mount_flags", Entries: []ConstTableEntry {
      { Name: "MS_RDONLY", Val: 1 },
      { Name: "MS_NOSUID", Val: 2 },
      { Name: "MS_NODEV", Val: 4 },
@@ -803,11 +819,13 @@ var AllConstants = []ConstTable {
      { Name: "MS_I_VERSION", Val: (1<<23) },
      { Name: "MS_STRICTATIME", Val: (1<<24) },
      { Name: "MS_LAZYTIME", Val: (1<<25) },
+     { Name: "MS_SUBMOUNT", Val: (1<<26) },
+     { Name: "MS_NOREMOTELOCK", Val: (1<<27) },
      { Name: "MS_NOSEC", Val: (1<<28) },
      { Name: "MS_BORN", Val: (1<<29) },
      { Name: "MS_ACTIVE", Val: (1<<30) },
      { Name: "MS_NOUSER", Val: (1<<31) } } },
-{ Name: "msg_io_flags", entries: []ConstTableEntry {
+{ Name: "msg_io_flags", Entries: []ConstTableEntry {
      { Name: "MSG_OOB", Val: 0x01 },
      { Name: "MSG_PEEK", Val: 0x02 },
      { Name: "MSG_DONTROUTE", Val: 0x04 },
@@ -825,9 +843,10 @@ var AllConstants = []ConstTable {
      { Name: "MSG_NOSIGNAL", Val: 0x4000 },
      { Name: "MSG_MORE", Val: 0x8000 },
      { Name: "MSG_WAITFORONE", Val: 0x10000 },
+     { Name: "MSG_BATCH", Val: 0x40000 },
      { Name: "MSG_FASTOPEN", Val: 0x20000000 },
      { Name: "MSG_CMSG_CLOEXEC", Val: 0x40000000 } } },
-{ Name: "netlink_flags", entries: []ConstTableEntry {
+{ Name: "netlink_flags", Entries: []ConstTableEntry {
      { Name: "NLM_F_REQUEST", Val: 1 },
      { Name: "NLM_F_MULTI", Val: 2 },
      { Name: "NLM_F_ACK", Val: 4 },
@@ -841,7 +860,7 @@ var AllConstants = []ConstTable {
      { Name: "NLM_F_EXCL", Val: 0x200 },
      { Name: "NLM_F_CREATE", Val: 0x400 },
      { Name: "NLM_F_APPEND", Val: 0x800 } } },
-{ Name: "netlink_type", entries: []ConstTableEntry {
+{ Name: "netlink_type", Entries: []ConstTableEntry {
      { Name: "NETLINK_ROUTE", Val: 0 },
      { Name: "NETLINK_UNUSED", Val: 1 },
      { Name: "NETLINK_USERSOCK", Val: 2 },
@@ -863,7 +882,7 @@ var AllConstants = []ConstTable {
      { Name: "NETLINK_ECRYPTFS", Val: 19 },
      { Name: "NETLINK_RDMA", Val: 20 },
      { Name: "NETLINK_CRYPTO", Val: 21 } } },
-{ Name: "open_mode", entries: []ConstTableEntry {
+{ Name: "open_mode", Entries: []ConstTableEntry {
      { Name: "O_ACCMODE", Val: 00000003 },
      { Name: "O_RDONLY", Val: 00000000 },
      { Name: "O_WRONLY", Val: 00000001 },
@@ -882,7 +901,7 @@ var AllConstants = []ConstTable {
      { Name: "O_NOATIME", Val: 01000000 },
      { Name: "O_CLOEXEC", Val: 02000000 },
      { Name: "O_PATH", Val: 010000000 } } },
-{ Name: "prctl_opts", entries: []ConstTableEntry {
+{ Name: "prctl_opts", Entries: []ConstTableEntry {
      { Name: "PR_SET_PDEATHSIG", Val: 1 },
      { Name: "PR_GET_PDEATHSIG", Val: 2 },
      { Name: "PR_GET_DUMPABLE", Val: 3 },
@@ -929,7 +948,7 @@ var AllConstants = []ConstTable {
      { Name: "PR_SET_FP_MODE", Val: 45 },
      { Name: "PR_GET_FP_MODE", Val: 46 },
      { Name: "PR_CAP_AMBIENT", Val: 47 } } },
-{ Name: "ptrace", entries: []ConstTableEntry {
+{ Name: "ptrace", Entries: []ConstTableEntry {
      { Name: "PTRACE_GETREGS", Val: 12 },
      { Name: "PTRACE_SETREGS", Val: 13 },
      { Name: "PTRACE_GETFPREGS", Val: 14 },
@@ -994,7 +1013,7 @@ var AllConstants = []ConstTable {
      { Name: "PTRACE_EVENT_VFORK_DONE", Val: 5 },
      { Name: "PTRACE_EVENT_EXIT", Val: 6 },
      { Name: "PTRACE_EVENT_SECCOMP", Val: 7 } } },
-{ Name: "readdir", entries: []ConstTableEntry {
+{ Name: "readdir", Entries: []ConstTableEntry {
      { Name: "DT_UNKNOWN", Val: 0 },
      { Name: "DT_FIFO", Val: 1 },
      { Name: "DT_CHR", Val: 2 },
@@ -1004,7 +1023,7 @@ var AllConstants = []ConstTable {
      { Name: "DT_LNK", Val: 10 },
      { Name: "DT_SOCK", Val: 12 },
      { Name: "DT_WHT", Val: 14 } } },
-{ Name: "rlimit", entries: []ConstTableEntry {
+{ Name: "rlimit", Entries: []ConstTableEntry {
      { Name: "RLIMIT_CPU", Val: 0 },
      { Name: "RLIMIT_FSIZE", Val: 1 },
      { Name: "RLIMIT_DATA", Val: 2 },
@@ -1021,7 +1040,7 @@ var AllConstants = []ConstTable {
      { Name: "RLIMIT_NICE", Val: 13 },
      { Name: "RLIMIT_RTPRIO", Val: 14 },
      { Name: "RLIMIT_RTTIME", Val: 15 } } },
-{ Name: "rtnetlink_msg_type", entries: []ConstTableEntry {
+{ Name: "rtnetlink_msg_type", Entries: []ConstTableEntry {
      { Name: "RTM_BASE", Val: 16 },
      { Name: "RTM_NEWLINK", Val: 16 },
      { Name: "RTM_NEWADDR", Val: 20 },
@@ -1047,8 +1066,10 @@ var AllConstants = []ConstTable {
      { Name: "RTM_GETMDB", Val: 86 },
      { Name: "RTM_NEWNSID", Val: 88 },
      { Name: "RTM_DELNSID", Val: 89 },
-     { Name: "RTM_GETNSID", Val: 90 } } },
-{ Name: "setsockopt_optname", entries: []ConstTableEntry {
+     { Name: "RTM_GETNSID", Val: 90 },
+     { Name: "RTM_NEWSTATS", Val: 92 },
+     { Name: "RTM_GETSTATS", Val: 94 } } },
+{ Name: "setsockopt_optname", Entries: []ConstTableEntry {
      { Name: "SO_DEBUG", Val: 1 },
      { Name: "SO_REUSEADDR", Val: 2 },
      { Name: "SO_TYPE", Val: 3 },
@@ -1100,8 +1121,9 @@ var AllConstants = []ConstTable {
      { Name: "SO_INCOMING_CPU", Val: 49 },
      { Name: "SO_ATTACH_BPF", Val: 50 },
      { Name: "SO_ATTACH_REUSEPORT_CBPF", Val: 51 },
-     { Name: "SO_ATTACH_REUSEPORT_EBPF", Val: 52 } } },
-{ Name: "signal", entries: []ConstTableEntry {
+     { Name: "SO_ATTACH_REUSEPORT_EBPF", Val: 52 },
+     { Name: "SO_CNX_ADVICE", Val: 53 } } },
+{ Name: "signal", Entries: []ConstTableEntry {
      { Name: "SIGHUP", Val: 1 },
      { Name: "SIGINT", Val: 2 },
      { Name: "SIGQUIT", Val: 3 },
@@ -1138,7 +1160,7 @@ var AllConstants = []ConstTable {
      { Name: "SIGUNUSED", Val: 31 },
      { Name: "SIGRTMIN", Val: 32 },
      { Name: "SIGSTKSZ", Val: 8192 } } },
-{ Name: "socket_family", entries: []ConstTableEntry {
+{ Name: "socket_family", Entries: []ConstTableEntry {
      { Name: "AF_UNSPEC", Val: 0 },
      { Name: "AF_UNIX", Val: 1 },
      { Name: "AF_INET", Val: 2 },
@@ -1180,8 +1202,9 @@ var AllConstants = []ConstTable {
      { Name: "AF_ALG", Val: 38 },
      { Name: "AF_NFC", Val: 39 },
      { Name: "AF_VSOCK", Val: 40 },
-     { Name: "AF_MAX", Val: 41 } } },
-{ Name: "socket_type", entries: []ConstTableEntry {
+     { Name: "AF_KCM", Val: 41 },
+     { Name: "AF_MAX", Val: 42 } } },
+{ Name: "socket_type", Entries: []ConstTableEntry {
      { Name: "SOCK_STREAM", Val: 1 },
      { Name: "SOCK_DGRAM", Val: 2 },
      { Name: "SOCK_RAW", Val: 3 },
@@ -1191,7 +1214,65 @@ var AllConstants = []ConstTable {
      { Name: "SOCK_PACKET", Val: 10 },
      { Name: "SOCK_CLOEXEC", Val: 02000000 },
      { Name: "SOCK_NONBLOCK", Val: 00004000 } } },
-{ Name: "syscall_name", entries: []ConstTableEntry {
+{ Name: "sockopt_tcp", Entries: []ConstTableEntry {
+     { Name: "TCP_NODELAY", Val: 1 },
+     { Name: "TCP_MAXSEG", Val: 2 },
+     { Name: "TCP_CORK", Val: 3 },
+     { Name: "TCP_KEEPIDLE", Val: 4 },
+     { Name: "TCP_KEEPINTVL", Val: 5 },
+     { Name: "TCP_KEEPCNT", Val: 6 },
+     { Name: "TCP_SYNCNT", Val: 7 },
+     { Name: "TCP_LINGER2", Val: 8 },
+     { Name: "TCP_DEFER_ACCEPT", Val: 9 },
+     { Name: "TCP_WINDOW_CLAMP", Val: 10 },
+     { Name: "TCP_INFO", Val: 11 },
+     { Name: "TCP_QUICKACK", Val: 12 },
+     { Name: "TCP_CONGESTION", Val: 13 },
+     { Name: "TCP_MD5SIG", Val: 14 },
+     { Name: "TCP_THIN_LINEAR_TIMEOUTS", Val: 16 },
+     { Name: "TCP_THIN_DUPACK", Val: 17 },
+     { Name: "TCP_USER_TIMEOUT", Val: 18 },
+     { Name: "TCP_REPAIR", Val: 19 },
+     { Name: "TCP_REPAIR_QUEUE", Val: 20 },
+     { Name: "TCP_QUEUE_SEQ", Val: 21 },
+     { Name: "TCP_REPAIR_OPTIONS", Val: 22 },
+     { Name: "TCP_FASTOPEN", Val: 23 },
+     { Name: "TCP_TIMESTAMP", Val: 24 },
+     { Name: "TCP_NOTSENT_LOWAT", Val: 25 },
+     { Name: "TCP_CC_INFO", Val: 26 },
+     { Name: "TCP_SAVE_SYN", Val: 27 },
+     { Name: "TCP_SAVED_SYN", Val: 28 },
+     { Name: "TCP_REPAIR_WINDOW", Val: 29 } } },
+{ Name: "sol_level", Entries: []ConstTableEntry {
+     { Name: "SOL_IP", Val: 0 },
+     { Name: "SOL_SOCKET", Val: 1 },
+     { Name: "SOL_TCP", Val: 6 },
+     { Name: "SOL_UDP", Val: 17 },
+     { Name: "SOL_RAW", Val: 255 },
+     { Name: "SOL_IPX", Val: 256 },
+     { Name: "SOL_ATALK", Val: 258 },
+     { Name: "SOL_NETROM", Val: 259 },
+     { Name: "SOL_ROSE", Val: 260 },
+     { Name: "SOL_DECNET", Val: 261 },
+     { Name: "SOL_PACKET", Val: 263 },
+     { Name: "SOL_ATM", Val: 264 },
+     { Name: "SOL_AAL", Val: 265 },
+     { Name: "SOL_IRDA", Val: 266 },
+     { Name: "SOL_NETBEUI", Val: 267 },
+     { Name: "SOL_LLC", Val: 268 },
+     { Name: "SOL_DCCP", Val: 269 },
+     { Name: "SOL_NETLINK", Val: 270 },
+     { Name: "SOL_TIPC", Val: 271 },
+     { Name: "SOL_RXRPC", Val: 272 },
+     { Name: "SOL_BLUETOOTH", Val: 274 },
+     { Name: "SOL_PNPIPE", Val: 275 },
+     { Name: "SOL_RDS", Val: 276 },
+     { Name: "SOL_IUCV", Val: 277 },
+     { Name: "SOL_CAIF", Val: 278 },
+     { Name: "SOL_ALG", Val: 279 },
+     { Name: "SOL_NFC", Val: 280 },
+     { Name: "SOL_KCM", Val: 281 } } },
+{ Name: "syscall_name", Entries: []ConstTableEntry {
      { Name: "read", Val: 0 },
      { Name: "write", Val: 1 },
      { Name: "open", Val: 2 },
@@ -1518,7 +1599,12 @@ var AllConstants = []ConstTable {
      { Name: "userfaultfd", Val: 323 },
      { Name: "membarrier", Val: 324 },
      { Name: "mlock2", Val: 325 },
-     { Name: "copy_file_range", Val: 326 } } } }
+     { Name: "copy_file_range", Val: 326 },
+     { Name: "preadv2", Val: 327 },
+     { Name: "pwritev2", Val: 328 },
+     { Name: "pkey_mprotect", Val: 329 },
+     { Name: "pkey_alloc", Val: 330 },
+     { Name: "pkey_free", Val: 331 } } } }
 
 
 func GetConstantTableByName(category string) (ConstTable, error) {
@@ -1543,10 +1629,10 @@ func getValByConstName(category string, name string) (uint, error) {
                 return 0, err
         }
 
-        for i := 0; i < len(table.entries); i++ {
+        for i := 0; i < len(table.Entries); i++ {
 
-                if table.entries[i].Name == name {
-                        return table.entries[i].Val, err
+                if table.Entries[i].Name == name {
+                        return table.Entries[i].Val, err
                 }
 
         }
@@ -1561,10 +1647,13 @@ func GetConstByNo(category string, val uint) (string, error) {
                 return "", err
         }
 
-        for i := 0; i < len(table.entries); i++ {
+        for i := 0; i < len(table.Entries); i++ {
 
-                if table.entries[i].Val == val {
-                        return table.entries[i].Name, nil
+                if table.Entries[i].Val == val {
+			if val, ok := ConstNameOverrides[table.Entries[i].Name]; ok {
+				return val, nil
+			}
+                        return table.Entries[i].Name, nil
                 }
 
         }
@@ -1582,14 +1671,14 @@ func GetConstByBitmask(category string, val uint) (string, error) {
 	constName := ""
 	first := 1
 
-        for i := 0; i < len(table.entries); i++ {
+        for i := 0; i < len(table.Entries); i++ {
 
 		// Just return if we have a straight up match.
-		if table.entries[i].Val == val {
-			return table.entries[i].Name, nil
+		if table.Entries[i].Val == val {
+			return table.Entries[i].Name, nil
 		}
 
-		if table.entries[i].Val != 0 && (table.entries[i].Val & val == table.entries[i].Val) {
+		if table.Entries[i].Val != 0 && (table.Entries[i].Val & val == table.Entries[i].Val) {
 
 			if first == 0 {
 				constName += "|"
@@ -1597,11 +1686,45 @@ func GetConstByBitmask(category string, val uint) (string, error) {
 				first = 0
 			}
 
-			constName += table.entries[i].Name
+			constName += table.Entries[i].Name
                 }
 
         }
 
         return constName, nil
 }
+
+// Functions for gosecco compatibility
+
+func GetSyscall(name string) (uint32, bool) {
+        res, ok := getValByConstName("syscall_name", name)
+        return uint32(res), ok==nil
+}
+
+func GetError(name string) (uint32, bool) {
+        res, ok := getValByConstName("errno", name)
+        return uint32(res), ok==nil
+}
+
+func GetConstant(name string) (uint32, bool) {
+	if val, ok := ConstValOverrides[name]; ok {
+		return uint32(val), true
+	}
+
+        for t := 0; t < len(AllConstants); t++ {
+                table := AllConstants[t]
+
+                for i := 0; i < len(table.Entries); i++ {
+
+                        if table.Entries[i].Name == name {
+                                return uint32(table.Entries[i].Val), true
+                        }
+
+                }
+
+        }
+
+        return 0, false
+}
+
 

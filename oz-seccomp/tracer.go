@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"bufio"
 	"os"
 	"os/exec"
 	"os/user"
@@ -42,6 +43,13 @@ const (
 
 type SystemCallArgs []int
 
+type SCIndOpt struct {
+	ArgNo        uint
+	ArgVal       string
+	MapArgNo     uint
+	MapArgClass  string
+}
+
 type SyscallMapper struct {
 	SyscallName string
 	Flags       uint
@@ -49,6 +57,7 @@ type SyscallMapper struct {
 	Arg1Class   string
 	Arg2Class   string
 	Arg3Class   string
+	ArgMappings []SCIndOpt
 }
 
 type SyscallTracker struct {
@@ -90,7 +99,13 @@ var (
 			Flags: SYSCALL_MAP_ARG1_ISMASK},
 		{SyscallName: "socket", Arg0Class: "socket_family", Arg1Class: "socket_type", Arg2Class: "ip_proto",
 			Flags: SYSCALL_MAP_ARG1_ISMASK},
-		{SyscallName: "setsockopt", Arg1Class: "setsockopt_level", Arg2Class: "setsockopt_optname"},
+		{SyscallName: "socketpair", Arg0Class: "socket_family", Arg1Class: "socket_type" },
+		{SyscallName: "setsockopt", Arg1Class: "sol_level", Arg2Class: "setsockopt_optname",
+			ArgMappings: []SCIndOpt{ {1, "SOL_SOCKET", 2, "setsockopt_optname" },
+						 {1, "SOL_TCP", 2, "sockopt_tcp" } } },
+		{SyscallName: "getsockopt", Arg1Class: "sol_level", Arg2Class: "setsockopt_optname",
+			ArgMappings: []SCIndOpt{ {1, "SOL_SOCKET", 2, "setsockopt_optname" },
+						 {1, "SOL_TCP", 2, "sockopt_tcp" } } },
 		{SyscallName: "prctl", Arg0Class: "PR_"},
 		{SyscallName: "mmap", Arg2Class: "mmap_prot", Arg3Class: "mmap_flags",
 			Flags: SYSCALL_MAP_ARG2_ISMASK | SYSCALL_MAP_ARG3_ISMASK},
@@ -205,13 +220,18 @@ func dumpSyscallsTrackedRaw() string {
 		//		if (i == 0) || (SyscallsTracked[i].scno != SyscallsTracked[i-1].scno) {
 		ruleString += fmt.Sprintf("# %s [%d]: ", scn.name, SyscallsTracked[i].nhits)
 
+		var allValArr = []uint{0, 0, 0, 0, 0, 0}
+		for j = 0; j < 6; j++ {
+			allValArr[j] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
+		}
+
 		for j = 0; j < 6; j++ {
 
 			if SyscallsTracked[i].rmask&(1<<j) > 0 {
 				ruleString += "   " + "arg" + strconv.Itoa(int(j)) + " == " + strconv.Itoa(int(getSyscallTrackerRegVal(SyscallsTracked[i], j)))
 				var valArr = []uint{0}
 				valArr[0] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
-				argStr := genArgs(scn.name, j, valArr, false, false)
+				argStr := genArgs(scn.name, j, valArr, allValArr, false, false)
 
 				if len(argStr) > 0 {
 					ruleString += "[" + argStr + "]"
@@ -249,15 +269,20 @@ func getSyscallsTracked(scname string) string {
 			ruleStringTmp += scn.name + ": "
 		}
 
+		var allValArr = []uint{0, 0, 0, 0, 0, 0}
+		for j = 0; j < 6; j++ {
+			allValArr[j] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
+		}
+
 		for j = 0; j < 6; j++ {
 
 			if SyscallsTracked[i].rmask&(1<<j) > 0 {
 				var valArr = []uint{0}
 				valArr[0] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
-				ruleStr := genArgs(scn.name, j, valArr, true, true)
+				ruleStr := genArgs(scn.name, j, valArr, allValArr, true, true)
 
 				if len(ruleStr) == 0 {
-					ruleStr = genArgs(scn.name, j, valArr, false, false)
+					ruleStr = genArgs(scn.name, j, valArr, allValArr, false, false)
 					commentStr = fmt.Sprintf("# Suppressed tracking of syscall %s, arg%d == %x[%s]\n", scn.name, j, valArr[0], ruleStr)
 //					ruleStringTmp += condPrefix
 					condPrefix = ""
@@ -512,7 +537,7 @@ func maskValueMatches(st1 SyscallTracker, st2 SyscallTracker, zero bool) bool {
 // passed as the value of syscall argument argNo for the specified system call.
 // Return the name-as-string (as either a single constant or a bitmask of constants),
 // and return whether or not the string value represents a bitmask, as bool.
-func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude bool) (string, bool) {
+func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude bool, allParams []uint) (string, bool) {
 
 	if argNo > 3 {
 		return fmt.Sprint(paramVal), false
@@ -524,33 +549,55 @@ func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude b
 			continue
 		}
 
-		argPrefix := SyscallMappings[i].Arg0Class
+//		argPrefix := SyscallMappings[i].Arg0Class
+		argPrefix := ""
 		lookupMask := false
 
-		switch argNo {
-		case 0:
-			argPrefix = SyscallMappings[i].Arg0Class
+		if len(allParams) > 0 && SyscallMappings[i].ArgMappings != nil && len(SyscallMappings[i].ArgMappings) > 0 {
 
-			if SyscallMappings[i].Flags&SYSCALL_MAP_ARG0_ISMASK == SYSCALL_MAP_ARG0_ISMASK {
-				lookupMask = true
+			for m := 0; m < len(SyscallMappings[i].ArgMappings); m++ {
+				smap := SyscallMappings[i].ArgMappings[m]
+
+				if smap.MapArgNo != argNo {
+					continue
+				}
+
+				aval, _ := getConstNameByCall(syscallName, allParams[smap.ArgNo], smap.ArgNo, false, nil)
+
+				if aval == smap.ArgVal {
+					argPrefix = smap.MapArgClass
+				}
+
 			}
-		case 1:
-			argPrefix = SyscallMappings[i].Arg1Class
 
-			if SyscallMappings[i].Flags&SYSCALL_MAP_ARG1_ISMASK == SYSCALL_MAP_ARG1_ISMASK {
-				lookupMask = true
-			}
-		case 2:
-			argPrefix = SyscallMappings[i].Arg2Class
+		}
 
-			if SyscallMappings[i].Flags&SYSCALL_MAP_ARG2_ISMASK == SYSCALL_MAP_ARG2_ISMASK {
-				lookupMask = true
-			}
-		case 3:
-			argPrefix = SyscallMappings[i].Arg3Class
+		if argPrefix == "" {
+			switch argNo {
+			case 0:
+				argPrefix = SyscallMappings[i].Arg0Class
 
-			if SyscallMappings[i].Flags&SYSCALL_MAP_ARG3_ISMASK == SYSCALL_MAP_ARG3_ISMASK {
-				lookupMask = true
+				if SyscallMappings[i].Flags&SYSCALL_MAP_ARG0_ISMASK == SYSCALL_MAP_ARG0_ISMASK {
+					lookupMask = true
+				}
+			case 1:
+				argPrefix = SyscallMappings[i].Arg1Class
+
+				if SyscallMappings[i].Flags&SYSCALL_MAP_ARG1_ISMASK == SYSCALL_MAP_ARG1_ISMASK {
+					lookupMask = true
+				}
+			case 2:
+				argPrefix = SyscallMappings[i].Arg2Class
+
+				if SyscallMappings[i].Flags&SYSCALL_MAP_ARG2_ISMASK == SYSCALL_MAP_ARG2_ISMASK {
+					lookupMask = true
+				}
+			case 3:
+				argPrefix = SyscallMappings[i].Arg3Class
+
+				if SyscallMappings[i].Flags&SYSCALL_MAP_ARG3_ISMASK == SYSCALL_MAP_ARG3_ISMASK {
+					lookupMask = true
+				}
 			}
 		}
 
@@ -676,6 +723,10 @@ func Tracer() {
 			Name:  "append, a",
                         Usage: "Append to existing policy (unsupported)",
                 },
+		cli.BoolFlag{
+			Name:  "allow-new-privs, N",
+			Usage: "Allow traced program to set new seccomp filters",
+		},
         }
 
 	app.Run(os.Args)
@@ -740,7 +791,12 @@ func TMain(ctx *cli.Context) {
 	if train {
 		// TODO: remove hardcoded path and read prefix from /etc/oz.conf
 		cmd = path.Join(OzConfig.PrefixPath, "bin", "oz-seccomp")
-		cmdArgs = append([]string{"-mode=train"}, ctx.Args()...)
+
+		if ctx.Bool("allow-new-privs") {
+			cmdArgs = append([]string{"-mode=train", "-allow-new-privs"}, ctx.Args()...)
+		} else {
+			cmdArgs = append([]string{"-mode=train"}, ctx.Args()...)
+		}
 		debug = ctx.Bool("debug")
 	} else {
 		p = new(oz.Profile)
@@ -778,7 +834,7 @@ func TMain(ctx *cli.Context) {
 	c.Env = os.Environ()
 	c.Args = append(c.Args, cmdArgs...)
 
-	if ctx.Bool("train") == false {
+	if train == false {
 
 		pi, err := c.StdinPipe()
 		if err != nil {
@@ -799,6 +855,50 @@ func TMain(ctx *cli.Context) {
 	trainingset := make(map[int]bool)
 	freqcount := make(map[int]int)
 	trainingargs := make(map[int]map[int][]uint)
+
+	pstdout, err := c.StdoutPipe()
+	if err != nil {
+		log.Fatal("Unable to get handle of process stdout: ", err)
+	}
+
+	pstderr, err := c.StderrPipe()
+	if err != nil {
+		log.Fatal("Unable to get handle of process stderr: ", err)
+	}
+
+//	go io.Copy(os.Stdout, pstdout)
+//	go io.Copy(os.Stderr, pstderr)
+
+	go func() {
+		lbuf := bufio.NewReader(pstdout)
+
+		for 1==1 {
+			line, err := lbuf.ReadString('\n')
+
+			if err != nil {
+				return
+			}
+			line = "\033[0;32m" + line + "\033[0m\n"
+			os.Stdout.Write([]byte(line))
+		}
+	}()
+
+	go func() {
+		lbuf := bufio.NewReader(pstderr)
+
+		for 1==1 {
+			line, err := lbuf.ReadString('\n')
+
+			if err != nil {
+				return
+			}
+			if len(line) > 0 {
+				line = line[0:len(line)-1]
+			}
+			line = "\033[1;31m" + line + "\033[0m\n"
+			os.Stderr.Write([]byte(line))
+		}
+	}()
 
 	if err := c.Start(); err == nil {
 		cpid = c.Process.Pid
@@ -1074,11 +1174,11 @@ func TMain(ctx *cli.Context) {
 	}
 }
 
-func genArgs(scName string, a uint, vals []uint, exclude bool, warg bool) string {
+func genArgs(scName string, a uint, vals []uint, allVals []uint, exclude bool, warg bool) string {
 	s := ""
 	for idx, x := range vals {
 		failed := false
-		constName, mask := getConstNameByCall(scName, x, a, exclude)
+		constName, mask := getConstNameByCall(scName, x, a, exclude, allVals)
 
 		if len(constName) == 0 {
 			failed = true

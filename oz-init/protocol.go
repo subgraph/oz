@@ -30,6 +30,13 @@ type ForwarderSuccessMsg struct {
 	Addr  string
 }
 
+type ReadProcNetMsg struct {
+	Term string "ReadProcNet"
+	Proto string
+	Data string
+}
+
+
 var messageFactory = ipc.NewMsgFactory(
 	new(OkMsg),
 	new(ErrorMsg),
@@ -37,4 +44,5 @@ var messageFactory = ipc.NewMsgFactory(
 	new(RunShellMsg),
 	new(RunProgramMsg),
 	new(ForwarderSuccessMsg),
+	new(ReadProcNetMsg),
 )

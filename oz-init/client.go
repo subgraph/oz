@@ -88,6 +88,29 @@ func RunShell(addr, term string) (int, error) {
 	}
 }
 
+func ReadProcNet(addr, protocol string) (string, error) {
+	c, err := clientConnect(addr)
+	if err != nil {
+		return "", err
+	}
+	rr, err := c.ExchangeMsg(&ReadProcNetMsg{Proto: protocol})
+	resp := <-rr.Chan()
+	rr.Done()
+	c.Close()
+	if err != nil {
+		return "", err
+	}
+	switch body := resp.Body.(type) {
+	case *ErrorMsg:
+		return "", errors.New(body.Msg)
+	case *ReadProcNetMsg:
+		rpn := resp.Body.(*ReadProcNetMsg)
+		return rpn.Data, nil
+	default:
+		return "", fmt.Errorf("Unexpected message type received: %+v", body)
+	}
+}
+
 func SetupForwarder(addr, proto, daddr string, fd uintptr) error {
 	c, err := clientConnect(addr)
 	if err != nil {

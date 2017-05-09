@@ -536,7 +536,7 @@ func (d *daemonState) getRunningSandboxByName(name string) *Sandbox {
 func (d *daemonState) handleListSandboxes(list *ListSandboxesMsg, msg *ipc.Message) error {
 	r := new(ListSandboxesResp)
 	for _, sb := range d.sandboxes {
-		r.Sandboxes = append(r.Sandboxes, SandboxInfo{Id: sb.id, Address: sb.addr, Mounts: sb.mountedFiles, Profile: sb.profile.Name})
+		r.Sandboxes = append(r.Sandboxes, SandboxInfo{Id: sb.id, Address: sb.addr, Mounts: sb.mountedFiles, Profile: sb.profile.Name, InitPid: sb.init.Process.Pid})
 	}
 	return msg.Respond(r)
 }

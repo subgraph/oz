@@ -85,16 +85,16 @@ func runApplication() {
 			Name:   "list",
 			Usage:  "list running sandboxes",
 			Action: handleList,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name: "verbose, v",
+				},
+			},
 		},
 		{
 			Name:   "shell",
 			Usage:  "start a shell in a running sandbox",
 			Action: handleShell,
-		},
-		{
-			Name:   "readprocnet",
-			Usage:  "read /proc/net entry for sandbox",
-			Action: handleReadProcNet,
 		},
 		{
 			Name:   "mount",
@@ -197,6 +197,7 @@ func handleLaunch(c *cli.Context) {
 }
 
 func handleList(c *cli.Context) {
+	verbose := c.Bool("verbose")
 	sboxes, err := daemon.ListSandboxes()
 	if err != nil {
 		fmt.Printf("Error listing running sandboxes: %v\n", err)
@@ -207,7 +208,14 @@ func handleList(c *cli.Context) {
 		return
 	}
 	for _, sb := range sboxes {
-		fmt.Printf("%2d) %s\n", sb.Id, sb.Profile)
+		if verbose {
+			fmt.Printf("%2d) %s   -> [%d] %s\n", sb.Id, sb.Profile, sb.InitPid, sb.Address)
+			if len(sb.Mounts) > 0 {
+				fmt.Printf("Mounts: %s\n", strings.Join(sb.Mounts, ","))
+			}
+		} else {
+			fmt.Printf("%2d) %s\n", sb.Id, sb.Profile)
+		}
 
 	}
 }
@@ -295,78 +303,6 @@ func handleShell(c *cli.Context) {
 	io.Copy(os.Stdout, f)
 	RestoreTerminal(0, st)
 	fmt.Println("done..")
-}
-
-func handleReadProcNet(c *cli.Context) {
-	if len(c.Args()) == 0 {
-		fmt.Println("Sandbox id argument needed")
-		os.Exit(1)
-	} else if len(c.Args()) < 2 {
-		fmt.Println("Protocol (tcp or udp) must be specified")
-		os.Exit(1)
-	} else if c.Args()[1] != "tcp" {
-		fmt.Println("Invalid protocol specified")
-		os.Exit(1)
-	}
-
-	if c.Args()[0] == "*" {
-		sboxes, err := daemon.ListSandboxes()
-	        if err != nil {
-			fmt.Println("Could not get list of sandboxes!")
-			os.Exit(1)
-		}
-
-		allData := ""
-		nfound := 0
-
-		for _, sb := range sboxes {
-			data, err := ozinit.ReadProcNet(sb.Address, "tcp")
-
-			if err == nil {
-				nfound++
-				if allData != "" {
-					allData += "\n---\n"
-				}
-				allData += data
-			}
-
-		}
-
-		if nfound == 0 {
-			fmt.Println("No sandbox networking data could be read.")
-		} else {
-//			fmt.Println("ALL DATA:")
-			fmt.Println(allData)
-		}
-
-		return
-        }
-
-	id, err := strconv.Atoi(c.Args()[0])
-	if err != nil {
-		fmt.Println("Sandbox id argument must be an integer")
-		os.Exit(1)
-	}
-
-	sb, err := getSandboxById(id)
-	if err != nil {
-		fmt.Printf("Error retrieving sandbox list: %v\n", err)
-		os.Exit(1)
-	}
-	if sb == nil {
-		fmt.Printf("No sandbox found with id = %d\n", id)
-		os.Exit(1)
-	}
-
-	data, err := ozinit.ReadProcNet(sb.Address, "tcp")
-
-	if err != nil {
-		fmt.Printf("start shell command failed: %v\n", err)
-		os.Exit(1)
-	}
-
-//	fmt.Println("DATA:")
-	fmt.Println(data)
 }
 
 func getSandboxById(id int) (*daemon.SandboxInfo, error) {

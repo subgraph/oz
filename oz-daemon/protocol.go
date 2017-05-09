@@ -67,6 +67,7 @@ type SandboxInfo struct {
 	Address string
 	Profile string
 	Mounts  []string
+	InitPid int
 }
 
 type ListSandboxesResp struct {

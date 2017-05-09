@@ -164,7 +164,6 @@ func (st *initState) runInit() {
 		st.handleRunProgram,
 		st.handleRunShell,
 		st.handleSetupForwarder,
-		st.handleReadProcNet,
 	)
 	if err != nil {
 		st.log.Error("NewServer failed: %v", err)
@@ -686,57 +685,6 @@ func (st *initState) handleRunShell(rs *RunShellMsg, msg *ipc.Message) error {
 	}
 	st.addChildProcess(cmd, false)
 	err = msg.Respond(&OkMsg{}, int(f.Fd()))
-	return err
-}
-
-func readFileDirect(filename string) ([]byte, error) {
-	fd, err := syscall.Open(filename, syscall.O_RDONLY, 0)
-
-	if err != nil {
-		return nil, err
-	}
-
-	data := make([]byte, 65535)
-
-	val, err := syscall.Read(fd, data)
-
-	if err != nil {
-		return nil, err
-	}
-
-	syscall.Close(fd)
-
-	if val < 65535 {
-		data = data[0:val]
-	}
-
-	return data, nil
-}
-
-func (st *initState) handleReadProcNet(rs *ReadProcNetMsg, msg *ipc.Message) error {
-//	bdata, err := ioutil.ReadFile("/proc/net/tcp")
-	MAXTRIES := 10
-	data := ""
-
-	for tries := 0; tries < MAXTRIES; tries++ {
-		bdata, err := readFileDirect("/proc/net/tcp")
-
-		if err != nil {
-
-			if tries+1 >= MAXTRIES {
-				data = fmt.Sprintf("ERROR (max %d attempts): %v\n", MAXTRIES, err.Error())
-				data += fmt.Sprintf("ERROR/uid: %v\n", os.Getuid())
-				break
-			}
-
-			continue
-		}
-
-		data += string(bdata)
-		break
-	}
-
-	err := msg.Respond(&ReadProcNetMsg{Data: data})
 	return err
 }
 

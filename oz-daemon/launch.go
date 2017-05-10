@@ -210,7 +210,8 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 			return nil, fmt.Errorf("Unable to setup bridged networking: %+v", err)
 		}
 
-		err := registerSandboxPid(sbox.init.Process.Pid)
+		pname := fmt.Sprintf("%s (%d)", sbox.profile.Name, sbox.id)
+		err := registerSandboxPid(sbox.init.Process.Pid, pname)
 		if err != nil {
 			log.Error("Error registering sandbox init pid with fw-daemon: ", err)
 		}
@@ -661,7 +662,7 @@ func (sbox *Sandbox) logPipeOutput(p io.Reader, label string) {
 
 const ReceiverSocketPath = "/tmp/fwoz.sock"
 
-func registerSandboxPid(pid int) (error) {
+func registerSandboxPid(pid int, name string) (error) {
 	c, err := net.Dial("unix", ReceiverSocketPath)
 	if err != nil {
 		return err
@@ -669,7 +670,7 @@ func registerSandboxPid(pid int) (error) {
 
 	defer c.Close()
 
-	reqstr := "register-init " + strconv.Itoa(pid) + "\n"
+	reqstr := "register-init " + strconv.Itoa(pid) + " " + name + "\n"
 	c.Write([]byte(reqstr))
 
 	buf := make([]byte, 1024)

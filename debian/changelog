@@ -1,4 +1,4 @@
-oz-daemon (0.2.1-1) testing; urgency=medium
+oz-daemon (0.2.1-1.1) testing; urgency=medium
 
   * Added strict(er) /etc feature
   * Added client enter shell prompt

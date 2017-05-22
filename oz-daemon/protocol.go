@@ -106,6 +106,14 @@ type ListForwardersMsg struct {
 	Id int "ListForwarders"
 }
 
+type ListProxiesMsg struct {
+	_ string "ListProxies"
+}
+
+type ListProxiesResp struct {
+	Proxies []string "ListProxiesResp"
+}
+
 type AskForwarderMsg struct {
 	Id   int "AskForwarder"
 	Name string
@@ -147,4 +155,6 @@ var messageFactory = ipc.NewMsgFactory(
 	new(ListForwardersResp),
 	new(ListBridgesMsg),
 	new(ListBridgesResp),
+	new(ListProxiesMsg),
+	new(ListProxiesResp),
 )

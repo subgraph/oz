@@ -76,6 +76,7 @@ func Main() {
 		d.handleAskForwarder,
 		d.handleListForwarders,
 		d.handleListBridges,
+		d.handleListProxies,
 	)
 	if err != nil {
 		d.log.Error("Error running server: %v", err)
@@ -558,6 +559,12 @@ func (d *daemonState) handleListBridges(msg *ListBridgesMsg, m *ipc.Message) err
 	for _, b := range d.bridges.GetBridgeMap() {
 		r.Bridges = append(r.Bridges, "oz-"+b.Name)
 	}
+	return m.Respond(r)
+}
+
+func (d *daemonState) handleListProxies(msg *ListProxiesMsg, m *ipc.Message) error {
+	r := new(ListProxiesResp)
+	r.Proxies = network.GetProxyPairInfo()
 	return m.Respond(r)
 }
 

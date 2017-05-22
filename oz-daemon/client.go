@@ -67,6 +67,18 @@ func ListForwarders(id int) ([]Forwarder, error) {
 	return body.Forwarders, nil
 }
 
+func ListProxies() ([]string, error) {
+	resp, err := clientSend(&ListProxiesMsg{})
+	if err != nil {
+		return nil, err
+	}
+	body, ok := resp.Body.(*ListProxiesResp)
+	if !ok {
+		return nil, errors.New("ListProxies response was not expected type")
+	}
+	return body.Proxies, nil
+}
+
 func ListSandboxes() ([]SandboxInfo, error) {
 	resp, err := clientSend(&ListSandboxesMsg{})
 	if err != nil {

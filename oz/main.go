@@ -168,6 +168,11 @@ func runApplication() {
 				},
 			},
 		},
+		{
+			Name:   "listproxies",
+			Usage:  "list established proxy circuits",
+			Action: handleListProxies,
+		},
 	}
 	app.Run(os.Args)
 }
@@ -421,6 +426,17 @@ func handleListForwarders(c *cli.Context) {
 		fmt.Printf("  %s: %s => %s\n", r.Name, r.Desc, r.Target)
 	}
 }
+
+func handleListProxies(c *cli.Context) {
+	res, err := daemon.ListProxies()
+	if err != nil {
+		fmt.Printf("Error listing established proxies: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Result: %d entries ...\n", len(res))
+	fmt.Println(strings.Join(res, "\n"))
+}
+
 
 func checkRecursingSandbox() error {
 	hostname, _ := os.Hostname()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"os/exec"
 )
 
@@ -17,6 +18,9 @@ func Up() {
 	ozdebug := os.Getenv("oz_debug")
 
 	ipgwstr := os.Getenv("route_network_1")
+	if ipgwstr == "" {
+		ipgwstr = os.Getenv("route_vpn_gateway")
+	}
 	ifrstr := os.Getenv("ifconfig_remote")
 	iflstr := os.Getenv("ifconfig_local")
 	dev := os.Getenv("dev")
@@ -31,11 +35,20 @@ func Up() {
 	   OpenVPN server missing or invalid
 	*/
 
+	var mask net.IPMask
 	i = net.ParseIP(ipgwstr)
-	mask := net.CIDRMask(24, 32)
+
+	ifnetmask := os.Getenv("ifconfig_netmask")
+	if ifnetmask != "" {
+		mask = ParseIPv4Mask(ifnetmask)
+	} else {
+		mask = net.CIDRMask(24, 32)
+	}
 	i = i.Mask(mask)
 	n.Mask = mask
 	n.IP = i
+
+	/* Oz bridge is always /24 */
 
 	bi := net.ParseIP(bridgeaddr)
 	bmask := net.CIDRMask(24, 32)
@@ -100,5 +113,34 @@ func Up() {
 	if ozdebug != "" {
 		fmt.Fprintf(os.Stderr, s)
 	}
+
 	cmd.Run()
+}
+
+/* Below ripped out of github.com/spf13/pflag, did the trick, thanks! */
+
+func ParseIPv4Mask(s string) net.IPMask {
+	mask := net.ParseIP(s)
+	if mask == nil {
+		if len(s) != 8 {
+			return nil
+		}
+		// net.IPMask.String() actually outputs things like ffffff00
+		// so write a horrible parser for that as well  :-(
+		m := []int{}
+		for i := 0; i < 4; i++ {
+			b := "0x" + s[2*i:2*i+2]
+			d, err := strconv.ParseInt(b, 0, 0)
+			if err != nil {
+				return nil
+			}
+			m = append(m, int(d))
+		}
+		s := fmt.Sprintf("%d.%d.%d.%d", m[0], m[1], m[2], m[3])
+		mask = net.ParseIP(s)
+		if mask == nil {
+			return nil
+		}
+	}
+	return net.IPv4Mask(mask[12], mask[13], mask[14], mask[15])
 }

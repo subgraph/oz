@@ -1,3 +1,9 @@
+oz-daemon (0.2.3-1) testing; urgency=medium
+  
+  * Bump version
+
+ -- Subgraph <info@subgraph.com>  Sat, 10 Jun 2017 21:55:00 +0000
+
 oz-daemon (0.2.2-1) testing; urgency=medium
 
   * Improved OpenVPN bring-up code

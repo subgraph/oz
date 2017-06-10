@@ -1,3 +1,9 @@
+oz-daemon (0.2.3-2) testing; urgency=medium
+
+  * Override dh_auto_build
+
+ -- Subgraph <info@subgraph.com>  Sat, 10 Jun 2017 23:02:00 +0000
+
 oz-daemon (0.2.3-1) testing; urgency=medium
   
   * Bump version

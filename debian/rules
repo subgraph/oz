@@ -10,7 +10,7 @@ export DH_GOPKG := github.com/subgraph/oz
 	dh $@ --buildsystem=golang --with=golang,systemd
 
 override_dh_auto_build:
-        dh_auto_build -- -buildmode=pie -pkgdir=$$(mktemp -d -p $(CURDIR))
+	dh_auto_build -- -buildmode=pie -pkgdir=$$(mktemp -d -p $(CURDIR))
 
 override_dh_auto_install:
 	dh_auto_install

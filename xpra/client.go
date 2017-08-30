@@ -37,6 +37,7 @@ func NewClient(config *oz.XServerConf, display uint64, cred *syscall.Credential,
 	x.Process.Env = []string{
 		"DISPLAY=:0",
 		"XPRA_CLIPBOARD_LIMIT=45",
+		"XPRA_CLIPBOARDS=CLIPBOARD",
 		fmt.Sprintf("TMPDIR=%s", workdir),
 		fmt.Sprintf("XPRA_SOCKET_HOSTNAME=%s", hostname),
 	}

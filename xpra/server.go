@@ -26,6 +26,7 @@ func NewServer(config *oz.XServerConf, display uint64, spath, workdir string) *X
 	x.Process.Env = append(os.Environ(),
 		"TMPDIR="+workdir,
 		"XPRA_CLIPBOARD_LIMIT=45",
+		"XPRA_CLIPBOARDS=CLIPBOARD",
 	)
 
 	if err := writeFakeProfile(x.Process); err != nil {

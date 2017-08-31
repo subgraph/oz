@@ -1,4 +1,4 @@
-oz-daemon (0.2.4) testing; urgency=medium
+oz-daemon (0.2.4-1) testing; urgency=medium
 
   * Fix clipboard issue
 

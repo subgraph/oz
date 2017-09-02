@@ -106,7 +106,7 @@ func NewDefaultConfig() *Config {
 			"USER", "USERNAME", "LOGNAME",
 			"LANG", "LANGUAGE", "_", "TZ=UTC",
 			"XDG_SESSION_TYPE", "XDG_RUNTIME_DIR", "XDG_DATA_DIRS",
-			"XDG_SEAT", "XDG_SESSION_TYPE", "XDG_SESSION_ID",
+			"XDG_SEAT", "XDG_SESSION_TYPE", "XDG_SESSION_ID","GNOME_DESKTOP_SESSION_ID=this-is-deprecated",
 		},
 		DefaultGroups: []string{
 			"audio", "video",

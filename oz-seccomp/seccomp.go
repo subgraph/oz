@@ -37,14 +37,16 @@ func Main() {
 	flag.Parse()
 
 	args := flag.Args()
-	cmdArgs := []string{args[0]}
-
-	var settings seccomp.SeccompSettings
 
 	if len(args) < 1 {
 		log.Error("oz-seccomp: no command.")
 		os.Exit(1)
 	}
+
+	cmdArgs := []string{args[0]}
+
+	var settings seccomp.SeccompSettings
+
 
 	cmd := args[0]
 	cmdArgs = args

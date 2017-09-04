@@ -114,6 +114,11 @@ func runApplication() {
 			Name:   "list",
 			Usage:  "list running sandboxes",
 			Action: handleList,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name: "verbose, v",
+				},
+			},
 		},
 		{
 			Name:   "shell",
@@ -192,6 +197,11 @@ func runApplication() {
 				},
 			},
 		},
+		{
+			Name:   "listproxies",
+			Usage:  "list established proxy circuits",
+			Action: handleListProxies,
+		},
 	}
 	app.Run(os.Args)
 }
@@ -225,6 +235,7 @@ func handleLaunch(c *cli.Context) {
 }
 
 func handleList(c *cli.Context) {
+	verbose := c.Bool("verbose")
 	sboxes, err := daemon.ListSandboxes()
 	if err != nil {
 		fmt.Printf("Error listing running sandboxes: %v\n", err)
@@ -240,7 +251,6 @@ func handleList(c *cli.Context) {
 			ephemeral = " [ephemeral]"
 		}
 		fmt.Printf("%2d) %s%s\n", sb.Id, sb.Profile, ephemeral)
-
 	}
 }
 
@@ -457,6 +467,17 @@ func handleListForwarders(c *cli.Context) {
 		fmt.Printf("  %s: %s => %s\n", r.Name, r.Desc, r.Target)
 	}
 }
+
+func handleListProxies(c *cli.Context) {
+	res, err := daemon.ListProxies()
+	if err != nil {
+		fmt.Printf("Error listing established proxies: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Result: %d entries ...\n", len(res))
+	fmt.Println(strings.Join(res, "\n"))
+}
+
 
 func checkRecursingSandbox() error {
 	hostname, _ := os.Hostname()

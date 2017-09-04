@@ -129,6 +129,35 @@ func syscallByName(name string) (s SystemCall, err error) {
 	return q, errors.New("System call not found.\n")
 }
 
+func getPrintableASCII(s string, smax int) string {
+	result := ""
+	nwritten := 0
+	for _, x := range s {
+
+		if smax != 0 && nwritten > smax {
+			result += " ..."
+			return result
+		}
+
+		if unicode.IsPrint(x) {
+			result += string(x)
+		} else if x == '\n' {
+			result += "\\n"
+		} else if x == '\r' {
+			result += "\\r"
+		} else if x == '\t' {
+			result += "\\t"
+		} else if x == 0 {
+			result += "\\0"
+		} else {
+			result += "."
+		}
+
+		nwritten++
+	}
+	return result
+}
+
 func isPrintableASCII(s string) bool {
 	for _, x := range s {
 		if unicode.IsPrint(x) == false {

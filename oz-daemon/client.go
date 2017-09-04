@@ -13,7 +13,21 @@ import (
 )
 
 func clientConnect() (*ipc.MsgConn, error) {
-	return ipc.Connect(GetSocketName(), messageFactory, nil)
+        bSockName = os.Getenv("SOCKET_NAME")
+
+        if bSockName != "" {
+                fmt.Println("Attempting to connect on custom socket provided through environment: ", bSockName)
+
+		if bSockName[0:1] != "@" {
+	                fmt.Println("Environment variable specified invalid socket name... prepending @")
+			bSockName = "@" + bSockName
+		}
+
+        } else {
+                bSockName = SocketName
+        }
+
+	return ipc.Connect(bSockName, messageFactory, nil)
 }
 
 func clientSend(msg interface{}) (*ipc.Message, error) {
@@ -54,6 +68,18 @@ func ListForwarders(id int) ([]Forwarder, error) {
 		return nil, errors.New("ListForwarders response was not expected type")
 	}
 	return body.Forwarders, nil
+}
+
+func ListProxies() ([]string, error) {
+	resp, err := clientSend(&ListProxiesMsg{})
+	if err != nil {
+		return nil, err
+	}
+	body, ok := resp.Body.(*ListProxiesResp)
+	if !ok {
+		return nil, errors.New("ListProxies response was not expected type")
+	}
+	return body.Proxies, nil
 }
 
 func ListSandboxes() ([]SandboxInfo, error) {

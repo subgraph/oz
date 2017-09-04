@@ -90,6 +90,7 @@ type SandboxInfo struct {
 	Profile   string
 	Mounts    []string
 	Ephemeral bool
+	InitPid int
 }
 
 type ListSandboxesResp struct {
@@ -126,6 +127,14 @@ type LogData struct {
 
 type ListForwardersMsg struct {
 	Id int "ListForwarders"
+}
+
+type ListProxiesMsg struct {
+	_ string "ListProxies"
+}
+
+type ListProxiesResp struct {
+	Proxies []string "ListProxiesResp"
 }
 
 type AskForwarderMsg struct {
@@ -173,4 +182,6 @@ var messageFactory = ipc.NewMsgFactory(
 	new(ListForwardersResp),
 	new(ListBridgesMsg),
 	new(ListBridgesResp),
+	new(ListProxiesMsg),
+	new(ListProxiesResp),
 )

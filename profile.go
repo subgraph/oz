@@ -43,6 +43,8 @@ type Profile struct {
 	// Allow bind mounting of files passed as arguments inside the sandbox
 	AllowFiles    bool     `json:"allow_files"`
 	AllowedGroups []string `json:"allowed_groups"`
+	// Optional directory where per-process logs will be output
+	LogDir string `json:"log_dir"`
 	// List of paths to bind mount inside jail
 	Whitelist []WhitelistItem
 	// List of paths to blacklist inside jail
@@ -55,6 +57,8 @@ type Profile struct {
 	Environment []EnvVar
 	// Networking
 	Networking NetworkProfile
+	// Firewall
+	Firewall []FWRule
 	// Seccomp
 	Seccomp SeccompConf
 	// External Forwarders
@@ -144,6 +148,12 @@ type WhitelistItem struct {
 type BlacklistItem struct {
 	Path     string
 	NoFollow bool `json:"no_follow"`
+}
+
+type FWRule struct {
+	Whitelist  bool `json:"whitelist"`
+	DstHost    string `json:"dst_host"`
+	DstPort    int `json:"dst_port"`
 }
 
 type EnvVar struct {

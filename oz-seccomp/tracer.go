@@ -3,9 +3,9 @@ package seccomp
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
+	"bufio"
 	"os"
 	"os/exec"
 	"os/user"
@@ -21,6 +21,8 @@ import (
 
 	"github.com/subgraph/oz"
 	"github.com/subgraph/oz/fs"
+
+	"github.com/codegangsta/cli"
 )
 
 // #include "sys/ptrace.h"
@@ -41,6 +43,13 @@ const (
 
 type SystemCallArgs []int
 
+type SCIndOpt struct {
+	ArgNo        uint
+	ArgVal       string
+	MapArgNo     uint
+	MapArgClass  string
+}
+
 type SyscallMapper struct {
 	SyscallName string
 	Flags       uint
@@ -48,6 +57,7 @@ type SyscallMapper struct {
 	Arg1Class   string
 	Arg2Class   string
 	Arg3Class   string
+	ArgMappings []SCIndOpt
 }
 
 type SyscallTracker struct {
@@ -89,7 +99,13 @@ var (
 			Flags: SYSCALL_MAP_ARG1_ISMASK},
 		{SyscallName: "socket", Arg0Class: "socket_family", Arg1Class: "socket_type", Arg2Class: "ip_proto",
 			Flags: SYSCALL_MAP_ARG1_ISMASK},
-		{SyscallName: "setsockopt", Arg1Class: "setsockopt_level", Arg2Class: "setsockopt_optname"},
+		{SyscallName: "socketpair", Arg0Class: "socket_family", Arg1Class: "socket_type" },
+		{SyscallName: "setsockopt", Arg1Class: "sol_level", Arg2Class: "setsockopt_optname",
+			ArgMappings: []SCIndOpt{ {1, "SOL_SOCKET", 2, "setsockopt_optname" },
+						 {1, "SOL_TCP", 2, "sockopt_tcp" } } },
+		{SyscallName: "getsockopt", Arg1Class: "sol_level", Arg2Class: "setsockopt_optname",
+			ArgMappings: []SCIndOpt{ {1, "SOL_SOCKET", 2, "setsockopt_optname" },
+						 {1, "SOL_TCP", 2, "sockopt_tcp" } } },
 		{SyscallName: "prctl", Arg0Class: "PR_"},
 		{SyscallName: "mmap", Arg2Class: "mmap_prot", Arg3Class: "mmap_flags",
 			Flags: SYSCALL_MAP_ARG2_ISMASK | SYSCALL_MAP_ARG3_ISMASK},
@@ -204,13 +220,18 @@ func dumpSyscallsTrackedRaw() string {
 		//		if (i == 0) || (SyscallsTracked[i].scno != SyscallsTracked[i-1].scno) {
 		ruleString += fmt.Sprintf("# %s [%d]: ", scn.name, SyscallsTracked[i].nhits)
 
+		var allValArr = []uint{0, 0, 0, 0, 0, 0}
+		for j = 0; j < 6; j++ {
+			allValArr[j] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
+		}
+
 		for j = 0; j < 6; j++ {
 
 			if SyscallsTracked[i].rmask&(1<<j) > 0 {
 				ruleString += "   " + "arg" + strconv.Itoa(int(j)) + " == " + strconv.Itoa(int(getSyscallTrackerRegVal(SyscallsTracked[i], j)))
 				var valArr = []uint{0}
 				valArr[0] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
-				argStr := genArgs(scn.name, j, valArr, true, false)
+				argStr := genArgs(scn.name, j, valArr, allValArr, false, false)
 
 				if len(argStr) > 0 {
 					ruleString += "[" + argStr + "]"
@@ -248,17 +269,22 @@ func getSyscallsTracked(scname string) string {
 			ruleStringTmp += scn.name + ": "
 		}
 
+		var allValArr = []uint{0, 0, 0, 0, 0, 0}
+		for j = 0; j < 6; j++ {
+			allValArr[j] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
+		}
+
 		for j = 0; j < 6; j++ {
 
 			if SyscallsTracked[i].rmask&(1<<j) > 0 {
 				var valArr = []uint{0}
 				valArr[0] = getSyscallTrackerRegVal(SyscallsTracked[i], j)
-				ruleStr := genArgs(scn.name, j, valArr, true, true)
+				ruleStr := genArgs(scn.name, j, valArr, allValArr, true, true)
 
 				if len(ruleStr) == 0 {
-					ruleStr = genArgs(scn.name, j, valArr, false, false)
+					ruleStr = genArgs(scn.name, j, valArr, allValArr, false, false)
 					commentStr = fmt.Sprintf("# Suppressed tracking of syscall %s, arg%d == %x[%s]\n", scn.name, j, valArr[0], ruleStr)
-					ruleStringTmp += condPrefix
+//					ruleStringTmp += condPrefix
 					condPrefix = ""
 					continue
 				}
@@ -511,7 +537,7 @@ func maskValueMatches(st1 SyscallTracker, st2 SyscallTracker, zero bool) bool {
 // passed as the value of syscall argument argNo for the specified system call.
 // Return the name-as-string (as either a single constant or a bitmask of constants),
 // and return whether or not the string value represents a bitmask, as bool.
-func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude bool) (string, bool) {
+func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude bool, allParams []uint) (string, bool) {
 
 	if argNo > 3 {
 		return fmt.Sprint(paramVal), false
@@ -523,33 +549,55 @@ func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude b
 			continue
 		}
 
-		argPrefix := SyscallMappings[i].Arg0Class
+//		argPrefix := SyscallMappings[i].Arg0Class
+		argPrefix := ""
 		lookupMask := false
 
-		switch argNo {
-		case 0:
-			argPrefix = SyscallMappings[i].Arg0Class
+		if len(allParams) > 0 && SyscallMappings[i].ArgMappings != nil && len(SyscallMappings[i].ArgMappings) > 0 {
 
-			if SyscallMappings[i].Flags&SYSCALL_MAP_ARG0_ISMASK == SYSCALL_MAP_ARG0_ISMASK {
-				lookupMask = true
+			for m := 0; m < len(SyscallMappings[i].ArgMappings); m++ {
+				smap := SyscallMappings[i].ArgMappings[m]
+
+				if smap.MapArgNo != argNo {
+					continue
+				}
+
+				aval, _ := getConstNameByCall(syscallName, allParams[smap.ArgNo], smap.ArgNo, false, nil)
+
+				if aval == smap.ArgVal {
+					argPrefix = smap.MapArgClass
+				}
+
 			}
-		case 1:
-			argPrefix = SyscallMappings[i].Arg1Class
 
-			if SyscallMappings[i].Flags&SYSCALL_MAP_ARG1_ISMASK == SYSCALL_MAP_ARG1_ISMASK {
-				lookupMask = true
-			}
-		case 2:
-			argPrefix = SyscallMappings[i].Arg2Class
+		}
 
-			if SyscallMappings[i].Flags&SYSCALL_MAP_ARG2_ISMASK == SYSCALL_MAP_ARG2_ISMASK {
-				lookupMask = true
-			}
-		case 3:
-			argPrefix = SyscallMappings[i].Arg3Class
+		if argPrefix == "" {
+			switch argNo {
+			case 0:
+				argPrefix = SyscallMappings[i].Arg0Class
 
-			if SyscallMappings[i].Flags&SYSCALL_MAP_ARG3_ISMASK == SYSCALL_MAP_ARG3_ISMASK {
-				lookupMask = true
+				if SyscallMappings[i].Flags&SYSCALL_MAP_ARG0_ISMASK == SYSCALL_MAP_ARG0_ISMASK {
+					lookupMask = true
+				}
+			case 1:
+				argPrefix = SyscallMappings[i].Arg1Class
+
+				if SyscallMappings[i].Flags&SYSCALL_MAP_ARG1_ISMASK == SYSCALL_MAP_ARG1_ISMASK {
+					lookupMask = true
+				}
+			case 2:
+				argPrefix = SyscallMappings[i].Arg2Class
+
+				if SyscallMappings[i].Flags&SYSCALL_MAP_ARG2_ISMASK == SYSCALL_MAP_ARG2_ISMASK {
+					lookupMask = true
+				}
+			case 3:
+				argPrefix = SyscallMappings[i].Arg3Class
+
+				if SyscallMappings[i].Flags&SYSCALL_MAP_ARG3_ISMASK == SYSCALL_MAP_ARG3_ISMASK {
+					lookupMask = true
+				}
 			}
 		}
 
@@ -617,9 +665,7 @@ func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude b
 	return fmt.Sprint(paramVal), false
 }
 
-var tracerProgName = ""
-
-func usage() {
+/*func usage() {
 	fmt.Fprintln(os.Stderr, "Usage: "+tracerProgName+" [-d] [-t / -x] [-o outfile] [-a] [-v] <cmd> <cmdargs ...>     where")
 	fmt.Fprintln(os.Stderr, "-d / -debug:   turns on debug mode,")
 	fmt.Fprintln(os.Stderr, "-t / -train:   enables training mode (default is to read profile in through stdin),")
@@ -627,44 +673,111 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "-o / -output:  specifies a file to which the learned seccomp rules will be written,")
 	fmt.Fprintln(os.Stderr, "-a / -append:  ensures that rules will be appended to a policy file,")
 	fmt.Fprintln(os.Stderr, "-v / -verbose: all rules will be generated with additional commentary.")
-}
+} */
 
 func Tracer() {
-	var train = false
+	app := cli.NewApp()
+        app.Name = "oz-seccomp-tracer"
+        app.Usage = "executable tracer for creating oz seccomp policies"
+//        app.UsageText = "some usage text"
+	app.ArgsUsage = "<cmd> [cmdargs]"
+	app.HelpName = "oz-seccomp-tracer"
+        app.Author = "Subgraph"
+        app.Email = "info@subgraph.com"
+        app.Version = "0.1"
+	app.Action = TMain
+	app.HideHelp = true
+	app.HideVersion = true
+
+	cli.VersionFlag = cli.BoolFlag{
+		Name: "version, V",
+		Usage: "Display the application version number",
+	}
+
+	app.Flags = []cli.Flag {
+		cli.BoolFlag{
+			Name:  "run, r",
+                        Usage: "Run mode (default is training mode)",
+                },
+		cli.BoolFlag{
+			Name:  "vtrain, x",
+                        Usage: "Verbose training output",
+                },
+		cli.BoolFlag{
+			Name:  "debug, d",
+                        Usage: "Debug mode",
+                },
+		cli.StringFlag{
+			Name: "output, o",
+			Usage: "Training policy output file",
+		},
+		cli.BoolFlag{
+			Name:  "verbose, v",
+                        Usage: "Verbose policy output",
+                },
+		cli.StringFlag{
+			Name: "profile, p",
+			Usage: "Pathname to JSON profile or - for stdin (required in run mode)",
+		},
+		cli.BoolFlag{
+			Name:  "append, a",
+                        Usage: "Append to existing policy (unsupported)",
+                },
+		cli.BoolFlag{
+			Name:  "allow-new-privs, N",
+			Usage: "Allow traced program to set new seccomp filters",
+		},
+        }
+
+	app.Run(os.Args)
+	fmt.Println("DONE")
+}
+
+func TMain(ctx *cli.Context) {
+	var train = true
 	var cmd string
 	var cmdArgs []string
 	var p *oz.Profile
+	var debug bool
 
-	tracerProgName = os.Args[0]
+//	tracerProgName = os.Args[0]
 
-	var noprofile = flag.Bool("train", false, "Training mode")
-	flag.BoolVar(noprofile, "t", false, "Training mode")
-	var debug = flag.Bool("debug", false, "Debug mode")
-	flag.BoolVar(debug, "d", false, "Debug mode")
-	var appendpolicy = flag.Bool("append", false, "Append to existing policy if exists")
-	flag.BoolVar(appendpolicy, "a", false, "Append to existing policy if exists")
-	var verbosetrain = flag.Bool("vtrain", false, "Verbose training output")
-	flag.BoolVar(verbosetrain, "x", false, "Verbose training output")
-	var trainingoutput = flag.String("output", "", "Training policy output file")
-	flag.StringVar(trainingoutput, "o", "", "Training policy output file")
-	var verbose = flag.Bool("verbose", false, "Verbose policy output")
-	flag.BoolVar(verbose, "v", false, "Verbose policy output")
-
-	flag.Usage = usage
-
-	flag.Parse()
-
-	var args = flag.Args()
-
-	if len(args) == 0 {
-		flag.Usage()
-		os.Exit(1)
+	if len(ctx.Args()) == 0 {
+		cli.ShowAppHelp(ctx)
+		os.Exit(-1)
 	}
 
-	_, err := os.Stat(args[0])
+//	fmt.Println("ctx args = ", ctx.Args())
+
+	if ctx.Bool("append") {
+		log.Error("Append policy feature is not yet implemented.")
+		os.Exit(-1)
+	}
+
+	if ctx.Bool("run") {
+		train = false
+	}
+
+	if train && ctx.String("profile") != "" {
+		log.Fatal("Error: input profile can only be specified in run mode.")
+	}
+
+	if !train {
+		if ctx.Bool("vtrain") {
+			log.Fatal("Error: verbose training mode can only be specified in training mode.")
+		} else if ctx.String("output") != "" {
+			log.Fatal("Error: output file can only be specified in training mode.")
+		} else if ctx.Bool("verbose") {
+			log.Fatal("Error: verbosity can only be set in training mode.")
+		} else if ctx.String("profile") == "" {
+			log.Fatal("Error: input profile must be specified in run mode.")
+		}
+	}
+
+	_, err := os.Stat(ctx.Args().Get(0))
 
 	if err != nil {
-		log.Error("Error: could not access program: ", err)
+		log.Error("Error: could not access program: %v", err)
 		os.Exit(-1)
 	}
 
@@ -675,26 +788,41 @@ func Tracer() {
 		os.Exit(1)
 	}
 
-	if *noprofile == true {
-		train = true
-
+	if train {
 		// TODO: remove hardcoded path and read prefix from /etc/oz.conf
-
 		cmd = path.Join(OzConfig.PrefixPath, "bin", "oz-seccomp")
-		cmdArgs = append([]string{"-mode=train"}, args...)
+
+		if ctx.Bool("allow-new-privs") {
+			cmdArgs = append([]string{"-mode=train", "-allow-new-privs"}, ctx.Args()...)
+		} else {
+			cmdArgs = append([]string{"-mode=train"}, ctx.Args()...)
+		}
+		debug = ctx.Bool("debug")
 	} else {
 		p = new(oz.Profile)
-		fmt.Fprintln(os.Stderr, "Expecting input as json data from stdin ...")
-		if err := json.NewDecoder(os.Stdin).Decode(&p); err != nil {
-			log.Error("unable to decode profile data: %v", err)
-			os.Exit(1)
+		inFile := os.Stdin
+
+		if ctx.String("profile") != "-" {
+			inFile, err = os.OpenFile(ctx.String("profile"), os.O_RDONLY, 0666)
+
+			if err != nil {
+				log.Fatal("Unable to open profile file: ", err)
+			}
+
+			fmt.Fprintln(os.Stderr, "Reading data from specified file: ", ctx.String("profile"))
+		} else {
+			fmt.Fprintln(os.Stderr, "Expecting input as json data from stdin ...")
+		}
+
+		if err := json.NewDecoder(inFile).Decode(&p); err != nil {
+			log.Fatal("unable to decode profile data: ", err)
 		}
 		if p.Seccomp.Mode == oz.PROFILE_SECCOMP_TRAIN {
 			train = true
 		}
-		*debug = p.Seccomp.Debug
-		cmd = args[0]
-		cmdArgs = args[1:]
+		debug = p.Seccomp.Debug
+		cmd = ctx.Args()[0]
+		cmdArgs = ctx.Args()[1:]
 	}
 
 	var cpid = 0
@@ -706,7 +834,7 @@ func Tracer() {
 	c.Env = os.Environ()
 	c.Args = append(c.Args, cmdArgs...)
 
-	if *noprofile == false {
+	if train == false {
 
 		pi, err := c.StdinPipe()
 		if err != nil {
@@ -727,6 +855,50 @@ func Tracer() {
 	trainingset := make(map[int]bool)
 	freqcount := make(map[int]int)
 	trainingargs := make(map[int]map[int][]uint)
+
+	pstdout, err := c.StdoutPipe()
+	if err != nil {
+		log.Fatal("Unable to get handle of process stdout: ", err)
+	}
+
+	pstderr, err := c.StderrPipe()
+	if err != nil {
+		log.Fatal("Unable to get handle of process stderr: ", err)
+	}
+
+//	go io.Copy(os.Stdout, pstdout)
+//	go io.Copy(os.Stderr, pstderr)
+
+	go func() {
+		lbuf := bufio.NewReader(pstdout)
+
+		for 1==1 {
+			line, err := lbuf.ReadString('\n')
+
+			if err != nil {
+				return
+			}
+			line = "\033[0;32m" + line + "\033[0m\n"
+			os.Stdout.Write([]byte(line))
+		}
+	}()
+
+	go func() {
+		lbuf := bufio.NewReader(pstderr)
+
+		for 1==1 {
+			line, err := lbuf.ReadString('\n')
+
+			if err != nil {
+				return
+			}
+			if len(line) > 0 {
+				line = line[0:len(line)-1]
+			}
+			line = "\033[1;31m" + line + "\033[0m\n"
+			os.Stderr.Write([]byte(line))
+		}
+	}()
 
 	if err := c.Start(); err == nil {
 		cpid = c.Process.Pid
@@ -822,7 +994,7 @@ func Tracer() {
 						log.Info("%v", err)
 						continue
 					}
-					if *debug == true {
+					if debug == true {
 						call += "\n  " + renderSyscallBasic(pid, systemcall, regs)
 					}
 				} else {
@@ -833,7 +1005,7 @@ func Tracer() {
 				continue
 
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXIT << 8):
-				if *debug == true {
+				if debug == true {
 					log.Error("Ptrace exit event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				delete(children, pid)
@@ -845,12 +1017,12 @@ func Tracer() {
 					log.Error("PTrace event message retrieval failed: %v", err)
 				}
 				children[int(newpid)] = true
-				if *debug == true {
+				if debug == true {
 					log.Error("Ptrace clone event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_FORK << 8):
-				if *debug == true {
+				if debug == true {
 					log.Error("PTrace fork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -860,7 +1032,7 @@ func Tracer() {
 				children[int(newpid)] = true
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK << 8):
-				if *debug == true {
+				if debug == true {
 					log.Error("Ptrace vfork event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -870,7 +1042,7 @@ func Tracer() {
 				children[int(newpid)] = true
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_VFORK_DONE << 8):
-				if *debug == true {
+				if debug == true {
 					log.Error("Ptrace vfork done event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				newpid, err := syscall.PtraceGetEventMsg(pid)
@@ -881,32 +1053,32 @@ func Tracer() {
 
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_EXEC << 8):
-				if *debug == true {
+				if debug == true {
 					log.Error("Ptrace exec event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP) | (unix.PTRACE_EVENT_STOP << 8):
-				if *debug == true {
+				if debug == true {
 					log.Error("Ptrace stop event detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGTRAP):
-				if *debug == true {
+				if debug == true {
 					log.Error("SIGTRAP detected in pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGCHLD):
-				if *debug == true {
+				if debug == true {
 					log.Error("SIGCHLD detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGSTOP):
-				if *debug == true {
+				if debug == true {
 					log.Error("SIGSTOP detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				continue
 			case uint32(unix.SIGSEGV):
-				if *debug == true {
+				if debug == true {
 					log.Error("SIGSEGV detected pid %v (%s)", pid, getProcessCmdLine(pid))
 				}
 				err = syscall.Kill(pid, 9)
@@ -918,7 +1090,7 @@ func Tracer() {
 				continue
 			default:
 				y := s.StopSignal()
-				if *debug == true {
+				if debug == true {
 					log.Error("Child stopped for unknown reasons pid %v status %v signal %i (%s)", pid, s, y, getProcessCmdLine(pid))
 				}
 				continue
@@ -935,29 +1107,29 @@ func Tracer() {
 				log.Error("user.Current(): %v", e)
 			}
 
-			if *trainingoutput != "" {
-				resolvedpath = *trainingoutput
+			if ctx.String("output") != "" {
+				resolvedpath = ctx.String("output")
 			} else {
-				if *noprofile == false {
+/*				if ctx.Bool("train") == false {
 					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.TrainOutput, -1, u, nil, p)
 					if e != nil {
 						log.Error("resolveVars(): %v", e)
 					}
-				} else {
-					s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(os.Args[2]), cpid)
+				} else { */
+					s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(ctx.Args()[0]), cpid)
 					resolvedpath, e = fs.ResolvePathNoGlob(s, -1, u, nil, nil)
-				}
+//				}
 			}
 			policyout := ""
 
 			collapseMatchingBitmasks()
 			sk := sortedKeys(freqcount)
-			if *verbosetrain == true {
+			if ctx.Bool("vtrain") == true {
 				fmt.Println("\nInvocation counts for observed system calls:\n")
 			}
 			for _, call := range sk {
 				sc, _ := syscallByNum(call)
-				if *verbosetrain == true {
+				if ctx.Bool("vtrain") == true {
 					fmt.Printf("%s calls: %d\n", sc.name, freqcount[call])
 				}
 				done := false
@@ -976,16 +1148,13 @@ func Tracer() {
 
 			policyout += fmt.Sprintf("execve:1")
 
-			if *verbose {
-				policyout += "\n# Raw system call data:\n" + dumpSyscallsTrackedRaw() + "\n"
+			if ctx.Bool("verbose") {
+				policyout += "\n\n# Raw system call data:\n" + dumpSyscallsTrackedRaw() + "\n"
 			}
 
-			if *verbosetrain == true {
+			if ctx.Bool("vtrain") == true {
 				fmt.Println("\nTrainer generated seccomp-bpf whitelist policy:\n")
 				fmt.Println(policyout)
-			}
-			if *appendpolicy == true {
-				log.Error("Not yet implemented.")
 			}
 
 			f, err := os.OpenFile(resolvedpath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
@@ -1005,11 +1174,11 @@ func Tracer() {
 	}
 }
 
-func genArgs(scName string, a uint, vals []uint, exclude bool, warg bool) string {
+func genArgs(scName string, a uint, vals []uint, allVals []uint, exclude bool, warg bool) string {
 	s := ""
 	for idx, x := range vals {
 		failed := false
-		constName, mask := getConstNameByCall(scName, x, a, exclude)
+		constName, mask := getConstNameByCall(scName, x, a, exclude, allVals)
 
 		if len(constName) == 0 {
 			failed = true

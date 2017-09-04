@@ -212,6 +212,24 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 			cmd.Process.Kill()
 			return nil, fmt.Errorf("Unable to setup bridged networking: %+v", err)
 		}
+
+		pname := fmt.Sprintf("%s (%d)", sbox.profile.Name, sbox.id)
+		err := registerSandboxPid(sbox.init.Process.Pid, pname)
+		if err != nil {
+			log.Error("Error registering sandbox init pid with fw-daemon: ", err)
+		}
+		if len(p.Firewall) == 0 {
+			log.Notice("XXX: no firewall rules found in profile... skipping.")
+		} else {
+			log.Notice("XXX: setup virtual bridge device: ", sbox.iface.GetSandboxIP().String())
+
+			for r := 0; r < len(p.Firewall); r++ {
+				log.Noticef("XXX: whitelist = %v, dsthost = %v, dstport = %v\n", p.Firewall[r].Whitelist, p.Firewall[r].DstHost, p.Firewall[r].DstPort)
+				success, err := setupFWRule(true, p.Firewall[r].Whitelist, sbox.iface.GetSandboxIP().String(), p.Firewall[r].DstHost, uint16(p.Firewall[r].DstPort), sbox.init.Process.Pid)
+				log.Noticef("XXX: success = %v, err = %v\n", success, err)
+			}
+
+		}
 		if p.Networking.VPNConf.VpnType == "openvpn" {
 			var ovpn OpenVPN
 			ovpn.runtoken, err = createRunToken("openvpn")
@@ -523,6 +541,12 @@ func (sbox *Sandbox) remove(log *logging.Logger) {
 	for _, sb := range sbox.daemon.sandboxes {
 		if sb == sbox {
 			if sb.iface != nil {
+				err := sb.iface.RemoveFWRules()
+
+				if err != nil {
+					sbox.daemon.Warning("Error: could not remove firewall rules for destroyed sandbox: ", err.Error())
+				}
+
 				sb.iface.Delete()
 				sb.iface = nil
 			}
@@ -636,4 +660,77 @@ func (sbox *Sandbox) logPipeOutput(p io.Reader, label string) {
 		line := scanner.Text()
 		sbox.daemon.log.Info("[%s] (%s) %s", sbox.profile.Name, label, line)
 	}
+}
+
+const ReceiverSocketPath = "/tmp/fwoz.sock"
+
+func registerSandboxPid(pid int, name string) (error) {
+	c, err := net.Dial("unix", ReceiverSocketPath)
+	if err != nil {
+		return err
+	}
+
+	defer c.Close()
+
+	reqstr := "register-init " + strconv.Itoa(pid) + " " + name + "\n"
+	c.Write([]byte(reqstr))
+
+	buf := make([]byte, 1024)
+
+	for {
+		_, err := c.Read(buf[:])
+		if err != nil {
+			return err
+		}
+//		fmt.Println(string(buf[0:n]))
+	}
+
+
+	return nil
+}
+
+func setupFWRule(add, whitelist bool, src, dst string, port uint16, pid int) (bool, error) {
+	c, err := net.Dial("unix", ReceiverSocketPath)
+	if err != nil {
+		return false, err
+	}
+
+	defer c.Close()
+
+	reqstr := ""
+
+	if add {
+		reqstr += "add "
+	} else {
+		reqstr += "remove "
+	}
+
+	if whitelist {
+		reqstr += "whitelist"
+	} else {
+		reqstr += "blacklist"
+	}
+
+	pstr := strconv.Itoa(int(port))
+
+	if port == 0 {
+		pstr = "*"
+	}
+
+	reqstr += " " + src + " " + dst + " " + pstr + " " + strconv.Itoa(pid) + "\n"
+	c.Write([]byte(reqstr))
+
+	buf := make([]byte, 1024)
+
+	for {
+		n, err := c.Read(buf[:])
+		if err != nil {
+			return false, err
+		}
+		fmt.Println(string(buf[0:n]))
+	}
+
+
+	fmt.Println("Done.")
+	return true, nil
 }

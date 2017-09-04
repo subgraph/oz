@@ -1,0 +1,10 @@
+
+# a comment
+
+DEFAULT_POSITIVE=kill
+
+something(a) = 1 + a
+VAL  = 42
+
+read: 42
+

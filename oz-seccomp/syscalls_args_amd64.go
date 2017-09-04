@@ -285,6 +285,7 @@ var syscalls = []SystemCall{
 		name: "socketpair",
 		num:  53,
 		args: SystemCallArgs{INTARG, INTARG, INTARG, PTRARG, 0, 0},
+		captureArgs: SystemCallArgs{STRINGARG, STRINGARG, STRINGARG, 0, 0, 0},
 	},
 	SystemCall{
 		name:        "setsockopt",
@@ -296,6 +297,7 @@ var syscalls = []SystemCall{
 		name: "getsockopt",
 		num:  55,
 		args: SystemCallArgs{INTARG, INTARG, INTARG, PTRARG, PTRARG, 0},
+		captureArgs: SystemCallArgs{0, STRINGARG, STRINGARG, 0, 0, 0},
 	},
 	SystemCall{
 		name: "clone",

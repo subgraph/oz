@@ -44,7 +44,7 @@ type SeccompSettings struct {
 	// up.
 	// If the path starts with the special marker InlineMarker, the rest of the string will
 	// be interpreted as an inline definition, not a path.
-	// ExtraDefinitions is softly deprecated - you should probably use parser.CombinedSources instead
+	// ExtraDefinitions is softly deprecated - you should probably use parser.CombineSources instead
 	ExtraDefinitions []string
 	// DefaultPositiveAction is the action to take when a syscall is matched, and the expression returns a positive result - and the rule
 	// doesn't have any specified custom actions.  It can be specified as one of "trap", "kill", "allow" or "trace". It can also be a number
@@ -157,7 +157,6 @@ func Compile(path string, enforce bool) ([]unix.SockFilter, error) {
 // It has the same signature as CompileBlacklist from Subgraphs go-seccomp and should provide the same behavior.
 // However, the modern interface is through the Prepare function
 func CompileBlacklist(path string, enforce bool) ([]unix.SockFilter, error) {
-
 	settings := SeccompSettings{}
 	settings.DefaultNegativeAction = "allow"
 	settings.DefaultPolicyAction = "allow"
@@ -187,6 +186,15 @@ func Load(bpf []unix.SockFilter) error {
 	}
 
 	return native.InstallSeccomp(prog)
+}
+
+// LockedLoad will run Load with the arguments given while locking the
+// current OS thread. The existing Load can't do that, since LockOSThread is
+// not nestable at the moment
+func LockedLoad(bpf []unix.SockFilter) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+	return Load(bpf)
 }
 
 // Install will install the given policy filters into the kernel

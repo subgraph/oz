@@ -64,11 +64,13 @@ func renderSyscallBasic(pid int, systemcall SystemCall, regs syscall.PtraceRegs)
 				if err != nil {
 					log.Error("Error %v", err)
 				} else {
-					if isPrintableASCII(str) == true {
+					pstr := getPrintableASCII(str, 128)
+					callrep += fmt.Sprintf("\"%s\"", pstr)
+/*					if isPrintableASCII(str) == true {
 						callrep += fmt.Sprintf("\"%s\"", str)
 					} else {
 						callrep += fmt.Sprintf("0x%X", uintptr(reg))
-					}
+					} */
 				}
 			} else {
 				callrep += fmt.Sprintf("0x%X", uintptr(reg))

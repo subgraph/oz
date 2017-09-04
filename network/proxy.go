@@ -55,6 +55,117 @@ type ProxyConfig struct {
 
 var wgProxy sync.WaitGroup
 
+type PConnInfo struct {
+	Saddr net.IP
+	Sport uint16
+	Daddr net.IP
+	Dport uint16
+}
+
+type ProxyPair struct {
+	In  *PConnInfo
+	Out *PConnInfo
+	Cnt int
+}
+
+var ProxyPairs []*ProxyPair
+var PairLock = &sync.Mutex{}
+
+func connToPConn(c net.Conn, swap bool) *PConnInfo {
+	rstr := c.LocalAddr().String()
+	lstr := c.RemoteAddr().String()
+
+	if swap {
+		tmp := rstr
+		rstr = lstr
+		lstr = tmp
+	}
+
+	rhosts, rports, err := net.SplitHostPort(rstr)
+	lhosts, lports, err2 := net.SplitHostPort(lstr)
+
+	if err == nil && err2 == nil {
+		srci := net.ParseIP(lhosts)
+		dsti := net.ParseIP(rhosts)
+		sport, err := strconv.Atoi(lports)
+		dport, err2 := strconv.Atoi(rports)
+
+		if srci != nil && dsti != nil && err == nil && err2 == nil {
+
+			if sport >= 0 && sport <= 65535 && dport >= 0 && dport <= 65535 {
+				return &PConnInfo{Saddr: srci, Sport: uint16(sport), Daddr: dsti, Dport: uint16(dport)}
+			}
+
+		}
+	}
+
+	return nil
+}
+
+func GetProxyPairInfo() []string {
+	PairLock.Lock()
+	defer PairLock.Unlock()
+
+	result := make([]string, 0)
+
+	for _, pair := range ProxyPairs {
+		rstr := fmt.Sprintf("%v:%d -> %v:%d, %v:%d -> %v:%d", pair.In.Saddr, pair.In.Sport, pair.In.Daddr, pair.In.Dport,
+			pair.Out.Saddr, pair.Out.Sport, pair.Out.Daddr, pair.Out.Dport)
+		result = append(result, rstr)
+	}
+
+	return result
+}
+
+func addProxyPair(in net.Conn, out net.Conn, swap bool) bool {
+	PairLock.Lock()
+	defer PairLock.Unlock()
+	pin := connToPConn(in, false)
+	pout := connToPConn(out, swap)
+
+	if pin == nil || pout == nil {
+		return false
+	}
+
+	ProxyPairs = append(ProxyPairs, &ProxyPair{In: pin, Out: pout, Cnt: 2})
+	return true
+}
+
+func pConnEqual(pair1, pair2 *PConnInfo, loose bool) bool {
+	if loose && (pair1.Saddr.Equal(pair2.Daddr) && pair1.Sport == pair2.Dport && pair1.Daddr.Equal(pair2.Saddr) && pair1.Dport == pair2.Sport) {
+		return true
+	}
+
+	return pair1.Saddr.Equal(pair2.Saddr) && pair1.Sport == pair2.Sport && pair1.Daddr.Equal(pair2.Daddr) && pair1.Dport == pair2.Dport
+}
+
+func removeProxyPair(in net.Conn, out net.Conn) bool {
+//	fmt.Println("XXX: attempting to remove proxy pair!")
+	PairLock.Lock()
+	defer PairLock.Unlock()
+
+	pin := connToPConn(in, false)
+	pout := connToPConn(out, false)
+
+	if pin == nil || pout == nil {
+		return false
+	}
+
+	for i, pair := range ProxyPairs {
+		if (pConnEqual(pair.In, pin, false) && pConnEqual(pair.Out, pout, true)) {
+			pair.Cnt--
+
+			if pair.Cnt <= 0 {
+				ProxyPairs = append(ProxyPairs[:i], ProxyPairs[i+1:]...)
+			}
+
+			return true
+		}
+	}
+
+	return false
+}
+
 func ProxySetup(childPid int, ozSockets []ProxyConfig, log *logging.Logger, ready sync.WaitGroup) error {
 	for _, socket := range ozSockets {
 		if socket.Nettype == "" {
@@ -91,7 +202,13 @@ func proxyClientConn(conn *net.Conn, proto ProtoType, rAddr string, ready sync.W
 	copyLoop := func(dst, src net.Conn) {
 		defer wg.Done()
 		defer dst.Close()
+		defer removeProxyPair(*conn, rConn)
 		io.Copy(dst, src)
+	}
+
+//	fmt.Println("XXX: attempting to add proxy client pair...")
+	if !addProxyPair(*conn, rConn, true) {
+		fmt.Println("Could not add new proxy client pair to table.")
 	}
 
 	go copyLoop(*conn, rConn)
@@ -211,6 +328,11 @@ func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log
 		defer dst.Close()
 		io.Copy(dst, src)
 	}
+
+//	log.Error("XXX: attempting to add proxy server pair...")
+/*	if !addProxyPair(*conn, rConn, false) {
+		log.Error("Could not add new proxy server pair to table.")
+	} */
 
 	go copyLoop(*conn, rConn)
 	go copyLoop(rConn, *conn)

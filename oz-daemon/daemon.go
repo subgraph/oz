@@ -45,25 +45,8 @@ type daemonState struct {
 
 func Main() {
 	oz.CheckSettingsOverRide()
-<<<<<<< HEAD
 	GetSocketName()
-=======
-	bSockName = os.Getenv("SOCKET_NAME")
 
-        if bSockName != "" {
-                fmt.Println("Attempting to connect on custom socket provided through environment: ", bSockName)
-
-                if bSockName[0:1] != "@" {
-                        fmt.Println("Environment variable specified invalid socket name... prepending @")
-                        bSockName = "@" + bSockName
-                }
-
-        } else {
-                bSockName = SocketName
-        }
-
-
->>>>>>> origin/shw_dev
 	d := initialize()
 
 	err := runServer(
@@ -271,11 +254,7 @@ func readOpenVPNPidFromFile(path string) (int, error) {
 }
 
 func runServer(log *logging.Logger, args ...interface{}) error {
-<<<<<<< HEAD
-	s, err := ipc.NewServer(GetSocketName(), messageFactory, log, args...)
-=======
 	s, err := ipc.NewServer(bSockName, messageFactory, log, args...)
->>>>>>> origin/shw_dev
 	if err != nil {
 		return err
 	}
@@ -349,11 +328,7 @@ func (d *daemonState) handleIsRunning(msg *IsRunningMsg, m *ipc.Message) error {
 func (d *daemonState) handleLaunch(msg *LaunchMsg, m *ipc.Message) error {
 	d.Debug("Launch message received. Path: %s Name: %s Pwd: %s Args: %+v", msg.Path, msg.Name, msg.Pwd, msg.Args)
 
-<<<<<<< HEAD
 	if m.Ucred.Uid == 0 || m.Ucred.Gid == 0 {
-=======
-	if m.Ucred.Uid == 0 || m.Ucred.Gid == 0  {
->>>>>>> origin/shw_dev
 		errmsg := fmt.Sprintf("Rejected launch request for %s by privileged user uid %d, gid %d", msg.Name, m.Ucred.Uid, m.Ucred.Gid)
 		d.Warning(errmsg)
 		return m.Respond(&ErrorMsg{errmsg})
@@ -597,17 +572,7 @@ func (d *daemonState) getRunningSandboxByName(name string) *Sandbox {
 func (d *daemonState) handleListSandboxes(list *ListSandboxesMsg, msg *ipc.Message) error {
 	r := new(ListSandboxesResp)
 	for _, sb := range d.sandboxes {
-<<<<<<< HEAD
-		r.Sandboxes = append(r.Sandboxes, SandboxInfo{
-			Id:        sb.id,
-			Address:   sb.addr,
-			Mounts:    sb.mountedFiles,
-			Profile:   sb.profile.Name,
-			Ephemeral: sb.ephemeral,
-		})
-=======
 		r.Sandboxes = append(r.Sandboxes, SandboxInfo{Id: sb.id, Address: sb.addr, Mounts: sb.mountedFiles, Profile: sb.profile.Name, InitPid: sb.init.Process.Pid})
->>>>>>> origin/shw_dev
 	}
 	return msg.Respond(r)
 }

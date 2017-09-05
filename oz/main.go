@@ -235,7 +235,6 @@ func handleLaunch(c *cli.Context) {
 }
 
 func handleList(c *cli.Context) {
-	verbose := c.Bool("verbose")
 	sboxes, err := daemon.ListSandboxes()
 	if err != nil {
 		fmt.Printf("Error listing running sandboxes: %v\n", err)

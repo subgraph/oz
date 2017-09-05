@@ -13,21 +13,7 @@ import (
 )
 
 func clientConnect() (*ipc.MsgConn, error) {
-        bSockName = os.Getenv("SOCKET_NAME")
-
-        if bSockName != "" {
-                fmt.Println("Attempting to connect on custom socket provided through environment: ", bSockName)
-
-		if bSockName[0:1] != "@" {
-	                fmt.Println("Environment variable specified invalid socket name... prepending @")
-			bSockName = "@" + bSockName
-		}
-
-        } else {
-                bSockName = SocketName
-        }
-
-	return ipc.Connect(bSockName, messageFactory, nil)
+	return ipc.Connect(GetSocketName(), messageFactory, nil)
 }
 
 func clientSend(msg interface{}) (*ipc.Message, error) {

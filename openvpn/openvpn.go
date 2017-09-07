@@ -80,7 +80,11 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 		/* TODO: Need to review all OpenVPN client params and filter here */
 
 		case "auth-user-pass":
-			cmd = append(cmd, []string{"--auth-user-pass", path.Join(c.OpenVPNConfDir, auth)}...)
+			cmd = append(cmd, []string{"--auth-nocache", "--auth-user-pass", path.Join(c.OpenVPNConfDir, auth)}...)
+			continue
+		case "persist-tun":
+			continue
+		case "auth-nocache":
 			continue
 		case "iproute":
 			continue
@@ -241,7 +245,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			}
 		}
 	}
-	extra := []string{"--writepid", pidfilepath, "--daemon", "--auth-retry", "nointeract", "--route-noexec", "--route-up", "/usr/bin/oz-ovpn-route-up", "--route-pre-down", "/usr/bin/oz-ovpn-route-down", "--script-security", "2", "--setenv", "bridge_addr", ip.String(), "--setenv", "routing_table", table, "--setenv", "bridge_dev", dev}
+	extra := []string{"--writepid", pidfilepath,"--ping","10","--ping-restart","60","--daemon", "--auth-retry", "nointeract", "--route-noexec", "--route-up", "/usr/bin/oz-ovpn-route-up", "--route-pre-down", "/usr/bin/oz-ovpn-route-down", "--script-security", "2", "--setenv", "bridge_addr", ip.String(), "--setenv", "routing_table", table, "--setenv", "bridge_dev", dev}
 	cmd = append(cmd, extra...)
 
 	for _, x := range cmd {

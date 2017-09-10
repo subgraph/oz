@@ -1,3 +1,9 @@
+oz-daemon (0.2.5-1) testing; urgency=medium
+
+  * Add support for fw-daemon integration (testing/experimental)
+
+ -- Subgraph <info@subgraph.com>  Sun, 10 Sep 2017 19:00 +0000
+
 oz-daemon (0.2.4-1) testing; urgency=medium
 
   * Fix clipboard issue

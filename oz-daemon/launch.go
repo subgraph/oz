@@ -673,7 +673,7 @@ func (sbox *Sandbox) logPipeOutput(p io.Reader, label string) {
 	}
 }
 
-const ReceiverSocketPath = "/tmp/fwoz.sock"
+const ReceiverSocketPath = "/var/run/fw-daemon/fwoz.sock"
 
 func registerSandboxPid(pid int, name string, id int) (error) {
 	c, err := net.Dial("unix", ReceiverSocketPath)

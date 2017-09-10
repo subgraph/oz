@@ -207,17 +207,28 @@ func (d *daemonState) launch(p *oz.Profile, msg *LaunchMsg, rawEnv []string, uid
 
 	sbox.waiting.Wait()
 
+        //pname := fmt.Sprintf("%s (%d)", sbox.profile.Name, sbox.id)
+        log.Noticef("Registering %s (%d) init pid %d with fw-daemon", sbox.profile.Name, sbox.id, sbox.init.Process.Pid)
+        err = registerSandboxPid(sbox.init.Process.Pid, sbox.profile.Name, sbox.id)
+
+        if err != nil {
+ 	       log.Error("Error registering sandbox init pid with fw-daemon: ", err)
+        }
+
+
 	if p.Networking.Nettype == network.TYPE_BRIDGE {
 		if err := sbox.configureBridgedIface(); err != nil {
 			cmd.Process.Kill()
 			return nil, fmt.Errorf("Unable to setup bridged networking: %+v", err)
 		}
 
-		pname := fmt.Sprintf("%s (%d)", sbox.profile.Name, sbox.id)
-		err := registerSandboxPid(sbox.init.Process.Pid, pname)
-		if err != nil {
-			log.Error("Error registering sandbox init pid with fw-daemon: ", err)
-		}
+		//pname := fmt.Sprintf("%s (%d)", sbox.profile.Name, sbox.id)
+//		err := registerSandboxPid(sbox.init.Process.Pid, sbox.profile.Name, sbox.id)
+//		log.Notice("Registering init pid with fw-daemon..")
+
+//		if err != nil {
+//			log.Error("Error registering sandbox init pid with fw-daemon: ", err)
+//		}
 		if len(p.Firewall) == 0 {
 			log.Notice("XXX: no firewall rules found in profile... skipping.")
 		} else {
@@ -664,7 +675,7 @@ func (sbox *Sandbox) logPipeOutput(p io.Reader, label string) {
 
 const ReceiverSocketPath = "/tmp/fwoz.sock"
 
-func registerSandboxPid(pid int, name string) (error) {
+func registerSandboxPid(pid int, name string, id int) (error) {
 	c, err := net.Dial("unix", ReceiverSocketPath)
 	if err != nil {
 		return err
@@ -672,20 +683,23 @@ func registerSandboxPid(pid int, name string) (error) {
 
 	defer c.Close()
 
-	reqstr := "register-init " + strconv.Itoa(pid) + " " + name + "\n"
+	reqstr := "register-init " + strconv.Itoa(pid) + " " + name + " " + strconv.Itoa(id) + "\n"
 	c.Write([]byte(reqstr))
 
 	buf := make([]byte, 1024)
 
 	for {
-		_, err := c.Read(buf[:])
-		if err != nil {
+		n, err := c.Read(buf[:])
+
+		if string(buf[0:2]) == "OK" {
+			return nil
+		}
+		if n > 2 {
+			return fmt.Errorf("Unknown response received from fw-daemon: %s", string(buf[0:n]))
+		} else if err != nil && err != io.EOF {
 			return err
 		}
-//		fmt.Println(string(buf[0:n]))
 	}
-
-
 	return nil
 }
 

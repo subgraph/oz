@@ -482,8 +482,9 @@ func (st *initState) launchApplication(cpath, pwd string, cmdArgs []string) (*ex
 		st.log.Notice("Enabling seccomp whitelist for: %s", cpath)
 		if st.profile.Seccomp.Enforce == false {
 			spath := path.Join(st.config.PrefixPath, "bin", "oz-seccomp")
-			cmdArgs = append([]string{spath, "-mode=whitelist", cpath}, cmdArgs...)
+			cmdArgs = append([]string{"-r", "-p", "-", spath, "-mode=whitelist", cpath}, cmdArgs...)
 			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp-tracer")
+			 
 		} else {
 			cmdArgs = append([]string{"-mode=whitelist", cpath}, cmdArgs...)
 			cpath = path.Join(st.config.PrefixPath, "bin", "oz-seccomp")

@@ -1,8 +1,14 @@
+oz-daemon (0.2.6-1) testing; urgency=medium
+
+  * Fix possible fd leak; cleanup
+
+ -- Subgraph <info@subgraph.com>  Wed, 20 Sep 2017 04:17:00 +0000
+
 oz-daemon (0.2.5-1) testing; urgency=medium
 
   * Add support for fw-daemon integration (testing/experimental)
 
- -- Subgraph <info@subgraph.com>  Sun, 10 Sep 2017 19:00 +0000
+ -- Subgraph <info@subgraph.com>  Sun, 10 Sep 2017 19:00:00 +0000
 
 oz-daemon (0.2.4-1) testing; urgency=medium
 

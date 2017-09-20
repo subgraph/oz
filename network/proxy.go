@@ -140,7 +140,6 @@ func pConnEqual(pair1, pair2 *PConnInfo, loose bool) bool {
 }
 
 func removeProxyPair(in net.Conn, out net.Conn) bool {
-//	fmt.Println("XXX: attempting to remove proxy pair!")
 	PairLock.Lock()
 	defer PairLock.Unlock()
 
@@ -202,6 +201,7 @@ func proxyClientConn(conn *net.Conn, proto ProtoType, rAddr string, ready sync.W
 	copyLoop := func(dst, src net.Conn) {
 		defer wg.Done()
 		defer dst.Close()
+		defer src.Close()
 		defer removeProxyPair(*conn, rConn)
 		io.Copy(dst, src)
 	}
@@ -271,6 +271,24 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 				//panic(err)
 				continue
 			}
+/*
+			if err = conn.SetDeadline(time.Now().Add(50*time.Second)); err != nil {
+				log.Error("conn: %+v", err)
+				continue	
+			}
+			defer func() {
+				// Disarm the handshake timeout, only propagate the error if
+				// the handshake was successful.
+				nerr := conn.SetDeadline(time.Time{})
+				if err == nil {
+					err = nerr
+				}
+			}()
+*/
+/*	req := new(Request)
+	req.conn = conn
+*/
+
 
 			var dialProto ProtoType
 			if c.Proto == PROTO_TCP_TO_UNIX {
@@ -326,6 +344,7 @@ func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log
 	copyLoop := func(dst, src net.Conn) {
 		defer wg.Done()
 		defer dst.Close()
+		defer src.Close()
 		io.Copy(dst, src)
 	}
 

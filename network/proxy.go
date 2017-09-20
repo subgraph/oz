@@ -151,7 +151,7 @@ func removeProxyPair(in net.Conn, out net.Conn) bool {
 	}
 
 	for i, pair := range ProxyPairs {
-		if (pConnEqual(pair.In, pin, false) && pConnEqual(pair.Out, pout, true)) {
+		if pConnEqual(pair.In, pin, false) && pConnEqual(pair.Out, pout, true) {
 			pair.Cnt--
 
 			if pair.Cnt <= 0 {
@@ -206,7 +206,7 @@ func proxyClientConn(conn *net.Conn, proto ProtoType, rAddr string, ready sync.W
 		io.Copy(dst, src)
 	}
 
-//	fmt.Println("XXX: attempting to add proxy client pair...")
+	//	fmt.Println("XXX: attempting to add proxy client pair...")
 	if !addProxyPair(*conn, rConn, true) {
 		fmt.Println("Could not add new proxy client pair to table.")
 	}
@@ -271,24 +271,23 @@ func newProxyClient(pid int, config *ProxyConfig, log *logging.Logger, ready syn
 				//panic(err)
 				continue
 			}
-/*
-			if err = conn.SetDeadline(time.Now().Add(50*time.Second)); err != nil {
-				log.Error("conn: %+v", err)
-				continue	
-			}
-			defer func() {
-				// Disarm the handshake timeout, only propagate the error if
-				// the handshake was successful.
-				nerr := conn.SetDeadline(time.Time{})
-				if err == nil {
-					err = nerr
+			/*
+				if err = conn.SetDeadline(time.Now().Add(50*time.Second)); err != nil {
+					log.Error("conn: %+v", err)
+					continue
 				}
-			}()
-*/
-/*	req := new(Request)
-	req.conn = conn
-*/
-
+				defer func() {
+					// Disarm the handshake timeout, only propagate the error if
+					// the handshake was successful.
+					nerr := conn.SetDeadline(time.Time{})
+					if err == nil {
+						err = nerr
+					}
+				}()
+			*/
+			/*	req := new(Request)
+				req.conn = conn
+			*/
 
 			var dialProto ProtoType
 			if c.Proto == PROTO_TCP_TO_UNIX {
@@ -348,8 +347,8 @@ func proxyServerConn(pid int, conn *net.Conn, proto ProtoType, rAddr string, log
 		io.Copy(dst, src)
 	}
 
-//	log.Error("XXX: attempting to add proxy server pair...")
-/*	if !addProxyPair(*conn, rConn, false) {
+	//	log.Error("XXX: attempting to add proxy server pair...")
+	/*	if !addProxyPair(*conn, rConn, false) {
 		log.Error("Could not add new proxy server pair to table.")
 	} */
 

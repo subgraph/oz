@@ -151,9 +151,9 @@ type BlacklistItem struct {
 }
 
 type FWRule struct {
-	Whitelist  bool `json:"whitelist"`
-	DstHost    string `json:"dst_host"`
-	DstPort    int `json:"dst_port"`
+	Whitelist bool   `json:"whitelist"`
+	DstHost   string `json:"dst_host"`
+	DstPort   int    `json:"dst_port"`
 }
 
 type EnvVar struct {

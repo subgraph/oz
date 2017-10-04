@@ -65,12 +65,24 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 	defer file.Close()
 
 	r := regexp.MustCompile("[^\\s]+")
+	commentstrip := regexp.MustCompile("^(.*)(#.*)$")
 	reader := bufio.NewReader(file)
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanLines)
 	cmd = append(cmd, "--client")
 	for scanner.Scan() {
 		x := r.FindAllString(scanner.Text(), -1)
+		var y []string
+		for _, v := range x {
+			new := commentstrip.ReplaceAllString(v, `$1`)
+			if new != "" {
+				y = append(y, new)
+			}
+			if v != new {
+				break
+			}
+		}
+		x = y
 		if len(x) == 0 {
 			continue
 		}
@@ -245,7 +257,7 @@ func parseOpenVPNConf(c *oz.Config, filename string, ip *net.IP, table, dev, aut
 			}
 		}
 	}
-	extra := []string{"--writepid", pidfilepath,"--ping","10","--ping-restart","60","--daemon", "--auth-retry", "nointeract", "--route-noexec", "--route-up", "/usr/bin/oz-ovpn-route-up", "--route-pre-down", "/usr/bin/oz-ovpn-route-down", "--script-security", "2", "--setenv", "bridge_addr", ip.String(), "--setenv", "routing_table", table, "--setenv", "bridge_dev", dev}
+	extra := []string{"--writepid", pidfilepath, "--ping", "10", "--ping-restart", "60", "--daemon", "--auth-retry", "nointeract", "--route-noexec", "--route-up", "/usr/bin/oz-ovpn-route-up", "--route-pre-down", "/usr/bin/oz-ovpn-route-down", "--script-security", "2", "--setenv", "bridge_addr", ip.String(), "--setenv", "routing_table", table, "--setenv", "bridge_dev", dev}
 	cmd = append(cmd, extra...)
 
 	for _, x := range cmd {

@@ -92,6 +92,7 @@ type XServerConf struct {
 	AudioMode           AudioMode `json:"audio_mode"`
 	PulseAudio          bool      `json:"pulseaudio"`
 	Border              bool      `json:"border"`
+	Environment         []EnvVar  `json:"env"`
 }
 
 type SeccompMode string

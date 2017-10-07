@@ -3,12 +3,11 @@ package xpra
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/subgraph/oz"
 	"io"
 	"os"
 	"os/exec"
 	"syscall"
-
-	"github.com/subgraph/oz"
 
 	"github.com/op/go-logging"
 )
@@ -40,6 +39,17 @@ func NewClient(config *oz.XServerConf, display uint64, cred *syscall.Credential,
 		"XPRA_CLIPBOARDS=CLIPBOARD",
 		fmt.Sprintf("TMPDIR=%s", workdir),
 		fmt.Sprintf("XPRA_SOCKET_HOSTNAME=%s", hostname),
+	}
+
+	/* Inject optional environment variables for XServer from profile XServer config */
+
+	for _, EnvItem := range config.Environment {
+		if EnvItem.Name != "" {
+			if EnvItem.Value != "" {
+				log.Info("Setting XServerConfig environment variable: %s=%s\n", EnvItem.Name, EnvItem.Value)
+				x.Process.Env = append(x.Process.Env, EnvItem.Name+"="+EnvItem.Value)
+			}
+		}
 	}
 
 	if err := writeFakeProfile(x.Process); err != nil {

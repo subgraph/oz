@@ -1,11 +1,11 @@
 package seccomp
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
-	"bufio"
 	"os"
 	"os/exec"
 	"os/user"
@@ -44,10 +44,10 @@ const (
 type SystemCallArgs []int
 
 type SCIndOpt struct {
-	ArgNo        uint
-	ArgVal       string
-	MapArgNo     uint
-	MapArgClass  string
+	ArgNo       uint
+	ArgVal      string
+	MapArgNo    uint
+	MapArgClass string
 }
 
 type SyscallMapper struct {
@@ -99,13 +99,13 @@ var (
 			Flags: SYSCALL_MAP_ARG1_ISMASK},
 		{SyscallName: "socket", Arg0Class: "socket_family", Arg1Class: "socket_type", Arg2Class: "ip_proto",
 			Flags: SYSCALL_MAP_ARG1_ISMASK},
-		{SyscallName: "socketpair", Arg0Class: "socket_family", Arg1Class: "socket_type" },
+		{SyscallName: "socketpair", Arg0Class: "socket_family", Arg1Class: "socket_type"},
 		{SyscallName: "setsockopt", Arg1Class: "sol_level", Arg2Class: "setsockopt_optname",
-			ArgMappings: []SCIndOpt{ {1, "SOL_SOCKET", 2, "setsockopt_optname" },
-						 {1, "SOL_TCP", 2, "sockopt_tcp" } } },
+			ArgMappings: []SCIndOpt{{1, "SOL_SOCKET", 2, "setsockopt_optname"},
+				{1, "SOL_TCP", 2, "sockopt_tcp"}}},
 		{SyscallName: "getsockopt", Arg1Class: "sol_level", Arg2Class: "setsockopt_optname",
-			ArgMappings: []SCIndOpt{ {1, "SOL_SOCKET", 2, "setsockopt_optname" },
-						 {1, "SOL_TCP", 2, "sockopt_tcp" } } },
+			ArgMappings: []SCIndOpt{{1, "SOL_SOCKET", 2, "setsockopt_optname"},
+				{1, "SOL_TCP", 2, "sockopt_tcp"}}},
 		{SyscallName: "prctl", Arg0Class: "PR_"},
 		{SyscallName: "mmap", Arg2Class: "mmap_prot", Arg3Class: "mmap_flags",
 			Flags: SYSCALL_MAP_ARG2_ISMASK | SYSCALL_MAP_ARG3_ISMASK},
@@ -284,7 +284,7 @@ func getSyscallsTracked(scname string) string {
 				if len(ruleStr) == 0 {
 					ruleStr = genArgs(scn.name, j, valArr, allValArr, false, false)
 					commentStr = fmt.Sprintf("# Suppressed tracking of syscall %s, arg%d == %x[%s]\n", scn.name, j, valArr[0], ruleStr)
-//					ruleStringTmp += condPrefix
+					//					ruleStringTmp += condPrefix
 					condPrefix = ""
 					continue
 				}
@@ -549,7 +549,7 @@ func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude b
 			continue
 		}
 
-//		argPrefix := SyscallMappings[i].Arg0Class
+		//		argPrefix := SyscallMappings[i].Arg0Class
 		argPrefix := ""
 		lookupMask := false
 
@@ -677,57 +677,57 @@ func getConstNameByCall(syscallName string, paramVal uint, argNo uint, exclude b
 
 func Tracer() {
 	app := cli.NewApp()
-        app.Name = "oz-seccomp-tracer"
-        app.Usage = "executable tracer for creating oz seccomp policies"
-//        app.UsageText = "some usage text"
+	app.Name = "oz-seccomp-tracer"
+	app.Usage = "executable tracer for creating oz seccomp policies"
+	//        app.UsageText = "some usage text"
 	app.ArgsUsage = "<cmd> [cmdargs]"
 	app.HelpName = "oz-seccomp-tracer"
-        app.Author = "Subgraph"
-        app.Email = "info@subgraph.com"
-        app.Version = "0.1"
+	app.Author = "Subgraph"
+	app.Email = "info@subgraph.com"
+	app.Version = "0.1"
 	app.Action = TMain
 	app.HideHelp = true
 	app.HideVersion = true
 
 	cli.VersionFlag = cli.BoolFlag{
-		Name: "version, V",
+		Name:  "version, V",
 		Usage: "Display the application version number",
 	}
 
-	app.Flags = []cli.Flag {
+	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:  "run, r",
-                        Usage: "Run mode (default is training mode)",
-                },
+			Usage: "Run mode (default is training mode)",
+		},
 		cli.BoolFlag{
 			Name:  "vtrain, x",
-                        Usage: "Verbose training output",
-                },
+			Usage: "Verbose training output",
+		},
 		cli.BoolFlag{
 			Name:  "debug, d",
-                        Usage: "Debug mode",
-                },
+			Usage: "Debug mode",
+		},
 		cli.StringFlag{
-			Name: "output, o",
+			Name:  "output, o",
 			Usage: "Training policy output file",
 		},
 		cli.BoolFlag{
 			Name:  "verbose, v",
-                        Usage: "Verbose policy output",
-                },
+			Usage: "Verbose policy output",
+		},
 		cli.StringFlag{
-			Name: "profile, p",
+			Name:  "profile, p",
 			Usage: "Pathname to JSON profile or - for stdin (required in run mode)",
 		},
 		cli.BoolFlag{
 			Name:  "append, a",
-                        Usage: "Append to existing policy (unsupported)",
-                },
+			Usage: "Append to existing policy (unsupported)",
+		},
 		cli.BoolFlag{
 			Name:  "allow-new-privs, N",
 			Usage: "Allow traced program to set new seccomp filters",
 		},
-        }
+	}
 
 	app.Run(os.Args)
 	fmt.Println("DONE")
@@ -740,14 +740,14 @@ func TMain(ctx *cli.Context) {
 	var p *oz.Profile
 	var debug bool
 
-//	tracerProgName = os.Args[0]
+	//	tracerProgName = os.Args[0]
 
 	if len(ctx.Args()) == 0 {
 		cli.ShowAppHelp(ctx)
 		os.Exit(-1)
 	}
 
-//	fmt.Println("ctx args = ", ctx.Args())
+	//	fmt.Println("ctx args = ", ctx.Args())
 
 	if ctx.Bool("append") {
 		log.Error("Append policy feature is not yet implemented.")
@@ -838,12 +838,12 @@ func TMain(ctx *cli.Context) {
 
 		pi, err := c.StdinPipe()
 		if err != nil {
-			fmt.Errorf("error creating stdin pipe for tracer process: %v", err)
+			log.Errorf("error creating stdin pipe for tracer process: %v", err)
 			os.Exit(1)
 		}
 		jdata, err := json.Marshal(p)
 		if err != nil {
-			fmt.Errorf("Unable to marshal seccomp state: %+v", err)
+			log.Errorf("Unable to marshal seccomp state: %+v", err)
 			os.Exit(1)
 		}
 		io.Copy(pi, bytes.NewBuffer(jdata))
@@ -866,13 +866,13 @@ func TMain(ctx *cli.Context) {
 		log.Fatal("Unable to get handle of process stderr: ", err)
 	}
 
-//	go io.Copy(os.Stdout, pstdout)
-//	go io.Copy(os.Stderr, pstderr)
+	//	go io.Copy(os.Stdout, pstdout)
+	//	go io.Copy(os.Stderr, pstderr)
 
 	go func() {
 		lbuf := bufio.NewReader(pstdout)
 
-		for 1==1 {
+		for 1 == 1 {
 			line, err := lbuf.ReadString('\n')
 
 			if err != nil {
@@ -886,14 +886,14 @@ func TMain(ctx *cli.Context) {
 	go func() {
 		lbuf := bufio.NewReader(pstderr)
 
-		for 1==1 {
+		for 1 == 1 {
 			line, err := lbuf.ReadString('\n')
 
 			if err != nil {
 				return
 			}
 			if len(line) > 0 {
-				line = line[0:len(line)-1]
+				line = line[0 : len(line)-1]
 			}
 			line = "\033[1;31m" + line + "\033[0m\n"
 			os.Stderr.Write([]byte(line))
@@ -1110,15 +1110,15 @@ func TMain(ctx *cli.Context) {
 			if ctx.String("output") != "" {
 				resolvedpath = ctx.String("output")
 			} else {
-/*				if ctx.Bool("train") == false {
-					resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.TrainOutput, -1, u, nil, p)
-					if e != nil {
-						log.Error("resolveVars(): %v", e)
-					}
-				} else { */
-					s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(ctx.Args()[0]), cpid)
-					resolvedpath, e = fs.ResolvePathNoGlob(s, -1, u, nil, nil)
-//				}
+				/*				if ctx.Bool("train") == false {
+								resolvedpath, e = fs.ResolvePathNoGlob(p.Seccomp.TrainOutput, -1, u, nil, p)
+								if e != nil {
+									log.Error("resolveVars(): %v", e)
+								}
+							} else { */
+				s := fmt.Sprintf("${HOME}/%s-%d.seccomp", fname(ctx.Args()[0]), cpid)
+				resolvedpath, e = fs.ResolvePathNoGlob(s, -1, u, nil, nil)
+				//				}
 			}
 			policyout := ""
 
